@@ -3,71 +3,82 @@ import torch.nn.functional as F
 
 
 
-def similarity_loss(text_images, gamma1, gamma2, gamma3): # consider passing the perceptron layer
+def similarity_loss(text_images, size_info, gamma1, gamma2, gamma3): # consider passing the perceptron layer
     """
-    text: D x T tensor
-    imgs: a list of  D x L tensors (L = 289 in the paper)
-    global_sent: D tensor
-    global : D tensor
+    text_images pair: a batch of text_image pairs
+    size_info: size of each dimension of image and text
     """
     loss1_w = 0
     loss2_w = 0
-    loss1_s = 0
-    loss2_s = 0
-    for text_image in text_images:
-        R_QD = torch.zeros(1)
-        R_DQ = torch.zeros(1)
-        total_RQD = torch.zeros(1)
-        total_RDQ = torch.zeros(1)
-        total_RQD_global = torch.zeros(1)
-        total_RDQ_global = torch.zeros(1)
+    loss_reg = 0
 
-        text, imgs, global_sentence, global_img = text_image
-        R_QD_global = global_img.view(1, -1).mm(global_sentence.view(-1, 1))
-        R_DQ_global = R_QD_global.clone()
-        for img in imgs:
-            relevance = calculate_relevance(img, text, gamma1, gamma2)
-            R_QD = torch.exp(gamma3 * relevance)
-            R_DQ += torch.exp(gamma3 * relevance)
-            for text_image in text_images:
-                text2, img2s, global_sentence2, global_img2 = text_image
-                total_RQD += calculate_relevance(img, text2, gamma1, gamma2)
-                total_RQD_global += global_img2.view(1, -1).mm(global_sentence.view(-1, 1))
-                total_RDQ_global += global_img.view(1, -1).mm(global_sentence2.view(-1, 1))
-                for img2 in img2s:
-                    total_RDQ += calculate_relevance(img2, text, gamma1, gamma2)
-            loss1_w -= torch.log(R_QD / total_RQD)
-            total_RQD = torch.zeros(1)
-
-        total_RDQ = total_RDQ / len(imgs)
-        loss2_w -= torch.log(R_DQ / total_RDQ)
-        loss1_s -= torch.log(R_QD_global / total_RQD_global)
-        loss2_s -= torch.log(R_DQ_global / total_RDQ_global)
-
-        return loss1_s + loss2_s + loss1_w + loss2_w
+    M, H_r, H_w = size_info
+    for e, v in text_images:
+        numerator, beta = torch.exp(calculate_matching_score(v, e, M, H_r, H_w, gamma1, gamma2))
+        loss_reg += torch.norm(beta.mm(beta.t()) - torch.diag(beta.mm(beta.t())))
+        P_DQ_denum = 0
+        P_QD_denum = 0
+        for e_sub, v_sub in text_images:
+            P_DQ_denum += torch.exp(calculate_matching_score(v, e_sub, M, H_r, H_w, gamma1, gamma2))
+            P_QD_denum += torch.exp(calculate_matching_score(v_sub, e, M, H_r, H_w, gamma1, gamma2))
+        loss1_w -= numerator / P_DQ_denum
+        loss2_w -= numerator / P_QD_denum
+    return loss1_w + loss2_w + loss_reg
 
 
-def calculate_relevance(img, text, gamma1, gamma2):
-    D, T = text.size()
-    _, L = img.size()
-    similarity_matrix = text.t().mm(img)
-    # normalize_base = torch.ones(similarity_matrix.size()[0], 1).mm(torch.sum(similarity_matrix, dim=1).view(1, -1))
-    normalize_base = torch.sum(similarity_matrix, dim=1).view(-1, 1).mm(torch.ones(1, L))
-    print("similarity_matrix size", similarity_matrix.size())
-    print("normalize_base size", normalize_base.size())
-    normalize_similarity_matrix = similarity_matrix / normalize_base
-    normalize_similarity_matrix = gamma1 * normalize_similarity_matrix
-    attn_distribution = F.softmax(normalize_similarity_matrix)
+def calculate_matching_score(v, e, M, H_r, H_w, gamma1, gamma2):
 
-    region_context = torch.zeros(L, T)
-    for i in range(T):
-        
-        region_context[:, i] = attn_distribution[i].mm(img)
-    relevance = 0
-    for t in range(text.size()[1]):
-        relevance += torch.exp(region_context[:, t].view(1, -1).mm(text[:, t].view(-1, 1)) * gamma2)
-    relevance = torch.log(torch.pow(relevance, 1 / gamma2))
-    return relevance
+    """
+    calculate matching score of (Q, D) pair, consider bi-direction
+    :param v: 2D tensor for img with dimension (M x H_r x W_r) x D
+    :param text: 2D tensor for text with dimension (T x D)
+    :param gamma1: factor
+    :param gamma2: factor
+    :return: maching score for (Q, D) pair
+    """
+    T, _ = e.size()
+    similarity_matrix = e.mm(v.to())
+    # might consider overflow
+    normalized_similarity_matrix = F.softmax(similarity_matrix, dim=0)
+
+    #regard text as query, might consider overflow
+    attn_score = F.softmax(gamma1 * normalized_similarity_matrix, dim=1)
+    # each row of v_tidal represent the attention output
+    v_tidal = attn_score.mm(v)
+    R_QD = 0 # define matching score for one direction
+    for i in range(e.size()[0]):
+        R_QD += v_tidal[i].view(1, -1).mm(e[i].view(-1, 1)).squeeze() / (torch.norm(v_tidal[i], 2) * torch.norm(e[i], 2))
+    R_QD = torch.log(torch.pow(R_QD, 1 / gamma2))
+
+    # regard image box as query, might consider overflow
+    similarity_matrix_copy = normalized_similarity_matrix.clone()
+    similarity_matrix_copy = torch.exp(similarity_matrix_copy)
+    beta = torch.zeros(T, M)
+    for i in range(M):
+        local_sum = torch.sum(similarity_matrix_copy[:, i * H_r * H_w : (i + 1) * H_r * H_w])
+        similarity_matrix_copy[:, i * H_r * H_w : (i + 1) * H_r * H_w] /= local_sum
+        beta[:, i] = torch.sum(similarity_matrix_copy[:, i * H_r * H_w : (i + 1) * H_r * H_w], dim=1)
+    e_prime = (e.t()).mm(beta)
+    # calculate R_QD in the second direction
+    R_QD2 = 0
+    for i in range(M):
+        reference = 0
+        for j in range(i * (H_r * H_w), (i + 1) * (H_r * H_w)):
+            reference += v[j].view(-1, 1).mm(e_prime[i].view(-1, 1)).squeeze() / (torch.norm(v[i], 2) * torch.norm(e_prime[i], 2))
+        reference /= H_r * H_w
+        R_QD2 += torch.exp(reference)
+    R_QD2 = torch.log(torch.pow(R_QD2, 1 / gamma2))
+
+    # add matching score for two directions.
+    return R_QD + R_QD2, beta
+
+
+
+
+
+
+
+
 
 
 if __name__ == "__main__":
