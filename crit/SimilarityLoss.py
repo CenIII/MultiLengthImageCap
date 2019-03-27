@@ -82,26 +82,26 @@ def calculate_matching_score(v, e, M, H_r, H_w, gamma1, gamma2):
 
 
 if __name__ == "__main__":
-    D = 10
+    M = 2
+    H_w = 10
+    H_r = 10
     T = 5
-    B = 3
-    L = 20
-    batch = 10
-    sample = []
-    for b in range(batch):
-        text = torch.randn(D, T)
-        imgs = []
-        for i in range(B):
-            imgs.append(torch.randn(D, L))
-        global_sentent = torch.randn(D)
-        global_img = torch.randn(D)
-        sample.append([text, imgs, global_sentent, global_img])
-    loss = similarity_loss(sample, 5, 10, 15)
-    print(loss)
-            
+    D = 20
+    e = torch.randn(T, D)
+    v = torch.randn(M, H_r, H_w, D)
+    v = v.view(M * H_r * H_w, D)
+    size_info = (M, H_r, H_w)
+    gamma1 = 1
+    gamma2 = 2
+    gamma3 = 3
+    loss = similarity_loss((e, v), size_info, gamma1, gamma2, gamma3)
 
 
-    
+
+
+
+
+
 
 
 
