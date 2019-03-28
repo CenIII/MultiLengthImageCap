@@ -435,7 +435,7 @@ function DenseCapModel:forward_backward(data)
   local din = self.crits.box_reg_crit:backward(
                          {pos_roi_boxes, final_box_trans},
                          gt_boxes)
-  local grad_pos_roi_boxes, grad_final_box_trans = unpack(din)
+  local grad_pos_roi_boxes, grad_final_box_trans = table.unpack(din)
 
   -- Compute captioning loss
   local target = self.nets.language_model:getTarget(gt_labels)

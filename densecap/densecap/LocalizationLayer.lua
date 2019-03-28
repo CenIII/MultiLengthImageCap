@@ -427,12 +427,12 @@ function layer:_forward_train(input)
                           self.rpn_out, {gt_boxes, gt_labels}}
    
     -- Unpack pos data
-    self.pos_data, self.pos_target_data, self.neg_data = unpack(sampler_out)
+    self.pos_data, self.pos_target_data, self.neg_data = table.unpack(sampler_out)
     self.pos_boxes, self.pos_anchors = self.pos_data[1], self.pos_data[2]
     self.pos_trans, self.pos_scores = self.pos_data[3], self.pos_data[4]
     
     -- Unpack target data
-    self.pos_target_boxes, self.pos_target_labels = unpack(self.pos_target_data)
+    self.pos_target_boxes, self.pos_target_labels = table.unpack(self.pos_target_data)
     
     -- Unpack neg data (only scores matter)
     self.neg_boxes = self.neg_data[1]
@@ -650,7 +650,7 @@ function build_rpn(opt)
   box_conv_layer.bias:zero()
   box_branch:add(box_conv_layer)
   box_branch:add(nn.RegularizeLayer(opt.box_reg_decay))
-  local x0, y0, sx, sy = unpack(opt.field_centers)
+  local x0, y0, sx, sy = table.unpack(opt.field_centers)
   local seq = nn.Sequential()
   seq:add(nn.MakeAnchors(x0, y0, sx, sy, anchors))
   seq:add(nn.ReshapeBoxFeatures(num_anchors))

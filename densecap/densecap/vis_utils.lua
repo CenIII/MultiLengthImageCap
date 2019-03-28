@@ -81,7 +81,7 @@ end
 
 function vis_utils.draw_box(img, box, color, lw)
   lw = lw or 1
-  local x, y, w, h = unpack(box:totable())
+  local x, y, w, h = table.unpack(box:totable())
   local H, W = img:size(2), img:size(3)
 
   local top_x1 = clamp(x - lw, 1, W)

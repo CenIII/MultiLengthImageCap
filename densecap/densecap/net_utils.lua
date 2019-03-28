@@ -78,7 +78,7 @@ function net_utils.cudnn_tune_cnn(cnn_name, cnn)
     for i = 1, #cnn do
       local layer = cnn:get(i)
       if torch.isTypeOf(layer, 'cudnn.SpatialConvolution') and algos[i] then
-        layer:setMode(unpack(algos[i]))
+        layer:setMode(table.unpack(algos[i]))
       end
     end
   end

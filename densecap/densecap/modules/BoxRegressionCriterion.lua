@@ -48,7 +48,7 @@ end
 
 
 function crit:updateOutput(input, target_boxes)
-  local anchor_boxes, transforms = unpack(input)
+  local anchor_boxes, transforms = table.unpack(input)
   self.target_transforms = self.invert_transform:forward{anchor_boxes, target_boxes}
 
   -- DIRTY DIRTY HACK: Ignore loss for boxes whose transforms are too big
@@ -68,7 +68,7 @@ end
 
 
 function crit:updateGradInput(input, target_boxes)
-  local anchor_boxes, transforms = unpack(input)
+  local anchor_boxes, transforms = table.unpack(input)
   local grad_transforms = self.smooth_l1:backward(transforms, self.target_transforms)
   grad_transforms:mul(self.w)
   self.gradInput[2]:resizeAs(grad_transforms)

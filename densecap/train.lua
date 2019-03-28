@@ -21,6 +21,8 @@ local opts = require 'train_opts'
 local models = require 'models'
 local eval_utils = require 'eval.eval_utils'
 
+require("mobdebug").start()
+
 -------------------------------------------------------------------------------
 -- Initializations
 -------------------------------------------------------------------------------
