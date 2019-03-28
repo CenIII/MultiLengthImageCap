@@ -68,7 +68,7 @@ class DecoderRNN(BaseRNN):
     def __init__(self, vocab_size, max_len, hidden_size,
             sos_id, eos_id, embedding = None,
             n_layers=1, rnn_cell='gru', bidirectional=False,
-            input_dropout_p=0, dropout_p=0, use_attention=False):
+            input_dropout_p=0, dropout_p=0, use_attention=False, use_prob_vector=False):
         super(DecoderRNN, self).__init__(vocab_size, max_len, hidden_size,
                 input_dropout_p, dropout_p,
                 n_layers, rnn_cell)
@@ -84,7 +84,10 @@ class DecoderRNN(BaseRNN):
 
         self.init_input = None
 
-        self.embedding = nn.Embedding(self.output_size, self.hidden_size)
+        if use_prob_vector:
+            self.embedding = nn.Linear(vocab_size, self.hidden_size)
+        else:
+            self.embedding = nn.Embedding(self.output_size, self.hidden_size)
         if embedding is not None:
             self.embedding.weight = nn.Parameter(embedding)
         
