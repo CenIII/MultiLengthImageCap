@@ -416,59 +416,59 @@ function DenseCapModel:forward_backward(data)
   local num_boxes = objectness_scores:size(1)
   local num_pos = pos_roi_boxes:size(1)
 
-  -- Compute final objectness loss and gradient
-  local objectness_labels = torch.LongTensor(num_boxes):zero()
-  objectness_labels[{{1, num_pos}}]:fill(1)
-  local end_objectness_loss = self.crits.objectness_crit:forward(
-                                         objectness_scores, objectness_labels)
+  -- -- Compute final objectness loss and gradient
+  -- local objectness_labels = torch.LongTensor(num_boxes):zero()
+  -- objectness_labels[{{1, num_pos}}]:fill(1)
+  -- local end_objectness_loss = self.crits.objectness_crit:forward(
+  --                                        objectness_scores, objectness_labels)
                                        
-  end_objectness_loss = end_objectness_loss * self.opt.end_objectness_weight
-  local grad_objectness_scores = self.crits.objectness_crit:backward(
-                                      objectness_scores, objectness_labels)
-  grad_objectness_scores:mul(self.opt.end_objectness_weight)
+  -- end_objectness_loss = end_objectness_loss * self.opt.end_objectness_weight
+  -- local grad_objectness_scores = self.crits.objectness_crit:backward(
+  --                                     objectness_scores, objectness_labels)
+  -- grad_objectness_scores:mul(self.opt.end_objectness_weight)
 
-  -- Compute box regression loss; this one multiplies by the weight inside
-  -- the criterion so we don't do it manually.
-  local end_box_reg_loss = self.crits.box_reg_crit:forward(
-                                {pos_roi_boxes, final_box_trans},
-                                gt_boxes)
-  local din = self.crits.box_reg_crit:backward(
-                         {pos_roi_boxes, final_box_trans},
-                         gt_boxes)
-  local grad_pos_roi_boxes, grad_final_box_trans = table.unpack(din)
+  -- -- Compute box regression loss; this one multiplies by the weight inside
+  -- -- the criterion so we don't do it manually.
+  -- local end_box_reg_loss = self.crits.box_reg_crit:forward(
+  --                               {pos_roi_boxes, final_box_trans},
+  --                               gt_boxes)
+  -- local din = self.crits.box_reg_crit:backward(
+  --                        {pos_roi_boxes, final_box_trans},
+  --                        gt_boxes)
+  -- local grad_pos_roi_boxes, grad_final_box_trans = table.unpack(din)
 
-  -- Compute captioning loss
-  local target = self.nets.language_model:getTarget(gt_labels)
-  local captioning_loss = self.crits.lm_crit:forward(lm_output, target)
-  captioning_loss = captioning_loss * self.opt.captioning_weight
-  local grad_lm_output = self.crits.lm_crit:backward(lm_output, target)
-  grad_lm_output:mul(self.opt.captioning_weight)
+  -- -- Compute captioning loss
+  -- local target = self.nets.language_model:getTarget(gt_labels)
+  -- local captioning_loss = self.crits.lm_crit:forward(lm_output, target)
+  -- captioning_loss = captioning_loss * self.opt.captioning_weight
+  -- local grad_lm_output = self.crits.lm_crit:backward(lm_output, target)
+  -- grad_lm_output:mul(self.opt.captioning_weight)
 
-  local ll_losses = self.nets.localization_layer.stats.losses
-  local losses = {
-    mid_objectness_loss=ll_losses.obj_loss_pos + ll_losses.obj_loss_neg,
-    mid_box_reg_loss=ll_losses.box_reg_loss,
-    end_objectness_loss=end_objectness_loss,
-    end_box_reg_loss=end_box_reg_loss,
-    captioning_loss=captioning_loss,
-  }
-  local total_loss = 0
-  for k, v in pairs(losses) do
-    total_loss = total_loss + v
-  end
-  losses.total_loss = total_loss
+  -- local ll_losses = self.nets.localization_layer.stats.losses
+  -- local losses = {
+  --   mid_objectness_loss=ll_losses.obj_loss_pos + ll_losses.obj_loss_neg,
+  --   mid_box_reg_loss=ll_losses.box_reg_loss,
+  --   end_objectness_loss=end_objectness_loss,
+  --   end_box_reg_loss=end_box_reg_loss,
+  --   captioning_loss=captioning_loss,
+  -- }
+  -- local total_loss = 0
+  -- for k, v in pairs(losses) do
+  --   total_loss = total_loss + v
+  -- end
+  -- losses.total_loss = total_loss
 
-  -- Run the model backward
-  local grad_out = {}
-  grad_out[1] = grad_objectness_scores
-  grad_out[2] = grad_pos_roi_boxes
-  grad_out[3] = grad_final_box_trans
-  grad_out[4] = out[4].new(#out[4]):zero()
-  grad_out[5] = grad_lm_output
-  grad_out[6] = gt_boxes.new(#gt_boxes):zero()
-  grad_out[7] = gt_labels.new(#gt_labels):zero()
+  -- -- Run the model backward
+  -- local grad_out = {}
+  -- grad_out[1] = grad_objectness_scores
+  -- grad_out[2] = grad_pos_roi_boxes
+  -- grad_out[3] = grad_final_box_trans
+  -- grad_out[4] = out[4].new(#out[4]):zero()
+  -- grad_out[5] = grad_lm_output
+  -- grad_out[6] = gt_boxes.new(#gt_boxes):zero()
+  -- grad_out[7] = gt_labels.new(#gt_labels):zero()
 
-  self:backward(input, grad_out)
+  -- self:backward(input, grad_out)
 
-  return losses
+  return out--losses
 end
