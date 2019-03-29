@@ -258,21 +258,11 @@ function DenseCapModel:updateOutput(input)
     self._called_forward = true
   end
   self.output = self.net:forward(input)
-
-  -- local outputs = {
-  --1   objectness_scores,
-  --2   pos_roi_boxes, 
-  --3   final_box_trans, 
-  --4   final_boxes,
-  --5   lm_output,
-  --6   gt_boxes, 
-  --7   gt_labels,
-  -- }
-  -- local posslice_net = nn.PosSlicer()
+  
   -- add new index to self.output: pos_roi_feats, pos_roi_codes
   local roi_feats = self.nets.localization_layer.output[1]
-  pos_roi_feats = self.nets.posslice_net:forward(roi_feats,self.output[7])
-  pos_roi_codes = self.nets.posslice_net:forward(self.nets.recog_base:forward(roi_feats),self.output[7])
+  pos_roi_feats = self.nets.posslice_net:forward({roi_feats,self.output[7]})
+  pos_roi_codes = self.nets.posslice_net:forward({self.nets.recog_base:forward(roi_feats),self.output[7]})
   self.output[8] = pos_roi_feats
   self.output[9] = pos_roi_codes
 
@@ -305,8 +295,19 @@ function DenseCapModel:updateOutput(input)
     -- variables dumped by the LocalizationLayer. Do we want to do that?
 
   end
-
-
+  self.output[10] = self.nets.conv_net2.output[1] -- global feature 512x30x45
+  -- local outputs = {
+  --1   objectness_scores, [~128]x1
+  --2   pos_roi_boxes, 
+  --3   final_box_trans, 
+  --4   final_boxes,  [~128]x4
+  --5   lm_output,     xxx
+  --6   gt_boxes,     [~128]x4
+  --7   gt_labels,    [~128]x15
+  --8   pos_roi_feats [~128]x512x7x7
+  --9   pos_roi_codes [~128]x4096
+  --10  global_feat   512x30x45
+  -- }
   return self.output
 end
 
