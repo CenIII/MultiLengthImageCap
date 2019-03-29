@@ -114,7 +114,7 @@ function DenseCapModel:__init(opt)
   self.net:add(self.nets.recog_net)
 
   -- PosSlicer net as tools for feats extract
-  self.nets.posslice_net = nn.PosSlicer()
+  -- self.nets.posslice_net = nn.PosSlicer()
 
   -- Set up Criterions
   self.crits = {}
@@ -268,13 +268,13 @@ function DenseCapModel:updateOutput(input)
   --6   gt_boxes, 
   --7   gt_labels,
   -- }
-
+  local posslice_net = nn.PosSlicer()
   -- add new index to self.output: pos_roi_feats, pos_roi_codes
-  pos_roi_feats = self.nets.posslice_net:forward(self.nets.localization_layer.output[1],self.output[7])
-  pos_roi_codes = self.nets.posslice_net:forward(self.nets.recog_base:forward(roi_feats),self.output[7])
+  pos_roi_feats = posslice_net:forward(self.nets.localization_layer.output[1],self.output[7])
+  pos_roi_codes = posslice_net:forward(self.nets.recog_base:forward(roi_feats),self.output[7])
   self.output[8] = pos_roi_feats
   self.output[9] = pos_roi_codes
-  
+
   -- At test-time, apply NMS to final boxes
   local verbose = false
   if verbose then
@@ -433,6 +433,8 @@ function DenseCapModel:forward_backward(data)
   self:setGroundTruth(data.gt_boxes, data.gt_labels)
   local out = self:forward(data.image)
 
+  print(out[8]:size())
+  print(out[9]:size())
   -- Pick out the outputs we care about
   -- local objectness_scores = out[1]
   -- local pos_roi_boxes = out[2]
