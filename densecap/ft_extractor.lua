@@ -126,7 +126,7 @@ local function saveJson(outputs, idx)
     end
   end
   
-  local enc = json.encode(outputs)
+  local enc = json.encode_pretty(outputs)
   local f = io.open('data_'..tostring(idx),"w")
   f:write(enc)
   f:close()
