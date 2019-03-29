@@ -46,7 +46,7 @@ class EncoderRNN(BaseRNN):
 
         self.variable_lengths = variable_lengths
         if use_prob_vector:
-            self.embedding = nn.Linear(vocab_size, hidden_size)
+            self.embedding = nn.Linear(vocab_size, hidden_size, bias=False)
         else:
             self.embedding = nn.Embedding(vocab_size, hidden_size)
         if embedding is not None:
