@@ -1,25 +1,20 @@
-from .LSTMDecoder import DecoderRNN
+from LSTMDecoder import DecoderRNN
 from torch.nn.utils.rnn import pad_sequence
 
-import torch.optim as optim
+
 import torch.nn as nn
+import torch
 
 class LanguageModelLoss(nn.Module):
-	"""Calculate loss based on both input sequences and outputs of decoder.
-	
-	Attributes:
-		LanguageModelLoss(): Calculate crossentropy loss with only the outputs, using two pre-trained language models.
-			The transferd style of the sample will be used to choose which language model to use.
-		ReconstructLoss(): Calculate reconstruction loss of output without tranfering style.
-	"""
-	def __init__(self, model):
-		super(LanguageModelLoss, self).__init__()
-        self.model = model
-        self.pad_id = pad_id
-        self.criterion = nn.CrossEntropyLoss()
-			
 
-	def forward(self, outputs, lengths):
+    def __init__(self, model):
+        super(LanguageModelLoss, self).__init__()
+        self.model = model
+
+    def criterion(self, decoder_out, lm_out):
+        return -torch.sum(torch.diag(torch.dot(torch.log(decoder_out), lm_out.T)))
+
+    def forward(self, outputs, lengths):
         loss = 0
 
         out_reshaped = torch.cat([outputs[i].unsqueeze(1) for i in range(len(outputs))],1)
@@ -33,10 +28,10 @@ class LanguageModelLoss(nn.Module):
             else:
                 loss += self.criterion(out_reshaped[i,1:,:],lm_output[i,:lengths[i]-1,:])
 
-        return loss
+        return loss/batch_size
 
 
-def train_LM(model, optimizer, criterion, pad_id):
+def train_LM(data, model, optimizer, criterion, pad_id):
     
 
     for epoch in range(max_epoch):
@@ -59,16 +54,3 @@ def train_LM(model, optimizer, criterion, pad_id):
             loss.backward()
             optimizer.step()
         
-def main():
-    embedding = None
-    vocab_size = None
-    max_len = None
-    hidden_size = None
-    sos_id = None
-    eos_id = None
-    pad_id = None
-
-    model = DecoderRNN(vocab_size, max_len, hidden_size, sos_id, eos_id, embedding=embedding)
-    optimizer = optim.Adam()
-    criterion = nn.CrossEntropyLoss()
-    train_LM(model, optimizer, criterion, pad_id)
