@@ -113,6 +113,9 @@ function DenseCapModel:__init(opt)
   self.nets.recog_net = self:_buildRecognitionNet()
   self.net:add(self.nets.recog_net)
 
+  -- PosSlicer net as tools for feats extract
+  self.nets.posslice_net = nn.PosSlicer()
+
   -- Set up Criterions
   self.crits = {}
   self.crits.objectness_crit = nn.LogisticCriterion()
@@ -133,7 +136,7 @@ function DenseCapModel:_buildRecognitionNet()
   local roi_codes = self.nets.recog_base(roi_feats)
   local objectness_scores = self.nets.objectness_branch(roi_codes)
 
-  local pos_roi_feats = nn.PosSlicer(){roi_feats, gt_labels}
+  -- local pos_roi_feats = nn.PosSlicer(){roi_feats, gt_labels}
 
   local pos_roi_codes = nn.PosSlicer(){roi_codes, gt_labels}
   local pos_roi_boxes = nn.PosSlicer(){roi_boxes, gt_boxes}
@@ -156,9 +159,9 @@ function DenseCapModel:_buildRecognitionNet()
     objectness_scores,
     pos_roi_boxes, final_box_trans, final_boxes,
     lm_output,
-    gt_boxes, gt_labels,
-    pos_roi_feats,
-    pos_roi_codes
+    gt_boxes, gt_labels
+    -- pos_roi_feats,
+    -- pos_roi_codes
   }
   local mod = nn.gModule(inputs, outputs)
   mod.name = 'recognition_network'
@@ -266,6 +269,12 @@ function DenseCapModel:updateOutput(input)
   --7   gt_labels,
   -- }
 
+  -- add new index to self.output: pos_roi_feats, pos_roi_codes
+  pos_roi_feats = self.nets.posslice_net:forward(self.nets.localization_layer.output[1],self.output[7])
+  pos_roi_codes = self.nets.posslice_net:forward(self.nets.recog_base:forward(roi_feats),self.output[7])
+  self.output[8] = pos_roi_feats
+  self.output[9] = pos_roi_codes
+  
   -- At test-time, apply NMS to final boxes
   local verbose = false
   if verbose then
