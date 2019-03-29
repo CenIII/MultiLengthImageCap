@@ -2,3 +2,4 @@
 *.swp
 /vis/data/*.jpg
 /vis/data/*.json
+/model/__pycache__
