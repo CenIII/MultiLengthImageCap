@@ -297,7 +297,7 @@ function DenseCapModel:updateOutput(input)
   end
   self.output[10] = self.nets.conv_net2.output[1] -- global feature 512x30x45
   -- local outputs = {
-  --1   objectness_scores, [~128]x1
+  --1   objectness_scores, 256x1
   --2   pos_roi_boxes, 
   --3   final_box_trans, 
   --4   final_boxes,  [~128]x4
@@ -435,8 +435,6 @@ function DenseCapModel:forward_backward(data)
   self:setGroundTruth(data.gt_boxes, data.gt_labels)
   local out = self:forward(data.image)
 
-  print(out[8]:size())
-  print(out[9]:size())
   -- Pick out the outputs we care about
   -- local objectness_scores = out[1]
   -- local pos_roi_boxes = out[2]
