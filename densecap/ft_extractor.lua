@@ -113,7 +113,7 @@ end
 local function check_pick_confirm(idx)
   -- body
   local fr = io.open('pick_confirm_'..tostring(idx), "r")
-   if fr~=nil then io.close(f) return true else return false end
+   if fr~=nil then io.close(fr) return true else return false end
 end
 
 local function saveJson(outputs, idx)
@@ -143,7 +143,7 @@ while true do
   -- print('success!')
   out_packed = pack_outputs(outputs)
   -- save to json file
-  saveJson(outputs, counter%pipeLen)
+  saveJson(out_packed, counter%pipeLen)
   counter = counter + 1
 
 end
