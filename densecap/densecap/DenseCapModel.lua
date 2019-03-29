@@ -268,11 +268,11 @@ function DenseCapModel:updateOutput(input)
   --6   gt_boxes, 
   --7   gt_labels,
   -- }
-  local posslice_net = nn.PosSlicer()
+  -- local posslice_net = nn.PosSlicer()
   -- add new index to self.output: pos_roi_feats, pos_roi_codes
   local roi_feats = self.nets.localization_layer.output[1]
-  pos_roi_feats = posslice_net:forward(roi_feats,self.output[7])
-  pos_roi_codes = posslice_net:forward(self.nets.recog_base:forward(roi_feats),self.output[7])
+  pos_roi_feats = self.nets.posslice_net:forward(roi_feats,self.output[7])
+  pos_roi_codes = self.nets.posslice_net:forward(self.nets.recog_base:forward(roi_feats),self.output[7])
   self.output[8] = pos_roi_feats
   self.output[9] = pos_roi_codes
 
