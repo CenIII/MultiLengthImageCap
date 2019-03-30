@@ -434,7 +434,7 @@ function DenseCapModel:forward_backward(data)
   -- Run the model forward
   self:setGroundTruth(data.gt_boxes, data.gt_labels)
   local out = self:forward(data.image)
-
+  
   -- Pick out the outputs we care about
   -- local objectness_scores = out[1]
   -- local pos_roi_boxes = out[2]

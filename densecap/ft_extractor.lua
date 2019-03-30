@@ -11,11 +11,12 @@ require 'optim'
 require 'image'
 require 'lfs'
 require 'nn'
-local json = require 'json'
 
 require 'densecap.DataLoader'
 require 'densecap.DenseCapModel'
 require 'densecap.optim_updates'
+
+local json = require 'cjson'
 local utils = require 'densecap.utils'
 local opts = require 'train_opts'
 local models = require 'models'
@@ -46,7 +47,7 @@ opt.vocab_size = loader:getVocabSize()
 opt.idx_to_token = loader.info.idx_to_token
 
 -- initialize the DenseCap model object
-local dtype = 'torch.CudaTensor'
+local dtype = 'torch.FloatTensor'
 local model = models.setup(opt):type(dtype)
 
 -- get the parameters vector
@@ -62,14 +63,16 @@ local all_losses = {}
 local results_history = {}
 local iter = 0
 
+
+
 local function extractFeats()
   model:training()
 
   -- Fetch data using the loader
   local timer = torch.Timer()
-  local info
+  local info = {}
   local data = {}
-  data.image, data.gt_boxes, data.gt_labels, info, data.region_proposals = loader:getBatch()
+  data.image, data.gt_boxes, data.gt_labels, info.im_info, data.region_proposals, info.fullcap = loader:getBatch()
   for k, v in pairs(data) do
     data[k] = v:type(dtype)
   end
@@ -82,10 +85,10 @@ local function extractFeats()
   -- local losses, stats = model:forward_backward(data)
   local outputs_all = model:forward_backward(data)
 
-  return outputs_all --losses, stats
+  return outputs_all, info --losses, stats
 end
 
-local function pack_outputs( outputs )
+local function pack_outputs( outputs, info )
   -- body
   --1 `   objectness_scores, 256x1
   --2   pos_roi_boxes, 
@@ -97,22 +100,26 @@ local function pack_outputs( outputs )
   --8 `  pos_roi_feats [~128]x512x7x7
   --9 `  pos_roi_codes [~128]x4096
   --10 ` global_feat   512x30x45
+  
   local pack = {}
-  pack['box_scores'] = outputs[1]:type('torch.FloatTensor'):totable() --to array
-  pack['boxes_pred'] = outputs[4]:type('torch.FloatTensor'):totable()
-  pack['boxes_gt'] = outputs[6]:type('torch.FloatTensor'):totable()
-  pack['box_captions_gt'] = outputs[7]:type('torch.FloatTensor'):totable()
-  pack['box_feats'] = outputs[8]:type('torch.FloatTensor'):totable()
-  pack['box_codes'] = outputs[9]:type('torch.FloatTensor'):totable()
-  pack['glob_feat'] = outputs[10]:type('torch.FloatTensor'):totable()
-  -- pack['glob_caption_gt'] = outputs[11]:type('torch.FloatTensor'):totable()
-
+  pack['info'] = info['im_info'][1]
+  print(info['im_info'])
+  pack['box_scores'] = outputs[1]:totable() --to array
+  pack['boxes_pred'] = outputs[4]:totable()
+  pack['boxes_gt'] = outputs[6]:totable()
+  pack['box_captions_gt'] = outputs[7]:totable()
+  pack['box_feats'] = outputs[8]:totable()
+  pack['box_codes'] = outputs[9]:totable()
+  pack['glob_feat'] = outputs[10]:totable() --:type('torch.FloatTensor')
+  if info['fullcap']~= nil then
+    pack['glob_caption_gt'] = info['fullcap']:totable()
+  end
   return pack
 end
 
 local function check_pick_confirm(idx)
   -- body
-  local fr = io.open('pick_confirm_'..tostring(idx), "r")
+  local fr = io.open('./data_pipeline/pick_confirm_'..tostring(idx), "r")
    if fr~=nil then io.close(fr) return true else return false end
 end
 
@@ -121,27 +128,32 @@ local function saveJson(outputs, idx)
   -- check "confirm" file
   while true do
     if check_pick_confirm(idx) then
-      os.remove('pick_confirm_'..tostring(idx))
+      os.remove('./data_pipeline/pick_confirm_'..tostring(idx))
       break
     end
   end
   
   local enc = json.encode(outputs)
-  local f = io.open('data_'..tostring(idx),"w")
+  local iter = outputs['info']['split_bounds'][1]
+  local numiters = outputs['info']['split_bounds'][2]
+  local fblk = io.open('./data_pipeline/writing_block_'..tostring(idx),"w")
+  fblk:close()
+  local f = io.open('./data_pipeline/data_'..tostring(idx)..'_'..tostring(iter)..'_'..tostring(numiters),"w")
   f:write(enc)
   f:close()
+  os.remove('./data_pipeline/writing_block_'..tostring(idx))
 
 end
 -------------------------------------------------------------------------------
 -- Main loop
 -------------------------------------------------------------------------------
-local pipeLen = 10
+local pipeLen = opt.pipe_len
 local counter = 0
 while true do  
   print(counter)
-  local outputs = extractFeats()
+  local outputs, info = extractFeats()
   -- print('success!')
-  out_packed = pack_outputs(outputs)
+  out_packed = pack_outputs(outputs, info)
   -- save to json file
   saveJson(out_packed, counter%pipeLen)
   counter = counter + 1

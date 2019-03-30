@@ -22,6 +22,13 @@ function DataLoader:__init(opt)
   end
   self.info.idx_to_token = idx_to_token
 
+  -- Convert keys in idx_to_fullcaps from string to integer
+  local idx_to_fullcaps = {}
+  for k, v in pairs(self.info.idx_to_fullcaps) do
+    idx_to_fullcaps[tonumber(k)] = tonumber(v)
+  end
+  self.info.idx_to_fullcaps = idx_to_fullcaps
+
   -- open the hdf5 file
   print('DataLoader loading h5 file: ', self.h5_file)
   self.h5_file = hdf5.open(self.h5_file, 'r')
@@ -34,6 +41,8 @@ function DataLoader:__init(opt)
   table.insert(keys, 'img_to_last_box')
   table.insert(keys, 'labels')
   table.insert(keys, 'lengths')
+  table.insert(keys, 'fullcaps')
+  table.insert(keys, 'fullcaps_lengths')
   table.insert(keys, 'original_heights')
   table.insert(keys, 'original_widths')
   table.insert(keys, 'split')
@@ -114,7 +123,7 @@ function DataLoader:decodeSequence(seq)
       if ix >= 1 and ix <= self.vocab_size then
         -- a word, translate it
         if j >= 2 then txt = txt .. ' ' end -- space
-        txt = txt .. itow[tostring(ix)]
+        txt = txt .. itow[ix]
       else
         -- END token
         break
@@ -143,7 +152,7 @@ end
 --]]
 function DataLoader:getBatch(opt)
   local split = utils.getopt(opt, 'split', 0)
-  local iterate = utils.getopt(opt, 'iterate', true)
+  local iterate = utils.getopt(opt, 'iterate', false)
 
   assert(split == 0 or split == 1 or split == 2, 'split must be integer, either 0 (train), 1 (val) or 2 (test)')
   local split_ix
@@ -169,7 +178,7 @@ function DataLoader:getBatch(opt)
   assert(ix ~= nil, 'bug: split ' .. split .. ' was accessed out of bounds with ' .. ri)
   
   -- fetch the image
-  local  img = self.h5_file:read('/images'):partial({ix,ix},{1,self.num_channels},
+  local img = self.h5_file:read('/images'):partial({ix,ix},{1,self.num_channels},
                             {1,self.max_image_size},{1,self.max_image_size})
 
   -- crop image to its original width/height, get rid of padding, and dummy first dim
@@ -177,6 +186,16 @@ function DataLoader:getBatch(opt)
   img = img:float() -- convert to float
   img = img:view(1, img:size(1), img:size(2), img:size(3)) -- batch the image
   img:add(-1, self.vgg_mean:expandAs(img)) -- subtract vgg mean
+
+  -- fetch the corresponding full image caption (if exists)
+  local fullcap = nil
+  if self.info.idx_to_fullcaps[ix] ~= nil then
+    print('fullcap found!')
+    local fcp_ind = self.info.idx_to_fullcaps[ix]
+    fullcap = self.fullcaps[fcp_ind]
+    -- print(fullcap)
+    print(self:decodeSequence(fullcap:view(fullcap:size(1),1)))
+  end
 
   -- fetch the corresponding labels array
   local r0 = self.img_to_first_box[ix]
@@ -214,6 +233,6 @@ function DataLoader:getBatch(opt)
   end
 
   -- TODO: start a prefetching thread to load the next image ?
-  return img, box_batch, label_array, info_table, obj_boxes
+  return img, box_batch, label_array, info_table, obj_boxes, fullcap
 end
 
