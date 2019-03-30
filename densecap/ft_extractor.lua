@@ -47,7 +47,7 @@ opt.vocab_size = loader:getVocabSize()
 opt.idx_to_token = loader.info.idx_to_token
 
 -- initialize the DenseCap model object
-local dtype = 'torch.FloatTensor'
+local dtype = 'torch.CudaTensor'
 local model = models.setup(opt):type(dtype)
 
 -- get the parameters vector
@@ -104,15 +104,15 @@ local function pack_outputs( outputs, info )
   local pack = {}
   pack['info'] = info['im_info'][1]
   print(info['im_info'])
-  pack['box_scores'] = outputs[1]:totable() --to array
-  pack['boxes_pred'] = outputs[4]:totable()
-  pack['boxes_gt'] = outputs[6]:totable()
-  pack['box_captions_gt'] = outputs[7]:totable()
-  pack['box_feats'] = outputs[8]:totable()
-  pack['box_codes'] = outputs[9]:totable()
-  pack['glob_feat'] = outputs[10]:totable() --:type('torch.FloatTensor')
+  pack['box_scores'] = outputs[1]--:totable() --to array
+  pack['boxes_pred'] = outputs[4]--:totable()
+  pack['boxes_gt'] = outputs[6]--:totable()
+  pack['box_captions_gt'] = outputs[7]--:totable()
+  pack['box_feats'] = outputs[8]--:totable()
+  pack['box_codes'] = outputs[9]--:totable()
+  pack['glob_feat'] = outputs[10]--:totable() --:type('torch.FloatTensor')
   if info['fullcap']~= nil then
-    pack['glob_caption_gt'] = info['fullcap']:totable()
+    pack['glob_caption_gt'] = info['fullcap']--:totable()
   end
   return pack
 end
@@ -133,14 +133,15 @@ local function saveJson(outputs, idx)
     end
   end
   
-  local enc = json.encode(outputs)
+  -- local enc = json.encode(outputs)
   local iter = outputs['info']['split_bounds'][1]
   local numiters = outputs['info']['split_bounds'][2]
   local fblk = io.open('./data_pipeline/writing_block_'..tostring(idx),"w")
   fblk:close()
-  local f = io.open('./data_pipeline/data_'..tostring(idx)..'_'..tostring(iter)..'_'..tostring(numiters),"w")
-  f:write(enc)
-  f:close()
+  torch.save('./data_pipeline/data_'..tostring(idx)..'_'..tostring(iter)..'_'..tostring(numiters), outputs)
+  -- local f = io.open('./data_pipeline/data_'..tostring(idx)..'_'..tostring(iter)..'_'..tostring(numiters),"w")
+  -- f:write(enc)
+  -- f:close()
   os.remove('./data_pipeline/writing_block_'..tostring(idx))
 
 end

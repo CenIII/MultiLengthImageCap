@@ -1,7 +1,8 @@
 # a python dataloader that loads dumped features files prodeced by lua program.
 import os
 import glob
-import json
+# import json
+import torchfile
 
 class _BaseDataLoader(object):
 	"""docstring for BaseDataLoader"""
@@ -55,9 +56,9 @@ class _BaseDataLoader(object):
 		itr = tmp[-2]
 
 		# json load data_$pipIndex_*
-		with open(filename,'r') as f:
-			f.seek(0)
-			data = json.load(f)
+		with open(filename,'rb') as f:
+			reader = torchfile.T7Reader(f, utf8_decode_strings=True)
+			data = reader.read_obj()
 
 		# place pick_confirm_$pipIndex to notify lua program
 		with open(self.dataPipePath+'pick_confirm_'+str(pInd), 'w') as f:
