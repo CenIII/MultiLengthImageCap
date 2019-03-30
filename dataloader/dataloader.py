@@ -60,6 +60,7 @@ class _BaseDataLoader(object):
 			reader = torchfile.T7Reader(f, utf8_decode_strings=True)
 			data = reader.read_obj()
 
+		os.remove(filename)
 		# place pick_confirm_$pipIndex to notify lua program
 		with open(self.dataPipePath+'pick_confirm_'+str(pInd), 'w') as f:
 			f.write('a')
