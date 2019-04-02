@@ -16,9 +16,10 @@ def similarity_loss(text_images, size_info, gamma1, gamma2, gamma3): # consider 
     M, H_r, H_w = size_info
     for text_image in text_images:
         e, v = text_image
+        T, D = e.size()
         numerator, beta = calculate_matching_score(v, e, M, H_r, H_w, gamma1, gamma2)
         numerator = gamma3 * torch.exp(numerator)
-        loss_reg += torch.norm(beta.mm(beta.t()) - torch.diag(beta.mm(beta.t())))
+        loss_reg += torch.norm(beta.mm(beta.t()) - torch.diag(beta.mm(beta.t())) * torch.eye(T))
         P_DQ_denum = 0
         P_QD_denum = 0
         for e_sub, v_sub in text_images:
@@ -109,19 +110,34 @@ class SimilarityLoss(nn.Module):
 
 
 if __name__ == "__main__":
+    # M = 2
+    # H_w = 10
+    # H_r = 10
+    # T = 5
+    # D = 20
     M = 2
-    H_w = 10
-    H_r = 10
-    T = 5
-    D = 20
-    e = torch.rand(T, D, requires_grad=True)
-    v = torch.rand(M , H_r , H_w, D, requires_grad=True)
+    H_w = 2
+    H_r = 2
+    T = 2
+    D = 2
+    e = torch.FloatTensor([[0.3, 0.8], [0.7, 0.2]])
+    e2 = e - 0.1
+    e.requires_grad = True
+    e2.requires_grad = True
+    v = torch.FloatTensor(
+        [[0.5, 0.3], [0.5, 1.0], [0.6, 0.4], [0.2, 0.4], [0.7, 1.2], [0.6, 1.6],
+         [1.1, 0.7], [0.5, 0.2]])
+    v2 = v + 0.2
+    v2.requires_grad = True
+    v.requires_grad = True
+    # e = torch.rand(T, D, requires_grad=True)
+    # v = torch.rand(M , H_r , H_w, D, requires_grad=True)
     v1 = v.view(M * H_r * H_w, D)
     size_info = (M, H_r, H_w)
     gamma1 = 1
     gamma2 = 2
     gamma3 = 3
-    loss = similarity_loss([(e, v1)], size_info, gamma1, gamma2, gamma3)
+    loss = similarity_loss([(e, v), (e2, v2)], size_info, gamma1, gamma2, gamma3)
     loss.backward()
     print(e.grad)
     print(v1.grad)
