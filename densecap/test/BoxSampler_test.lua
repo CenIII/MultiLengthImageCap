@@ -185,7 +185,7 @@ function tests.negativeReplacementTest()
 
   local output = mod:forward{input_boxes, target_boxes}
 
-  local pos_input_idx, pos_target_idx, neg_input_idx = unpack(output)
+  local pos_input_idx, pos_target_idx, neg_input_idx = table.unpack(output)
   tester:asserteq(pos_input_idx:size(1), pos_target_idx:size(1))
   tester:asserteq(pos_input_idx:size(1) + neg_input_idx:size(1), batch_size)
 end

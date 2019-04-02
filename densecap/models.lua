@@ -1,3 +1,5 @@
+require 'densecap.modules.PosSlicer'
+
 local M = {}
 
 function M.setup(opt)
@@ -16,7 +18,7 @@ function M.setup(opt)
     rpn:findModules('nn.RegularizeLayer')[1].w = opt.box_reg_decay
     model.opt.train_remove_outbounds_boxes = opt.train_remove_outbounds_boxes
     model.opt.captioning_weight = opt.captioning_weight
-
+    model.nets.posslice_net = nn.PosSlicer()
     if cudnn then
       cudnn.convert(model.net, cudnn)
       cudnn.convert(model.nets.localization_layer.nets.rpn, cudnn)

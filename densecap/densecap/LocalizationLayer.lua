@@ -427,12 +427,12 @@ function layer:_forward_train(input)
                           self.rpn_out, {gt_boxes, gt_labels}}
    
     -- Unpack pos data
-    self.pos_data, self.pos_target_data, self.neg_data = unpack(sampler_out)
+    self.pos_data, self.pos_target_data, self.neg_data = table.unpack(sampler_out)
     self.pos_boxes, self.pos_anchors = self.pos_data[1], self.pos_data[2]
     self.pos_trans, self.pos_scores = self.pos_data[3], self.pos_data[4]
     
     -- Unpack target data
-    self.pos_target_boxes, self.pos_target_labels = unpack(self.pos_target_data)
+    self.pos_target_boxes, self.pos_target_labels = table.unpack(self.pos_target_data)
     
     -- Unpack neg data (only scores matter)
     self.neg_boxes = self.neg_data[1]
@@ -451,24 +451,24 @@ function layer:_forward_train(input)
     self.roi_features = self.nets.roi_pooling:forward{cnn_features[1], self.roi_boxes}
   end)
 
-  -- Compute objectness loss
-  self:timeit('objectness_loss:forward', function()
-    if self.pos_scores:type() ~= 'torch.CudaTensor' then
-       -- ClassNLLCriterion expects LongTensor labels for CPU score types,
-       -- but CudaTensor labels for GPU score types. self.pos_labels and
-       -- self.neg_labels will be casted by any call to self:type(), so
-       -- we need to cast them back to LongTensor for CPU tensor types.
-       self.pos_labels = self.pos_labels:long()
-       self.neg_labels = self.neg_labels:long()
-    end
-    self.pos_labels:resize(num_pos):fill(1)
-    self.neg_labels:resize(num_neg):fill(2)
-    local obj_loss_pos = self.nets.obj_crit_pos:forward(self.pos_scores, self.pos_labels)
-    local obj_loss_neg = self.nets.obj_crit_neg:forward(self.neg_scores, self.neg_labels)
-    local obj_weight = self.opt.mid_objectness_weight
-    self.stats.losses.obj_loss_pos = obj_weight * obj_loss_pos
-    self.stats.losses.obj_loss_neg = obj_weight * obj_loss_neg
-  end)
+  -- -- Compute objectness loss
+  -- self:timeit('objectness_loss:forward', function()
+  --   if self.pos_scores:type() ~= 'torch.CudaTensor' then
+  --      -- ClassNLLCriterion expects LongTensor labels for CPU score types,
+  --      -- but CudaTensor labels for GPU score types. self.pos_labels and
+  --      -- self.neg_labels will be casted by any call to self:type(), so
+  --      -- we need to cast them back to LongTensor for CPU tensor types.
+  --      self.pos_labels = self.pos_labels:long()
+  --      self.neg_labels = self.neg_labels:long()
+  --   end
+  --   self.pos_labels:resize(num_pos):fill(1)
+  --   self.neg_labels:resize(num_neg):fill(2)
+  --   local obj_loss_pos = self.nets.obj_crit_pos:forward(self.pos_scores, self.pos_labels)
+  --   local obj_loss_neg = self.nets.obj_crit_neg:forward(self.neg_scores, self.neg_labels)
+  --   local obj_weight = self.opt.mid_objectness_weight
+  --   self.stats.losses.obj_loss_pos = obj_weight * obj_loss_pos
+  --   self.stats.losses.obj_loss_neg = obj_weight * obj_loss_neg
+  -- end)
       
   -- Compute targets for RPN bounding box regression
   self:timeit('invert_box_transform:forward', function()
@@ -489,24 +489,24 @@ function layer:_forward_train(input)
   end
 
   -- Compute RPN box regression loss
-  self:timeit('box_reg_loss:forward', function()
-    local crit = self.nets.box_reg_crit
-    local weight = self.opt.mid_box_reg_weight
-    local loss = weight * crit:forward(self.pos_trans, self.pos_trans_targets)
-    self.stats.losses.box_reg_loss = loss
-  end)
+  -- self:timeit('box_reg_loss:forward', function()
+  --   local crit = self.nets.box_reg_crit
+  --   local weight = self.opt.mid_box_reg_weight
+  --   local loss = weight * crit:forward(self.pos_trans, self.pos_trans_targets)
+  --   self.stats.losses.box_reg_loss = loss
+  -- end)
   
   -- Fish out the box regression loss
-  local reg_mods = self.nets.rpn:findModules('nn.RegularizeLayer')
-  assert(#reg_mods == 1)
-  self.stats.losses.box_decay_loss = reg_mods[1].loss
+  -- local reg_mods = self.nets.rpn:findModules('nn.RegularizeLayer')
+  -- assert(#reg_mods == 1)
+  -- self.stats.losses.box_decay_loss = reg_mods[1].loss
   
   -- Compute total loss
-  local total_loss = 0
-  for k, v in pairs(self.stats.losses) do
-   total_loss = total_loss + v
-  end
-  self.stats.losses.total_loss = total_loss
+  -- local total_loss = 0
+  -- for k, v in pairs(self.stats.losses) do
+  --  total_loss = total_loss + v
+  -- end
+  -- self.stats.losses.total_loss = total_loss
 
   if self.dump_vars then
     local vars = self.stats.vars or {}
@@ -650,7 +650,7 @@ function build_rpn(opt)
   box_conv_layer.bias:zero()
   box_branch:add(box_conv_layer)
   box_branch:add(nn.RegularizeLayer(opt.box_reg_decay))
-  local x0, y0, sx, sy = unpack(opt.field_centers)
+  local x0, y0, sx, sy = table.unpack(opt.field_centers)
   local seq = nn.Sequential()
   seq:add(nn.MakeAnchors(x0, y0, sx, sy, anchors))
   seq:add(nn.ReshapeBoxFeatures(num_anchors))

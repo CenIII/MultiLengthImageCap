@@ -46,7 +46,7 @@ function tests.gradCheckTest()
   local mod = nn.ApplyBoxTransform()
   local out = mod:forward{boxes, trans}
   local dout = torch.randn(#out)
-  local dboxes, dtrans = unpack(mod:backward({boxes, trans}, dout))
+  local dboxes, dtrans = table.unpack(mod:backward({boxes, trans}, dout))
   
   local function f_boxes(x)
     return nn.ApplyBoxTransform():forward{x, trans}

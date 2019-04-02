@@ -70,7 +70,7 @@ function tests.gradCheck()
   local mod = nn.InvertBoxTransform()
   mod:forward{anchor_boxes, target_boxes}
   local din = mod:backward({anchor_boxes, target_boxes}, grad_output)
-  local grad_anchor_boxes, grad_target_boxes = unpack(din)
+  local grad_anchor_boxes, grad_target_boxes = table.unpack(din)
   
   local function f_anchor(x)
     return nn.InvertBoxTransform():forward{x, target_boxes}

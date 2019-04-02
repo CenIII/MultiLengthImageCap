@@ -10,6 +10,7 @@ import h5py
 import numpy as np
 from scipy.misc.pilutil import imread, imresize
 
+import pickle
 
 """
 This file expects a JSON file containing ground-truth regions and captions
@@ -423,7 +424,7 @@ def main(args):
   f = h5py.File(args.h5_output, 'w')
 
   # add several fields to the file: images, and the original/resized widths/heights
-  add_images(data, f, args)
+  # add_images(data, f, args)
 
   # add split information
   split = encode_splits(data, split_data)
@@ -443,6 +444,18 @@ def main(args):
   vocab = build_vocab(data, selected_fullcaps, args.min_token_instances) # vocab is a set()
   token_to_idx, idx_to_token = build_vocab_dict(vocab) # both mappings are dicts
     
+  vocab_data = {}
+  # save vocab
+  vocab_data['vocab'] = vocab
+  # save selected fullcaps
+  vocab_data['selected_fullcaps'] = selected_fullcaps
+  # save token_to_idx
+  vocab_data['token_to_idx'] = token_to_idx
+  
+  with open('vocab_data.pkl','wb') as f:
+    pickle.dump(vocab_data,f)
+  print('pickle dump done.')
+
   # encode labels
   captions_matrix, lengths_vector = encode_captions(data, token_to_idx, args.max_token_length)
   f.create_dataset('labels', data=captions_matrix)

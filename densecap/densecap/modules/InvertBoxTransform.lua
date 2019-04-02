@@ -62,7 +62,7 @@ end
 
 function layer:updateGradInput(input, gradOutput)
   local anchor_boxes, target_boxes = input[1], input[2]
-  local grad_anchor_boxes, grad_target_boxes = unpack(self.gradInput)
+  local grad_anchor_boxes, grad_target_boxes = table.unpack(self.gradInput)
   
   grad_anchor_boxes:resizeAs(anchor_boxes):zero()
   grad_target_boxes:resizeAs(target_boxes):zero()
