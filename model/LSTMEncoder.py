@@ -17,6 +17,7 @@ class EncoderRNN(BaseRNN):
         bidirectional (bool, optional): if True, becomes a bidirectional encodr (defulat False)
         rnn_cell (str, optional): type of RNN cell (default: gru)
         variable_lengths (bool, optional): if use variable length RNN (default: False)
+        use_prob_vector (bool, optional): if use probability vector instead of index vector of word (default: True)
         embedding (torch.Tensor, optional): Pre-trained embedding.  The size of the tensor has to match
             the size of the embedding parameter: (vocab_size, hidden_size).  The embedding layer would be initialized
             with the tensor if provided (default: None).
@@ -41,12 +42,16 @@ class EncoderRNN(BaseRNN):
     def __init__(self, vocab_size, max_len, hidden_size,
                  input_dropout_p=0, dropout_p=0,
                  n_layers=1, bidirectional=False, rnn_cell='gru', variable_lengths=False,
-                 embedding=None, update_embedding=True):
+                 use_prob_vector=True, embedding=None, update_embedding=False):
+
         super(EncoderRNN, self).__init__(vocab_size, max_len, hidden_size,
                 input_dropout_p, dropout_p, n_layers, rnn_cell)
 
         self.variable_lengths = variable_lengths
-        self.embedding = nn.Embedding(vocab_size, hidden_size)
+        if use_prob_vector:
+            self.embedding = nn.Linear(vocab_size, hidden_size, bias=False)
+        else:
+            self.embedding = nn.Embedding(vocab_size, hidden_size)
         if embedding is not None:
             self.embedding.weight = nn.Parameter(embedding)
         self.embedding.weight.requires_grad = update_embedding
@@ -55,7 +60,7 @@ class EncoderRNN(BaseRNN):
 
     def forward(self, input_var, input_lengths=None):
         """
-        Applies a multi-layer RNN to an input sequence.
+        Applies an RNN encoder to a batch of input sequences.
 
         Args:
             input_var (batch, seq_len): tensor containing the features of the input sequence.
@@ -79,11 +84,11 @@ def train_EncoderRNN(trainloader, net, criterion, optimizer, device):
     for epoch in range(50):  
         start = time.time()
         running_loss = 0.0
-        for i, (features, text) in enumerate(trainloader):
+        for i, (features, prob_vector) in enumerate(trainloader):
             features = features.to(device)
-            text = text.to(device)
+            prob_vector = prob_vector.to(device)
             optimizer.zero_grad()
-            outputs = net(text)
+            outputs = net(prob_vector)
             loss = similarity_loss(features, outputs)
             loss.backward()
             optimizer.step()
