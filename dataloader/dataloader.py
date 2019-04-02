@@ -10,7 +10,7 @@ class _BaseDataLoader(object):
 		super(_BaseDataLoader, self).__init__()
 		self.pipeIndex = 0
 		# save pick_confirm for all pip indices
-		self.dataPipePath = '../densecap/data_pipeline/'
+		self.dataPipePath = './densecap/data_pipeline/'
 		self.pipeLen = 10
 		self.init_pick_confirm_files()
 
