@@ -1,6 +1,7 @@
 import torch.nn as nn
 
 from .baseRNN import BaseRNN
+import time
 
 class EncoderRNN(BaseRNN):
     r"""
@@ -73,3 +74,24 @@ class EncoderRNN(BaseRNN):
         if self.variable_lengths:
             output, _ = nn.utils.rnn.pad_packed_sequence(output, batch_first=True)
         return output, hidden
+    
+def train_EncoderRNN(trainloader, net, criterion, optimizer, device):
+    for epoch in range(50):  
+        start = time.time()
+        running_loss = 0.0
+        for i, (features, text) in enumerate(trainloader):
+            features = features.to(device)
+            text = text.to(device)
+            optimizer.zero_grad()
+            outputs = net(text)
+            loss = similarity_loss(features, outputs)
+            loss.backward()
+            optimizer.step()
+            running_loss += loss.item()
+            if i % 100 == 99:
+                end = time.time()
+                print('[epoch %d, iter %5d] loss: %.3f eplased time %.3f' %
+                      (epoch + 1, i + 1, running_loss / 100, end-start))
+                start = time.time()
+                running_loss = 0.0
+    print('Finished Training')
