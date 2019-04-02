@@ -8,8 +8,7 @@ class LinearModel(nn.Module):
         self.conv1 = nn.Conv2d(512, 1024, (10, 9), (4, 6))
         self.conv2 = nn.Conv2d(512, 1024, 1, 1)
 
-    def forward(self, image_pair):
-        global_feat, box_feat = image_pair
+    def forward(self, box_feat, global_feat):
         global_feat = global_feat.unsqueeze(dim=0)
         global_feat = self.conv1(global_feat)
         global_hidden = F.avg_pool2d(global_feat, 7).squeeze()
