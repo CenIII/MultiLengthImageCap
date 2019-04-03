@@ -1,7 +1,7 @@
 import torch.nn as nn
 import torch
 
-from baseRNN import BaseRNN
+from .baseRNN import BaseRNN
 import time
 
 class EncoderRNN(BaseRNN):
@@ -39,7 +39,7 @@ class EncoderRNN(BaseRNN):
 
     """
 
-    def __init__(self, vocab_size, max_len, hidden_size,
+    def __init__(self, vocab_size, max_len, hidden_size, embedding_size,
                  input_dropout_p=0, dropout_p=0,
                  n_layers=1, bidirectional=False, rnn_cell='gru', variable_lengths=False,
                  embedding_parameter=None, update_embedding=False):
@@ -49,13 +49,14 @@ class EncoderRNN(BaseRNN):
 
         self.variable_lengths = variable_lengths
         self.linear = nn.Linear(vocab_size, hidden_size, bias=False)
-        self.embedding = nn.Embedding(vocab_size, hidden_size)
+        self.embedding = nn.Embedding(vocab_size, embedding_size)
         if embedding_parameter is not None:
+            embedding_parameter = torch.FloatTensor(embedding_parameter)
             self.linear.weight = nn.Parameter(embedding_parameter)
             self.embedding.weight = nn.Parameter(embedding_parameter)
         self.embedding.weight.requires_grad = update_embedding
         self.linear.weight.requires_grad = update_embedding
-        self.rnn = self.rnn_cell(hidden_size, hidden_size, n_layers,
+        self.rnn = self.rnn_cell(embedding_size, hidden_size, n_layers,
                                  batch_first=True, bidirectional=bidirectional, dropout=dropout_p)
 
     def forward(self, input_var, use_prob_vector=False, input_lengths=None):

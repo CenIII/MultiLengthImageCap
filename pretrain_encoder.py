@@ -1,42 +1,73 @@
 import torch
+import tqdm
+import numpy as np
 from model.LSTMEncoder import EncoderRNN
 from dataloader.dataloader import LoaderEncTrain
 from model.LinearModel import LinearModel
 from crit.SimilarityLoss import SimilarityLoss
+import pickle
 
 def getLengths(caps):
 	batchSize = len(caps)
-	lengths = np.zeros(batchSize)
+	lengths = np.zeros(batchSize, dtype=np.int32)
 	for i in range(batchSize):
 		cap = caps[i]
-		lengths[i] = np.argmax(cap==0.)
+		lengths[i] = int(np.argmax(cap==0.))
 	return lengths
 
 # load sample data
 
 loader = LoaderEncTrain()
 data, itr, numiters = loader.getBatch()
+numiters = int(numiters)
 
-box_feats = torch.tensor(data['box_feats'])
-glob_feat = torch.tensor(data['glob_feat'])
+# load vocab data
+with open('./data/VocabData.pkl', 'rb') as f:
+	VocabData = pickle.load(f)
 
 # load linear model, transform feature tensor to semantic space
 linNet = LinearModel(hiddenSize=1024)
-
 # load LSTM encoder
-# lstmEnc = EncoderRNN()
-
+lstmEnc = EncoderRNN(len(VocabData['word_dict']), 15, 1024, 300,
+                 input_dropout_p=0, dropout_p=0,
+                 n_layers=1, bidirectional=False, rnn_cell='lstm', variable_lengths=False,
+                 embedding_parameter=VocabData['word_embs'], update_embedding=False)
 # load crit 
 crit = SimilarityLoss(1,1,1)
 
+optimizer = torch.optim.Adam(list(filter(lambda p: p.requires_grad, lstmEnc.parameters()))+list(linNet.parameters()), 0.001)
 
-# output1 output2 fed into Similarity loss
-out1 = linNet(box_feats, glob_feat)
 
-out2 = lstmEnc(data['box_captions'])
+qdar = tqdm.tqdm(range(numiters), total= numiters, ascii=True)
+for i in qdar:
+	data, itr, numiters = loader.getBatch()
 
-capLens = getLengths(data['box_captions'])
-loss = crit(out1, out2, capLens)
+	box_feats = torch.tensor(data['box_feats'])
+	glob_feat = torch.tensor(data['glob_feat'])
+	box_captions =  torch.LongTensor(data['box_captions_gt'])
 
-# loss.backward()
-loss.backward()
+	# output1 output2 fed into Similarity loss  # todo: incorporate glob feat
+	out1 = linNet(box_feats, glob_feat)[2].unsqueeze(1)
+	out2 = lstmEnc(box_captions)[0]
+
+	capLens = getLengths(box_captions)
+	loss = crit(out1, out2, capLens)
+	optimizer.zero_grad()
+	# loss.backward()
+	loss.backward()
+	optimizer.step()
+	qdar.set_postfix(loss=str(np.round(loss.data,3)))
+
+
+
+
+
+
+
+
+
+
+
+
+
+

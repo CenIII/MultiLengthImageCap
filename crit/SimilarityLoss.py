@@ -12,8 +12,7 @@ class SimilarityLoss(nn.Module):
         self.gamma2 = gamma2
         self.gamma3 = gamma3
 
-    def similarity_loss(self, image, text, length_info, gamma1, gamma2,
-                        gamma3):  # consider passing the perceptron layer
+    def similarity_loss(self, image, text, length_info):  # consider passing the perceptron layer
         """
         text_images pair: a batch of text_image pairs
         size_info: size of each dimension of image and text
@@ -24,33 +23,30 @@ class SimilarityLoss(nn.Module):
 
         batch = image.size()[0]
         for i in range(batch):
-            e = text[i][:, length_info[i]]  # remove zero padding
+            e = text[i][:length_info[i]]  # remove zero padding
             v = image[i]
-            M, H_r, H_w = v.size()
+            M, D, H_r, H_w = v.size()
             v = v.view(-1, v.size()[-1])
             T, D = e.size()
-            numerator, beta = self.calculate_matching_score(v, e, M, H_r, H_w,
-                                                       gamma1, gamma2)
-            numerator = gamma3 * torch.exp(numerator)
+            numerator, beta = self.calculate_matching_score(v, e, M, H_r, H_w)
+            numerator = self.gamma3 * torch.exp(numerator)
             loss_reg += torch.norm(
                 beta.mm(beta.t()) - torch.diag(beta.mm(beta.t())) * torch.eye(
                     T))
             P_DQ_denum = 0
             P_QD_denum = 0
             for i in range(batch):
-                e_sub = text[i][:, length_info[i]]
+                e_sub = text[i][:length_info[i]]
                 v_sub = image[i].view(-1, image[1].size()[-1])
-                denum, _ = self.calculate_matching_score(v, e_sub, M, H_r, H_w,
-                                                    gamma1, gamma2)
-                denum2, _ = self.calculate_matching_score(v_sub, e, M, H_r, H_w,
-                                                     gamma1, gamma2)
-                P_DQ_denum += gamma3 * torch.exp(denum)
-                P_QD_denum += gamma3 * torch.exp(denum2)
+                denum, _ = self.calculate_matching_score(v, e_sub, M, H_r, H_w)
+                denum2, _ = self.calculate_matching_score(v_sub, e, M, H_r, H_w)
+                P_DQ_denum += self.gamma3 * torch.exp(denum)
+                P_QD_denum += self.gamma3 * torch.exp(denum2)
             loss1_w -= numerator / P_DQ_denum
             loss2_w -= numerator / P_QD_denum
         return loss1_w + loss2_w + loss_reg
 
-    def calculate_matching_score(self, v, e, M, H_r, H_w, gamma1, gamma2):
+    def calculate_matching_score(self, v, e, M, H_r, H_w):
 
         """
         calculate matching score of (Q, D) pair, consider bi-direction
@@ -68,14 +64,14 @@ class SimilarityLoss(nn.Module):
         normalized_similarity_matrix = F.softmax(similarity_matrix, dim=0)
 
         # #regard text as query, might consider overflow
-        attn_score = F.softmax(gamma1 * normalized_similarity_matrix, dim=1)
+        attn_score = F.softmax(self.gamma1 * normalized_similarity_matrix, dim=1)
         # each row of v_tidal represent the attention output
         v_tidal = attn_score.mm(v)
         R_QD = 0  # define matching score for one direction
         for i in range(e.size()[0]):
             R_QD += v_tidal[i].view(1, -1).mm(e[i].view(-1, 1)).squeeze() / (
                         torch.norm(v_tidal[i], 2) * torch.norm(e[i], 2))
-        R_QD = torch.log(torch.pow(R_QD, 1 / gamma2))
+        R_QD = torch.log(torch.pow(R_QD, 1 / self.gamma2))
 
         # regard image box as query, might consider overflow
         similarity_matrix_copy = normalized_similarity_matrix.clone()
@@ -89,6 +85,7 @@ class SimilarityLoss(nn.Module):
             beta.append(torch.sum(torch.div(
                 similarity_matrix_copy[:, i * H_r * H_w: (i + 1) * H_r * H_w],
                 local_sum), dim=1))
+
         # beta = torch.tensor(beta)
         beta = torch.stack(beta, dim=0)
         # return torch.sum(beta)
@@ -105,6 +102,7 @@ class SimilarityLoss(nn.Module):
                     e_prime[:, i].view(-1, 1)).squeeze() / (
                                          torch.norm(v[j], 2) * torch.norm(
                                      e_prime[:, i], 2))
+
             reference /= H_r * H_w
             R_QD2 += torch.exp(reference)
         R_QD2 = torch.log(torch.pow(R_QD2, 1 / gamma2))
@@ -113,21 +111,13 @@ class SimilarityLoss(nn.Module):
         return R_QD + R_QD2, beta
 
 
-
     def forward(self, image, text, length_info):
         """
         image: batch x boxes x D x H x W
         text: batch x T x D
         length_info: batch x 1
         """
-        return self.similarity_loss(image, text, length_info, gamma1, gamma2, gamma3)
-
-
-
-
-
-
-
+        return self.similarity_loss(image, text, length_info)
 
 
 if __name__ == "__main__":
