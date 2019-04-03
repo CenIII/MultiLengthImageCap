@@ -108,18 +108,6 @@ def train_EncoderRNN(trainloader, net, criterion, optimizer, device):
                 running_loss = 0.0
     print('Finished Training')
 """
-'''
+
 Enc = EncoderRNN(vocab_size=1000, max_len=15, hidden_size=1024)
 
-a = torch.tensor([[4, 3, 5],
-                [6, 7, 8]])
-m,n=a.size()
-b = torch.zeros((m, n, 10))
-print(b.size())
-for i in range(m):
-    for j in range(n):
-        b[i,j,a[i,j]] = 1
-print(a.view(m,n,1))
-b[a.view(m,n,1)] = 1
-print(b)
-'''
