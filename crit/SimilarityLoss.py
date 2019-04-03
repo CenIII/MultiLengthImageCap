@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import random
 
 
 # class version of similarity loss
@@ -69,8 +70,8 @@ class SimilarityLoss(nn.Module):
         v_tidal = attn_score.mm(v)
         R_QD = 0  # define matching score for one direction
         for i in range(e.size()[0]):
-            R_QD += v_tidal[i].view(1, -1).mm(e[i].view(-1, 1)).squeeze() / (
-                        torch.norm(v_tidal[i], 2) * torch.norm(e[i], 2))
+            R_QD += torch.exp((v_tidal[i].view(1, -1).mm(e[i].view(-1, 1)).squeeze() / (
+                        torch.norm(v_tidal[i], 2) * torch.norm(e[i], 2))) * self.gamma2)
         R_QD = torch.log(torch.pow(R_QD, 1 / self.gamma2))
 
         # regard image box as query, might consider overflow
@@ -98,14 +99,14 @@ class SimilarityLoss(nn.Module):
         for i in range(M):
             reference = 0
             for j in range(i * (H_r * H_w), (i + 1) * (H_r * H_w)):
-                reference += v[j].view(1, -1).mm(
+                reference += self.gamma2 * v[j].view(1, -1).mm(
                     e_prime[:, i].view(-1, 1)).squeeze() / (
                                          torch.norm(v[j], 2) * torch.norm(
                                      e_prime[:, i], 2))
 
             reference /= H_r * H_w
             R_QD2 += torch.exp(reference)
-        R_QD2 = torch.log(torch.pow(R_QD2, 1 / gamma2))
+        R_QD2 = torch.log(torch.pow(R_QD2, 1 / self.gamma2))
 
         # add matching score for two directions.
         return R_QD + R_QD2, beta
@@ -126,39 +127,45 @@ if __name__ == "__main__":
     # H_r = 10
     # T = 5
     # D = 20
-    M = 2
-    H_w = 2
-    H_r = 2
-    T = 2
-    D = 2
-    e = torch.FloatTensor([[0.3, 0.8], [0.7, 0.2]])
-    e2 = e - 0.1
-    e.requires_grad = True
-    e2.requires_grad = True
-    v = torch.FloatTensor(
-        [[0.5, 0.3], [0.5, 1.0], [0.6, 0.4], [0.2, 0.4], [0.7, 1.2], [0.6, 1.6],
-         [1.1, 0.7], [0.5, 0.2]])
-    v2 = v + 0.2
-    v2.requires_grad = True
-    v.requires_grad = True
-    # e = torch.rand(T, D, requires_grad=True)
-    # v = torch.rand(M , H_r , H_w, D, requires_grad=True)
-    v1 = v.view(M * H_r * H_w, D)
-    size_info = (M, H_r, H_w)
-    gamma1 = 1
-    gamma2 = 2
-    gamma3 = 3
-    loss = similarity_loss([(e, v), (e2, v2)], size_info, gamma1, gamma2, gamma3)
-    loss.backward()
-    print(e.grad)
-    print(v1.grad)
-    print(v.grad)
-
+    image = torch.randn(2, 2, 2, 2, 2)
+    text = torch.randn(2, 4, 2)
+    length_info = [2, 2]
+    m = SimilarityLoss(1, 1, 1)
+    loss = m(image, text, length_info)
     print(loss)
-    # x = torch.randn(3, 4, requires_grad=True)
-    # y = torch.randn(3, 4, requires_grad=True)
-    # loss = test_loss(x, y)
+    # M = 2
+    # H_w = 2
+    # H_r = 2
+    # T = 2
+    # D = 2
+    # e = torch.FloatTensor([[0.3, 0.8], [0.7, 0.2]])
+    # e2 = e - 0.1
+    # e.requires_grad = True
+    # e2.requires_grad = True
+    # v = torch.FloatTensor(
+    #     [[0.5, 0.3], [0.5, 1.0], [0.6, 0.4], [0.2, 0.4], [0.7, 1.2], [0.6, 1.6],
+    #      [1.1, 0.7], [0.5, 0.2]])
+    # v2 = v + 0.2
+    # v2.requires_grad = True
+    # v.requires_grad = True
+    # # e = torch.rand(T, D, requires_grad=True)
+    # # v = torch.rand(M , H_r , H_w, D, requires_grad=True)
+    # v1 = v.view(M * H_r * H_w, D)
+    # size_info = (M, H_r, H_w)
+    # gamma1 = 1
+    # gamma2 = 2
+    # gamma3 = 3
+    # loss = similarity_loss([(e, v), (e2, v2)], size_info, gamma1, gamma2, gamma3)
     # loss.backward()
+    # print(e.grad)
+    # print(v1.grad)
+    # print(v.grad)
+    #
+    # print(loss)
+    # # x = torch.randn(3, 4, requires_grad=True)
+    # # y = torch.randn(3, 4, requires_grad=True)
+    # # loss = test_loss(x, y)
+    # # loss.backward()
 
 
 
