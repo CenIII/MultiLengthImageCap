@@ -12,7 +12,7 @@ class _BaseDataLoader(object):
 		# save pick_confirm for all pip indices
 		self.dataPipePath = './densecap/data_pipeline/'
 		self.pipeLen = 10
-		self.init_pick_confirm_files()
+		# self.init_pick_confirm_files()
 
 	def updatePipeIndex(self):
 		self.pipeIndex = (self.pipeIndex+1)%self.pipeLen
@@ -60,10 +60,10 @@ class _BaseDataLoader(object):
 			reader = torchfile.T7Reader(f, utf8_decode_strings=True)
 			data = reader.read_obj()
 
-		os.remove(filename)
+		# os.remove(filename)
 		# place pick_confirm_$pipIndex to notify lua program
-		with open(self.dataPipePath+'pick_confirm_'+str(pInd), 'w') as f:
-			f.write('a')
+		# with open(self.dataPipePath+'pick_confirm_'+str(pInd), 'w') as f:
+		# 	f.write('a')
 
 		# update pInd
 		self.updatePipeIndex()

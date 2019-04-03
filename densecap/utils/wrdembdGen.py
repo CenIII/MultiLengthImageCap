@@ -57,9 +57,9 @@ print(len(vocabs))
 
 numwords = len(vocabs)
 
-wordDict['<START>'] = numwords
-wordDict['<END>'] = numwords+1
-wordDict['<PAD>'] = numwords+2
+wordDict['<START>'] = numwords+1
+wordDict['<END>'] = numwords+2
+wordDict['<PAD>'] = 0
 
 word2vec = np.zeros([numwords+3,300])
 

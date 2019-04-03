@@ -3,10 +3,10 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 class LinearModel(nn.Module):
-    def __init__(self):
+    def __init__(self, hiddenSize=1024):
         super(LinearModel, self).__init__()
-        self.conv1 = nn.Conv2d(512, 1024, (10, 9), (4, 6))
-        self.conv2 = nn.Conv2d(512, 1024, 1, 1)
+        self.conv1 = nn.Conv2d(512, hiddenSize, (10, 9), (4, 6))
+        self.conv2 = nn.Conv2d(512, hiddenSize, 1, 1)
 
     def forward(self, box_feat, global_feat):
         global_feat = global_feat.unsqueeze(dim=0)

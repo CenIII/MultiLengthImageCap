@@ -24,10 +24,10 @@ glob_feat = torch.tensor(data['glob_feat'])
 linNet = LinearModel(hiddenSize=1024)
 
 # load LSTM encoder
-lstmEnc = EncoderRNN()
+# lstmEnc = EncoderRNN()
 
 # load crit 
-crit = SimilarityLoss()
+crit = SimilarityLoss(1,1,1)
 
 
 # output1 output2 fed into Similarity loss
