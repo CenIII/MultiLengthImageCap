@@ -27,7 +27,9 @@ class SimilarityLoss(nn.Module):
             e = text[i][:length_info[i]]  # remove zero padding
             v = image[i]
             M, D, H_r, H_w = v.size()
-            v = v.view(-1, v.size()[-1])
+            v = v.permute(0, 3, 2, 1)
+            print(v.shape)
+            v = v.contiguous().view(M * H_r * H_w, D)
             T, D = e.size()
             numerator, beta = self.calculate_matching_score(v, e, M, H_r, H_w)
             numerator = self.gamma3 * torch.exp(numerator)
@@ -127,9 +129,9 @@ if __name__ == "__main__":
     # H_r = 10
     # T = 5
     # D = 20
-    image = torch.randn(2, 2, 2, 2, 2)
-    text = torch.randn(2, 4, 2)
-    length_info = [2, 2]
+    image = torch.randn(2, 1, 1024, 7, 7)
+    text = torch.randn(2, 15, 1024)
+    length_info = torch.tensor([10, 8])
     m = SimilarityLoss(1, 1, 1)
     loss = m(image, text, length_info)
     print(loss)
