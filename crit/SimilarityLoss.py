@@ -28,7 +28,6 @@ class SimilarityLoss(nn.Module):
             v = image[i]
             M, D, H_r, H_w = v.size()
             v = v.permute(0, 3, 2, 1)
-            print(v.shape)
             v = v.contiguous().view(M * H_r * H_w, D)
             T, D = e.size()
             numerator, beta = self.calculate_matching_score(v, e, M, H_r, H_w)
@@ -40,7 +39,8 @@ class SimilarityLoss(nn.Module):
             P_QD_denum = 0
             for i in range(batch):
                 e_sub = text[i][:length_info[i]]
-                v_sub = image[i].view(-1, image[1].size()[-1])
+                v_sub = image[i].permute(0, 3, 2, 1)
+                v_sub = v_sub.contiguous().view(M * H_r * H_w, D)
                 denum, _ = self.calculate_matching_score(v, e_sub, M, H_r, H_w)
                 denum2, _ = self.calculate_matching_score(v_sub, e, M, H_r, H_w)
                 P_DQ_denum += self.gamma3 * torch.exp(denum)
