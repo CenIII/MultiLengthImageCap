@@ -3,6 +3,7 @@ import os
 import glob
 # import json
 import torchfile
+import random
 
 class _BaseDataLoader(object):
 	"""docstring for BaseDataLoader"""
@@ -15,13 +16,15 @@ class _BaseDataLoader(object):
 		self.init_pick_confirm_files()
 
 	def updatePipeIndex(self):
-		self.pipeIndex = (self.updatePipeIndex+1)%self.pipeLen
+		self.pipeIndex = (self.pipeIndex+1)%self.pipeLen
 
 	def init_pick_confirm_files(self):
 		for i in range(self.pipeLen):
-			save_file = os.path.join(self.dataPipePath,'pick_confirm_'+str(i))
-			with open(save_file,'w') as f:
-				f.write('a')
+			filename = glob.glob(self.dataPipePath+'data_'+str(i)+'*')
+			if len(filename)<1:
+				save_file = os.path.join(self.dataPipePath,'pick_confirm_'+str(i))
+				with open(save_file,'w') as f:
+					f.write('a')
 
 	def loadOneJson(self):
 		'''
@@ -78,6 +81,23 @@ class LoaderEncTrain(_BaseDataLoader):
 	"""docstring for LoaderEncTrain"""
 	def __init__(self):
 		super(LoaderEncTrain, self).__init__()
+
+	def filtReplicate(self, data):
+		# shuffle 128 gt boxes copy
+		capsGt = data['box_captions_gt']
+		# get one box per real gt box
+		numCaps = len(capsGt) 
+		randInds = list(range(numCaps))
+		random.shuffle(randInds)
+		capList = []
+		selectInds = []
+		for i in range(numCaps):
+			zzz = list(capsGt[randInds[i]])
+			if zzz not in capList:
+				capList.append(zzz)
+				selectInds.append(randInds[i])
+		# return selected inds
+		return selectInds
 		
 	def getBatch(self):
 		'''
@@ -86,11 +106,12 @@ class LoaderEncTrain(_BaseDataLoader):
 		Every image has up to 128 boxes, numbers may vary. 
 		'''
 		data, itr, numiters = self.loadOneJson()
+		filtInds = self.filtReplicate(data)
 		# return only useful data fields
 		ret = {}
 		ret['info'] = data['info']
-		ret['box_feats'] = data['box_feats'] 
-		ret['box_captions_gt'] = data['box_captions_gt']
+		ret['box_feats'] = data['box_feats'][filtInds]
+		ret['box_captions_gt'] = data['box_captions_gt'][filtInds]
 		ret['glob_feat'] = data['glob_feat']
 		if 'glob_caption_gt' in data:
 			ret['glob_caption_gt'] = data['glob_caption_gt']
