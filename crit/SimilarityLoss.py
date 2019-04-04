@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import random
-
+import numpy as np
 
 # class version of similarity loss
 class SimilarityLoss(nn.Module):
@@ -24,6 +24,7 @@ class SimilarityLoss(nn.Module):
 
         batch = image.size()[0]
         for i in range(batch):
+            # print(i)
             e = text[i][:length_info[i]]  # remove zero padding
             v = image[i]
             M, D, H_r, H_w = v.size()
@@ -37,7 +38,8 @@ class SimilarityLoss(nn.Module):
                     T))
             P_DQ_denum = 0
             P_QD_denum = 0
-            for i in range(batch):
+            spinds = np.random.choice(batch,5)
+            for i in spinds:
                 e_sub = text[i][:length_info[i]]
                 v_sub = image[i].permute(0, 3, 2, 1)
                 v_sub = v_sub.contiguous().view(M * H_r * H_w, D)

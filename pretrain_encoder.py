@@ -51,7 +51,9 @@ for i in qdar:
 	out2 = lstmEnc(box_captions)[0]
 
 	capLens = getLengths(box_captions)
+	print('calc loss')
 	loss = crit(out1, out2, capLens)
+	print('backward')
 	optimizer.zero_grad()
 	# loss.backward()
 	loss.backward()
