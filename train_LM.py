@@ -5,6 +5,7 @@ import torch.nn as nn
 import torch.optim as optim
 import pickle
 
+
 def train_LM(lmloader, model, optimizer, criterion, pad_id, max_epoch):
     
     for epoch in range(max_epoch):
@@ -12,9 +13,9 @@ def train_LM(lmloader, model, optimizer, criterion, pad_id, max_epoch):
         for n, batch in enumerate(lmloader):
             optimizer.zero_grad()
             loss = 0
-            if torch.cuda.is_available():
-                batch = batch.cuda()
             input_sentences = batch['sentence']
+            if torch.cuda.is_available():
+                input_sentences = input_sentences.cuda()
             lengths = batch['lengths']
             batch_size = lengths.shape[0]
             decoder_output, _, _ = model(input_sentences, teacher_forcing_ratio=1)
@@ -49,6 +50,8 @@ def main():
     pad_id = lmdata.pad_id
 
     model = DecoderRNN(vocab_size, max_len, hidden_size, embedding_size, sos_id, eos_id, embedding=embedding, rnn_cell='lstm')
+    if torch.cuda.is_available():
+        model = model.cuda()
     optimizer = optim.Adam(model.parameters(), lr=0.001)
     criterion = nn.CrossEntropyLoss()
     train_LM(lmloader, model, optimizer, criterion, pad_id, max_epoch)
