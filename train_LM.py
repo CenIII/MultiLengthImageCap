@@ -12,6 +12,8 @@ def train_LM(lmloader, model, optimizer, criterion, pad_id, max_epoch):
         for n, batch in enumerate(lmloader):
             optimizer.zero_grad()
             loss = 0
+            if torch.cuda.is_available():
+                batch = batch.cuda()
             input_sentences = batch['sentence']
             lengths = batch['lengths']
             batch_size = lengths.shape[0]
