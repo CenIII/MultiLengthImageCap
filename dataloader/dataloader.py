@@ -15,7 +15,7 @@ class _BaseDataLoader(object):
 		self.init_pick_confirm_files()
 
 	def updatePipeIndex(self):
-		self.pipeIndex = (self.updatePipeIndexndex+1)%self.pipeLen
+		self.pipeIndex = (self.updatePipeIndex+1)%self.pipeLen
 
 	def init_pick_confirm_files(self):
 		for i in range(self.pipeLen):
@@ -61,7 +61,7 @@ class _BaseDataLoader(object):
 			data = reader.read_obj()
 
 		os.remove(filename)
-		place pick_confirm_$pipIndex to notify lua program
+		# place pick_confirm_$pipIndex to notify lua program
 		with open(self.dataPipePath+'pick_confirm_'+str(pInd), 'w') as f:
 			f.write('a')
 
