@@ -7,8 +7,8 @@ import torch.nn as nn
 from torch.autograd import Variable
 import torch.nn.functional as F
 
-from box_attention import Attention
-from baseRNN import BaseRNN
+from .box_attention import Attention
+from .baseRNN import BaseRNN
 
 if torch.cuda.is_available():
     import torch.cuda as device
@@ -65,16 +65,16 @@ class DecoderRNN(BaseRNN):
     KEY_LENGTH = 'length'
     KEY_SEQUENCE = 'sequence'
 
-    def __init__(self, vocab_size, max_len, hidden_size,
+    def __init__(self, vocab_size, max_len, hidden_size, embedding_size,
             sos_id, eos_id, embedding = None,
-            n_layers=1, rnn_cell='gru', bidirectional=False,
+            n_layers=1, rnn_cell='lstm', bidirectional=False,
             input_dropout_p=0, dropout_p=0, use_attention=False, use_prob_vector=False):
         super(DecoderRNN, self).__init__(vocab_size, max_len, hidden_size,
                 input_dropout_p, dropout_p,
                 n_layers, rnn_cell)
 
         self.bidirectional_encoder = bidirectional
-        self.rnn = self.rnn_cell(hidden_size, hidden_size, n_layers, batch_first=True, dropout=dropout_p)
+        self.rnn = self.rnn_cell(embedding_size, hidden_size, n_layers, batch_first=True, dropout=dropout_p)
 
         self.output_size = vocab_size
         self.max_length = max_len
