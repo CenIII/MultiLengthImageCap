@@ -44,7 +44,7 @@ class LMDataset(Dataset):
 		return {'sentence':sent,
 				'lengths':stLengths}
 
-	def word2indices(self, sentence, sos=False):
+	def word2indices(self, sList, sos=False):
 		"""For each sentence in a list of sentences, convert its tokens into word index including auxilary tokens.
 		Args:
 			sList: A list of sentences.

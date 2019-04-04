@@ -102,7 +102,7 @@ class LoaderEncTrain(_BaseDataLoader):
 class _LoaderDec(_BaseDataLoader):
 	"""docstring for LoaderDec"""
 	def __init__(self, arg):
-		super(LoaderDec, self).__init__()
+		super(_LoaderDec, self).__init__()
 		self.arg = arg
 
 	def randomSample(self,data,boxes,sampleNum):
@@ -113,7 +113,7 @@ class _LoaderDec(_BaseDataLoader):
 class LoaderDecTrain(_LoaderDec):
 	"""docstring for LoaderEncTrain"""
 	def __init__(self, arg):
-		super(LoaderEncTrain, self).__init__()
+		super(LoaderDecTrain, self).__init__()
 		self.arg = arg
 	def filtReplicate(self, data):
 		# shuffle 128 gt boxes copy
@@ -129,7 +129,7 @@ class LoaderDecTrain(_LoaderDec):
 class LoaderDecTest(_LoaderDec):
 	"""docstring for LoaderEncTrain"""
 	def __init__(self, arg):
-		super(LoaderEncTrain, self).__init__()
+		super(LoaderDecTest, self).__init__()
 		self.arg = arg
 	def getBatch(self):
 		pass
