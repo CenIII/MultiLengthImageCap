@@ -63,7 +63,7 @@ class SimilarityLoss(nn.Module):
         loss1_w = loss1_w/batch
         loss2_w = loss2_w/batch 
         loss_reg = loss_reg/(batch*T*M)
-        print('loss_reg: '+str(loss_reg))
+        # print('loss_reg: '+str(loss_reg))
         return loss1_w + loss2_w + loss_reg
 
     def calculate_matching_score(self, v, e, M, H_r, H_w):
@@ -95,7 +95,7 @@ class SimilarityLoss(nn.Module):
 
         v_e_norm = torch.norm(v_tidal) * torch.norm(e.t())
         R_QD = torch.log(torch.pow(torch.sum(torch.exp(torch.diag(v_tidal.mm(e.t())) / v_e_norm * self.gamma2)), 1 / self.gamma2)+1e-10)
-        print('R_QD'+str(R_QD.data))
+        # print('R_QD'+str(R_QD.data))
         # regard image box as query, might consider overflow
         similarity_matrix_copy = normalized_similarity_matrix.clone()
         similarity_matrix_copy = torch.exp(similarity_matrix_copy)
@@ -142,7 +142,7 @@ class SimilarityLoss(nn.Module):
             R_QD2 += torch.exp(reference)
         # print("2 ", time.time() - time2)
         R_QD2 = torch.log(torch.pow(R_QD2, 1 / self.gamma2)+1e-10)
-        print('R_QD2'+str(R_QD2))
+        # print('R_QD2'+str(R_QD2))
         # add matching score for two directions.
         return R_QD + R_QD2, beta
 
