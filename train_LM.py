@@ -30,10 +30,14 @@ def train_LM(lmloader, model, optimizer, criterion, pad_id, max_epoch):
         PATH = 'LMcheckpoint'
         torch.save(model.state_dict(), PATH)
 
-def sampleSentence(model, sos_id):
-    sample_input = torch.LongTensor([[sos_id]])
-    decoder_output,_, out = model(sample_input,teacher_forcing_ratio=0)
-    print(out['sequence'])
+def sampleSentence(model, lmloader, rev_vocab):
+    sample_input = next(iter(lmloader))['sentence']
+    with torch.no_grad():
+        _,_, out = model(sample_input,teacher_forcing_ratio=0)
+    sentence = []
+    for word in out['sequence']:
+        sentence.append(rev_vocab[word.item()])
+    print(' '.join(sentence))
 
 def main():
     # load vocab Data here!
@@ -42,10 +46,13 @@ def main():
         VocabData = pickle.load(f)
     with open('FullImageCaps.pkl','rb') as f:
         FullImageCaps = pickle.load(f)
-        
+    
+    
+    
+
     lmdata = LMDataset(VocabData, FullImageCaps)
     lmloader = lmdata.getLoader(batchSize=128,shuffle=True)
-
+    testloader = lmdata.getLoader(batchSize=1,shuffle=False)
     embedding = torch.Tensor(lmdata.embedding)
     vocab_size = len(lmdata.wordDict)
     max_len = 100
@@ -56,12 +63,21 @@ def main():
     eos_id = lmdata.eos_id
     pad_id = lmdata.pad_id
 
+    wordDict = VocabData['word_dict']
+    rev_vocab = ['']*vocab_size
+    for word in wordDict:
+        rev_vocab[wordDict[word]] = word
+    
+    
     model = DecoderRNN(vocab_size, max_len, hidden_size, embedding_size, sos_id, eos_id, embedding=embedding, rnn_cell='lstm')
+    optimizer = optim.Adam(model.parameters(), lr=0.0005)
+    criterion = nn.CrossEntropyLoss(ignore_index=pad_id)
     if torch.cuda.is_available():
         model = model.cuda()
-    optimizer = optim.Adam(model.parameters(), lr=0.0001)
-    criterion = nn.CrossEntropyLoss(ignore_index=pad_id)
+        criterion = criterion.cuda()
     train_LM(lmloader, model, optimizer, criterion, pad_id, max_epoch)
+    sampleSentence(model, testloader, rev_vocab)
+
 
 if __name__ == "__main__":
     main()
