@@ -91,7 +91,7 @@ class SimilarityLoss(nn.Module):
         # R_QD = torch.log(torch.pow(R_QD, 1 / self.gamma2))
 
 
-        R_QD = torch.log(torch.pow(torch.sum(torch.exp(torch.diag(v_tidal.mm(e.t())) * self.gamma2)), 1 / self.gamma2))
+        R_QD = torch.log(torch.pow(torch.sum(torch.exp(torch.diag(v_tidal.mm(e.t())) * self.gamma2)), 1 / self.gamma2)+1e-10)
 
         # regard image box as query, might consider overflow
         similarity_matrix_copy = normalized_similarity_matrix.clone()
