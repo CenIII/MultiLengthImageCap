@@ -13,6 +13,7 @@ class SimilarityLoss(nn.Module):
         self.gamma2 = gamma2
         self.gamma3 = gamma3
 
+
     def similarity_loss(self, image, text, length_info):  # consider passing the perceptron layer
         """
         text_images pair: a batch of text_image pairs
@@ -33,9 +34,8 @@ class SimilarityLoss(nn.Module):
             T, D = e.size()
             numerator, beta = self.calculate_matching_score(v, e, M, H_r, H_w)
             numerator = self.gamma3 * torch.exp(numerator)
-            loss_reg += torch.norm(
-                beta.mm(beta.t()) - torch.diag(beta.mm(beta.t())) * torch.eye(
-                    T))
+            tmp = beta.mm(beta.t())
+            loss_reg += torch.sqrt(torch.sum(tmp**2) - torch.sum(torch.diag(tmp))**2)
             P_DQ_denum = 0
             P_QD_denum = 0
             spinds = np.random.choice(batch,5)
