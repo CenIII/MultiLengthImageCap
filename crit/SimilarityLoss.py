@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import random
 import numpy as np
+import time
 
 # class version of similarity loss
 class SimilarityLoss(nn.Module):
@@ -86,6 +87,7 @@ class SimilarityLoss(nn.Module):
         similarity_matrix_copy = torch.exp(similarity_matrix_copy)
 
         # beta = torch.zeros(T, M)
+        time1 = time.time()
         beta = []
         for i in range(M):
             local_sum = torch.sum(
@@ -93,7 +95,7 @@ class SimilarityLoss(nn.Module):
             beta.append(torch.sum(torch.div(
                 similarity_matrix_copy[:, i * H_r * H_w: (i + 1) * H_r * H_w],
                 local_sum), dim=1))
-
+        # print("1 ", time.time() - time1)
         # beta = torch.tensor(beta)
         beta = torch.stack(beta, dim=0)
         # return torch.sum(beta)
@@ -102,17 +104,26 @@ class SimilarityLoss(nn.Module):
         e_prime = (e.t()).mm(beta)
 
         # calculate R_QD in the second direction
+        time2 = time.time()
         R_QD2 = 0
         for i in range(M):
             reference = 0
-            for j in range(i * (H_r * H_w), (i + 1) * (H_r * H_w)):
-                reference += self.gamma2 * v[j].view(1, -1).mm(
-                    e_prime[:, i].view(-1, 1)).squeeze() / (
-                                         torch.norm(v[j], 2) * torch.norm(
-                                     e_prime[:, i], 2))
-
-            reference /= H_r * H_w
+            # def tmp():
+            #     reference = 0
+            #     for j in range(i * (H_r * H_w), (i + 1) * (H_r * H_w)):
+            #         reference += self.gamma2 * v[j].view(1, -1).mm(
+            #             e_prime[:, i].view(-1, 1)).squeeze() / (
+            #                                 torch.norm(v[j]) * torch.norm(
+            #                             e_prime[:, i]))
+            #     reference = v_local_e_norm / ( H_r * H_w)
+            #     return reference
+            v_local = v[i * (H_r * H_w) : (i + 1) * (H_r * H_w)]
+            v_local_e = v_local.mm(e_prime[:, i].unsqueeze(1)).squeeze()
+            v_local_e_norm = torch.sum(
+                v_local_e / (torch.norm(v_local, dim=1) * torch.norm(e_prime[:, i])))
+            reference = v_local_e_norm / ( H_r * H_w)
             R_QD2 += torch.exp(reference)
+        # print("2 ", time.time() - time2)
         R_QD2 = torch.log(torch.pow(R_QD2, 1 / self.gamma2))
 
         # add matching score for two directions.
@@ -134,8 +145,11 @@ if __name__ == "__main__":
     # H_r = 10
     # T = 5
     # D = 20
+    torch.manual_seed(7)
+    torch.backends.cudnn.deterministic=True
     image = torch.randn(10, 1, 1024, 7, 7)
     image.requires_grad = True
+    torch.manual_seed(7)
     text = torch.randn(10, 15, 1024)
     text.requires_grad = True
     length_info = torch.tensor([10, 12, 11, 9, 8, 14, 5, 10, 7, 10])
