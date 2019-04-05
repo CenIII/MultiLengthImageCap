@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import random
-
+import numpy as np
 
 # class version of similarity loss
 class SimilarityLoss(nn.Module):
@@ -12,6 +12,7 @@ class SimilarityLoss(nn.Module):
         self.gamma1 = gamma1
         self.gamma2 = gamma2
         self.gamma3 = gamma3
+
 
     def similarity_loss(self, image, text, length_info):  # consider passing the perceptron layer
         """
@@ -24,6 +25,7 @@ class SimilarityLoss(nn.Module):
 
         batch = image.size()[0]
         for i in range(batch):
+            # print(i)
             e = text[i][:length_info[i]]  # remove zero padding
             v = image[i]
             M, D, H_r, H_w = v.size()
@@ -32,12 +34,12 @@ class SimilarityLoss(nn.Module):
             T, D = e.size()
             numerator, beta = self.calculate_matching_score(v, e, M, H_r, H_w)
             numerator = self.gamma3 * torch.exp(numerator)
-            loss_reg += torch.norm(
-                beta.mm(beta.t()) - torch.diag(beta.mm(beta.t())) * torch.eye(
-                    T))
+            tmp = beta.mm(beta.t())
+            loss_reg += torch.sqrt(torch.sum(tmp**2) - torch.sum(torch.diag(tmp))**2)
             P_DQ_denum = 0
             P_QD_denum = 0
-            for i in range(batch):
+            spinds = np.random.choice(batch,5)
+            for i in spinds:
                 e_sub = text[i][:length_info[i]]
                 v_sub = image[i].permute(0, 3, 2, 1)
                 v_sub = v_sub.contiguous().view(M * H_r * H_w, D)

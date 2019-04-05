@@ -9,10 +9,10 @@ import pickle
 
 def getLengths(caps):
 	batchSize = len(caps)
-	lengths = np.zeros(batchSize, dtype=np.int32)
+	lengths = torch.zeros(batchSize,dtype=torch.int32)
 	for i in range(batchSize):
 		cap = caps[i]
-		lengths[i] = int(np.argmax(cap==0.))
+		lengths[i] = torch.argmax(cap==0.)
 	return lengths
 
 # load sample data
@@ -25,38 +25,44 @@ numiters = int(numiters)
 with open('./data/VocabData.pkl', 'rb') as f:
 	VocabData = pickle.load(f)
 
+
+
 # load linear model, transform feature tensor to semantic space
-linNet = LinearModel(hiddenSize=1024)
+linNet = LinearModel(hiddenSize=1024).cuda()
 # load LSTM encoder
 lstmEnc = EncoderRNN(len(VocabData['word_dict']), 15, 1024, 300,
                  input_dropout_p=0, dropout_p=0,
                  n_layers=1, bidirectional=False, rnn_cell='lstm', variable_lengths=False,
-                 embedding_parameter=VocabData['word_embs'], update_embedding=False)
+                 embedding_parameter=VocabData['word_embs'], update_embedding=False).cuda()
 # load crit 
-crit = SimilarityLoss(1,1,1)
+crit = SimilarityLoss(1,1,1).cuda()
+
+
 
 optimizer = torch.optim.Adam(list(filter(lambda p: p.requires_grad, lstmEnc.parameters()))+list(linNet.parameters()), 0.001)
 
 
-qdar = tqdm.tqdm(range(numiters), total= numiters, ascii=True)
+qdar = tqdm.tqdm(range(numiters-1), total= numiters-1, ascii=True)
 for i in qdar:
 	data, itr, numiters = loader.getBatch()
 
-	box_feats = torch.tensor(data['box_feats'])
-	glob_feat = torch.tensor(data['glob_feat'])
-	box_captions =  torch.LongTensor(data['box_captions_gt'])
+	box_feats = torch.tensor(data['box_feats']).cuda()
+	glob_feat = torch.tensor(data['glob_feat']).cuda()
+	box_captions =  torch.LongTensor(data['box_captions_gt']).cuda()
 
 	# output1 output2 fed into Similarity loss  # todo: incorporate glob feat
 	out1 = linNet(box_feats, glob_feat)[2].unsqueeze(1)
 	out2 = lstmEnc(box_captions)[0]
 
-	capLens = getLengths(box_captions)
+	capLens = getLengths(box_captions).cuda()
+	# print('calc loss')
 	loss = crit(out1, out2, capLens)
+	# print('backward')
 	optimizer.zero_grad()
 	# loss.backward()
 	loss.backward()
 	optimizer.step()
-	qdar.set_postfix(loss=str(np.round(loss.data,3)))
+	qdar.set_postfix(loss=str(np.round(loss.data.cpu().numpy(),3)))
 
 
 
