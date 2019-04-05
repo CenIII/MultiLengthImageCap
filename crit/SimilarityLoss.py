@@ -39,7 +39,9 @@ class SimilarityLoss(nn.Module):
             loss_reg += torch.sqrt(torch.sum(tmp**2) - torch.sum(torch.diag(tmp)**2))
             P_DQ_denum = 0
             P_QD_denum = 0
-            spinds = np.random.choice(batch,5)
+            spinds = np.zeros(5,dtype=np.int32)
+            spinds[0] = i
+            spinds[1:] = np.random.choice(batch,4)
             for i in spinds:
                 e_sub = text[i][:length_info[i]]
                 v_sub = image[i].permute(0, 3, 2, 1)
@@ -50,7 +52,10 @@ class SimilarityLoss(nn.Module):
                 P_QD_denum += self.gamma3 * torch.exp(denum2)
             loss1_w -= numerator / P_DQ_denum
             loss2_w -= numerator / P_QD_denum
-        return loss1_w + loss2_w + loss_reg
+
+        # print('loss1:'+str(loss1_w))
+        # print('loss2:'+str(loss2_w))
+        return loss1_w/batch + loss2_w/batch + loss_reg/(batch*T*M)
 
     def calculate_matching_score(self, v, e, M, H_r, H_w):
 
