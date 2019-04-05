@@ -9,10 +9,10 @@ import pickle
 
 def getLengths(caps):
 	batchSize = len(caps)
-	lengths = np.zeros(batchSize, dtype=np.int32)
+	lengths = torch.zeros(batchSize,dtype=torch.int32)
 	for i in range(batchSize):
 		cap = caps[i]
-		lengths[i] = int(np.argmax(cap==0.))
+		lengths[i] = torch.argmax(cap==0.)
 	return lengths
 
 # load sample data
@@ -54,7 +54,7 @@ for i in qdar:
 	out1 = linNet(box_feats, glob_feat)[2].unsqueeze(1)
 	out2 = lstmEnc(box_captions)[0]
 
-	capLens = getLengths(box_captions)
+	capLens = getLengths(box_captions).cuda()
 	# print('calc loss')
 	loss = crit(out1, out2, capLens)
 	# print('backward')
