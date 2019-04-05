@@ -56,6 +56,7 @@ class SimilarityLoss(nn.Module):
         loss1_w = loss1_w/batch
         loss2_w = loss2_w/batch 
         loss_reg = loss_reg/(batch*T*M)
+        print('P_QD_denum'+str(P_QD_denum))
         print('loss1:'+str(loss1_w))
         print('loss2:'+str(loss2_w))
         print('loss_reg: '+str(loss_reg))
