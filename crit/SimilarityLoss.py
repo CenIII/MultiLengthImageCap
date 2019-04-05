@@ -35,7 +35,7 @@ class SimilarityLoss(nn.Module):
             numerator, beta = self.calculate_matching_score(v, e, M, H_r, H_w)
             numerator = self.gamma3 * torch.exp(numerator)
             tmp = beta.mm(beta.t())
-            loss_reg += torch.sqrt(torch.sum(tmp**2) - torch.sum(torch.diag(tmp))**2)
+            loss_reg += torch.sqrt(torch.sum(tmp**2) - torch.sum(torch.diag(tmp)**2))
             P_DQ_denum = 0
             P_QD_denum = 0
             spinds = np.random.choice(batch,5)
