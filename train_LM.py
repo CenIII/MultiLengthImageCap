@@ -16,17 +16,22 @@ def train_LM(lmloader, model, optimizer, criterion, pad_id, max_epoch):
             input_sentences = batch['sentence']
             if torch.cuda.is_available():
                 input_sentences = input_sentences.cuda()
-            lengths = batch['lengths']
-            batch_size = lengths.shape[0]
+            batch_size = input_sentences.shape[0]
             decoder_output, _, _ = model(input_sentences, teacher_forcing_ratio=1)
             decoder_output_reshaped = torch.cat([decoder_output[i].unsqueeze(1) for i in range(len(decoder_output))],1)
-            for i in range(batch_size):
-                loss += criterion(decoder_output_reshaped[i,:lengths[i]-1], input_sentences[i,1:lengths[i]])
+            loss += criterion(decoder_output_reshaped, input_sentences[:,1:])
             loss /= batch_size
             loss.backward()
             optimizer.step()
             if n%10 == 0:
                 print("Epoch {}, batch {}: loss = {}".format(epoch, n, loss.item()))
+        PATH = 'LMcheckpoint'
+        torch.save(model.state_dict(), PATH)
+
+def sampleSentence(model, sos_id):
+    sample_input = torch.LongTensor([[sos_id]])
+    _,_, out = model(sample_input,teacher_forcing_ratio=0)
+    print(out['sequence'])
 
 def main():
     # load vocab Data here!
@@ -53,7 +58,7 @@ def main():
     if torch.cuda.is_available():
         model = model.cuda()
     optimizer = optim.Adam(model.parameters(), lr=0.001)
-    criterion = nn.CrossEntropyLoss()
+    criterion = nn.CrossEntropyLoss(ignore_index=pad_id)
     train_LM(lmloader, model, optimizer, criterion, pad_id, max_epoch)
 
 if __name__ == "__main__":
