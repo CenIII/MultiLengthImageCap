@@ -62,7 +62,7 @@ for i in qdar:
 	# loss.backward()
 	loss.backward()
 	optimizer.step()
-	qdar.set_postfix(loss=str(np.round(loss.data,3)))
+	qdar.set_postfix(loss=str(np.round(loss.data.cpu().numpy(),3)))
 
 
 
