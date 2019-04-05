@@ -73,10 +73,13 @@ class SimilarityLoss(nn.Module):
         # each row of v_tidal represent the attention output
         v_tidal = attn_score.mm(v)
         R_QD = 0  # define matching score for one direction
-        for i in range(e.size()[0]):
-            R_QD += torch.exp((v_tidal[i].view(1, -1).mm(e[i].view(-1, 1)).squeeze() / (
-                        torch.norm(v_tidal[i], 2) * torch.norm(e[i], 2))) * self.gamma2)
-        R_QD = torch.log(torch.pow(R_QD, 1 / self.gamma2))
+        # for i in range(e.size()[0]):
+        #     R_QD += torch.exp((v_tidal[i].view(1, -1).mm(e[i].view(-1, 1)).squeeze() / (
+        #                 torch.norm(v_tidal[i], 2) * torch.norm(e[i], 2))) * self.gamma2)
+        # R_QD = torch.log(torch.pow(R_QD, 1 / self.gamma2))
+
+
+        R_QD = torch.log(torch.pow(torch.sum(torch.exp(torch.diag(v_tidal.mm(e.t())) * self.gamma2)), 1 / self.gamma2))
 
         # regard image box as query, might consider overflow
         similarity_matrix_copy = normalized_similarity_matrix.clone()
@@ -131,12 +134,15 @@ if __name__ == "__main__":
     # H_r = 10
     # T = 5
     # D = 20
-    image = torch.randn(2, 1, 1024, 7, 7)
-    text = torch.randn(2, 15, 1024)
-    length_info = torch.tensor([10, 8])
+    image = torch.randn(10, 1, 1024, 7, 7)
+    image.requires_grad = True
+    text = torch.randn(10, 15, 1024)
+    text.requires_grad = True
+    length_info = torch.tensor([10, 12, 11, 9, 8, 14, 5, 10, 7, 10])
     m = SimilarityLoss(1, 1, 1)
     loss = m(image, text, length_info)
     print(loss)
+    loss.backward()
     # M = 2
     # H_w = 2
     # H_r = 2
