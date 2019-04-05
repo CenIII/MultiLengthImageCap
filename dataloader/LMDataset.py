@@ -34,15 +34,15 @@ class LMDataset(Dataset):
 			if seqLen > maxLen:
 				maxLen = seqLen
 		packed = np.zeros([batchSize, maxLen])
+		mask = np.zeros([batchSize, maxLen])
 		for i in range(batchSize):
 			packed[i][:lengths[i]] = batch[i]
-		lengths = np.array(lengths)
+		# lengths = np.array(lengths)
 		# inds = np.argsort(lengths)[::-1]
 		sent = torch.LongTensor(packed)
-		stLengths = torch.tensor(lengths)
+		# mask = torch.tensor(mask)
 
-		return {'sentence':sent,
-				'lengths':stLengths}
+		return {'sentence':sent}
 
 	def word2indices(self, sList, sos=False):
 		"""For each sentence in a list of sentences, convert its tokens into word index including auxilary tokens.
