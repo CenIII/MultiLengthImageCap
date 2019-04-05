@@ -50,7 +50,10 @@ class SimilarityLoss(nn.Module):
                 P_QD_denum += self.gamma3 * torch.exp(denum2)
             loss1_w -= numerator / P_DQ_denum
             loss2_w -= numerator / P_QD_denum
-        return loss1_w + loss2_w + loss_reg
+
+        print('loss1:'+str(loss1_w))
+        print('loss2:'+str(loss2_w))
+        return loss1_w + loss2_w + loss_reg/(batch*T*M)
 
     def calculate_matching_score(self, v, e, M, H_r, H_w):
 
