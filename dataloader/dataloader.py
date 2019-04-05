@@ -52,7 +52,7 @@ class _BaseDataLoader(object):
 						break
 		assert(len(filename)==1)
 		filename = filename[0]
-		print(filename)
+		# print(filename)
 		# read iter and numiters
 		tmp = filename.split('/')[-1].split('_')
 		numiters = tmp[-1]

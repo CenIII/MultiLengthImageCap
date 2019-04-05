@@ -123,14 +123,16 @@ local function check_pick_confirm(idx)
    if fr~=nil then io.close(fr) return true else return false end
 end
 
-local function saveJson(outputs, idx)
+local function saveJson(outputs, pipeLen)
   -- body
   -- check "confirm" file
+  idx = 0
   while true do
     if check_pick_confirm(idx) then
       os.remove('./data_pipeline/pick_confirm_'..tostring(idx))
       break
     end
+    idx = (idx+1)%pipeLen
   end
   
   -- local enc = json.encode(outputs)
@@ -156,7 +158,7 @@ while true do
   -- print('success!')
   out_packed = pack_outputs(outputs, info)
   -- save to json file
-  saveJson(out_packed, counter%pipeLen)
+  saveJson(out_packed, pipeLen)
   counter = counter + 1
 
 end
