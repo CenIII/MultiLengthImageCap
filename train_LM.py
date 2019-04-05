@@ -32,7 +32,7 @@ def train_LM(lmloader, model, optimizer, criterion, pad_id, max_epoch):
 
 def sampleSentence(model, sos_id):
     sample_input = torch.LongTensor([[sos_id]])
-    _,_, out = model(sample_input,teacher_forcing_ratio=0)
+    decoder_output,_, out = model(sample_input,teacher_forcing_ratio=0)
     print(out['sequence'])
 
 def main():
@@ -51,7 +51,7 @@ def main():
     max_len = 100
     hidden_size = 1024
     embedding_size = 300
-    max_epoch = 10
+    max_epoch = 20
     sos_id = lmdata.sos_id
     eos_id = lmdata.eos_id
     pad_id = lmdata.pad_id
@@ -59,7 +59,7 @@ def main():
     model = DecoderRNN(vocab_size, max_len, hidden_size, embedding_size, sos_id, eos_id, embedding=embedding, rnn_cell='lstm')
     if torch.cuda.is_available():
         model = model.cuda()
-    optimizer = optim.Adam(model.parameters(), lr=0.001)
+    optimizer = optim.Adam(model.parameters(), lr=0.0001)
     criterion = nn.CrossEntropyLoss(ignore_index=pad_id)
     train_LM(lmloader, model, optimizer, criterion, pad_id, max_epoch)
 
