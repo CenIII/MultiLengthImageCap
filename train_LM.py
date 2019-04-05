@@ -68,9 +68,10 @@ def main():
     for word in wordDict:
         rev_vocab[wordDict[word]] = word
     
+    
+    model = DecoderRNN(vocab_size, max_len, hidden_size, embedding_size, sos_id, eos_id, embedding=embedding, rnn_cell='lstm')
     optimizer = optim.Adam(model.parameters(), lr=0.0005)
     criterion = nn.CrossEntropyLoss(ignore_index=pad_id)
-    model = DecoderRNN(vocab_size, max_len, hidden_size, embedding_size, sos_id, eos_id, embedding=embedding, rnn_cell='lstm')
     if torch.cuda.is_available():
         model = model.cuda()
         criterion = criterion.cuda()
