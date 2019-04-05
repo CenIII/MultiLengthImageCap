@@ -49,6 +49,8 @@ class SimilarityLoss(nn.Module):
                 v_sub = v_sub.contiguous().view(M * H_r * H_w, D)
                 denum, _ = self.calculate_matching_score(v, e_sub, M, H_r, H_w)
                 denum2, _ = self.calculate_matching_score(v_sub, e, M, H_r, H_w)
+                print(denum.data)
+                print(denum2.data)
                 P_DQ_denum += self.gamma3 * torch.exp(denum)
                 P_QD_denum += self.gamma3 * torch.exp(denum2)
                 print('P_DQ_denum'+str(P_DQ_denum))
@@ -56,14 +58,12 @@ class SimilarityLoss(nn.Module):
             
             loss1_w -= numerator / P_DQ_denum
             loss2_w -= numerator / P_QD_denum
-
+            print('loss1:'+str(loss1_w))
+            print('loss2:'+str(loss2_w))
         loss1_w = loss1_w/batch
         loss2_w = loss2_w/batch 
         loss_reg = loss_reg/(batch*T*M)
-        
-        print('loss1:'+str(loss1_w))
-        print('loss2:'+str(loss2_w))
-        print('loss_reg: '+str(loss_reg))
+        # print('loss_reg: '+str(loss_reg))
         return loss1_w + loss2_w + loss_reg
 
     def calculate_matching_score(self, v, e, M, H_r, H_w):
