@@ -65,19 +65,19 @@ for i in qdar:
 	start = time.time()
 	out1 = linNet(box_feats, glob_feat)[2].unsqueeze(1)
 	out2 = lstmEnc(box_captions)[0]
-	end1 = time.time() - start
-	print('model forward: '+str(end1)+'s')
+	end1 = time.time()
+	print('model forward: '+str(end1-start)+'s')
 	# print('calc loss')
 	loss = crit(out1, out2, capLens)
-	end2 = time.time() - end1
-	print('crit forward: '+str(end2)+'s')
+	end2 = time.time()
+	print('crit forward: '+str(end2-end1)+'s')
 	# print('backward')
 	optimizer.zero_grad()
 	# loss.backward()
 	loss.backward()
 	optimizer.step()
-	end3 = time.time() - end2
-	print('backward: '+str(end3)+'s')
+	end3 = time.time()
+	print('backward: '+str(end3-end2)+'s')
 	qdar.set_postfix(loss=str(np.round(loss.data.cpu().numpy(),3)))
 
 
