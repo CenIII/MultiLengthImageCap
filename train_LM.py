@@ -19,8 +19,7 @@ def train_LM(lmloader, model, optimizer, criterion, pad_id, max_epoch):
             batch_size = input_sentences.shape[0]
             decoder_output, _, _ = model(input_sentences, teacher_forcing_ratio=1)
             decoder_output_reshaped = torch.cat([decoder_output[i].unsqueeze(1) for i in range(len(decoder_output))],1)
-            loss += criterion(decoder_output_reshaped, input_sentences[:,1:])
-            loss /= batch_size
+            loss = criterion(decoder_output_reshaped, input_sentences[:,1:])
             loss.backward()
             optimizer.step()
             if n%10 == 0:
