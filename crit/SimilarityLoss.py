@@ -135,7 +135,7 @@ class SimilarityLoss(nn.Module):
             reference = v_local_e_norm / ( H_r * H_w)
             R_QD2 += torch.exp(reference)
         # print("2 ", time.time() - time2)
-        R_QD2 = torch.log(torch.pow(R_QD2, 1 / self.gamma2))
+        R_QD2 = torch.log(torch.pow(R_QD2, 1 / self.gamma2)+1e-10)
 
         # add matching score for two directions.
         return R_QD + R_QD2, beta
