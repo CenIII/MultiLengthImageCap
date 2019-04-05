@@ -133,9 +133,10 @@ class SimilarityLoss(nn.Module):
             #     return reference
             v_local = v[i * (H_r * H_w) : (i + 1) * (H_r * H_w)]
             v_local_e = v_local.mm(e_prime[:, i].unsqueeze(1)).squeeze()
+            print('v_local_e'+str(v_local_e))
             v_local_e_norm = torch.sum(
                 v_local_e / ((torch.norm(v_local, dim=1)+1e-10) * torch.norm(e_prime[:, i])))
-            
+            print('v_local_e_norm'+str(v_local_e_norm.data))
             reference = v_local_e_norm / ( H_r * H_w)
             # print('reference'+str(reference))
             R_QD2 += torch.exp(reference)
