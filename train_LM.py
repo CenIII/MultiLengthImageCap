@@ -22,7 +22,7 @@ def train_LM(lmloader, model, optimizer, criterion, pad_id, max_epoch):
             vocab_size = decoder_output_reshaped.shape[2]
             decoder_output_reshaped = decoder_output_reshaped.view(-1, vocab_size)
             input_sentences = input_sentences[:,1:].contiguous().view(-1)
-            loss = criterion(decoder_output_reshaped, input_sentences[:,1:])
+            loss = criterion(decoder_output_reshaped, input_sentences)
             loss.backward()
             optimizer.step()
             if n%10 == 0:
