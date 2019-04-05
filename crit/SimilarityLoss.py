@@ -39,7 +39,7 @@ class SimilarityLoss(nn.Module):
             loss_reg += torch.sqrt(torch.sum(tmp**2) - torch.sum(torch.diag(tmp)**2))
             P_DQ_denum = 0
             P_QD_denum = 0
-            spinds = np.zeros(5)
+            spinds = np.zeros(5,dtype=np.int32)
             spinds[0] = i
             spinds[1:] = np.random.choice(batch,4)
             for i in spinds:
