@@ -95,7 +95,7 @@ class SimilarityLoss(nn.Module):
 
 
         R_QD = torch.log(torch.pow(torch.sum(torch.exp(torch.diag(v_tidal.mm(e.t())) * self.gamma2)), 1 / self.gamma2)+1e-10)
-
+        print('R_QD'+str(R_QD.data))
         # regard image box as query, might consider overflow
         similarity_matrix_copy = normalized_similarity_matrix.clone()
         similarity_matrix_copy = torch.exp(similarity_matrix_copy)
@@ -133,16 +133,16 @@ class SimilarityLoss(nn.Module):
             #     return reference
             v_local = v[i * (H_r * H_w) : (i + 1) * (H_r * H_w)]
             v_local_e = v_local.mm(e_prime[:, i].unsqueeze(1)).squeeze()
-            print('v_local_e'+str(v_local_e))
+            # print('v_local_e'+str(v_local_e))
             v_local_e_norm = torch.sum(
                 v_local_e / ((torch.norm(v_local, dim=1)+1e-10) * torch.norm(e_prime[:, i])))
-            print('v_local_e_norm'+str(v_local_e_norm.data))
+            # print('v_local_e_norm'+str(v_local_e_norm.data))
             reference = v_local_e_norm / ( H_r * H_w)
             # print('reference'+str(reference))
             R_QD2 += torch.exp(reference)
         # print("2 ", time.time() - time2)
         R_QD2 = torch.log(torch.pow(R_QD2, 1 / self.gamma2)+1e-10)
-
+        print('R_QD2'+str(R_QD2))
         # add matching score for two directions.
         return R_QD + R_QD2, beta
 
