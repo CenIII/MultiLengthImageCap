@@ -5,6 +5,8 @@ import torch.nn as nn
 import torch.optim as optim
 import pickle
 
+import sys
+
 
 def train_LM(lmloader, model, optimizer, criterion, pad_id, max_epoch):
     
@@ -52,7 +54,8 @@ def main():
         FullImageCaps = pickle.load(f)
     
     
-    
+    recovery = sys.argv[1]
+    mode = sys.argv[2]
 
     lmdata = LMDataset(VocabData, FullImageCaps)
     lmloader = lmdata.getLoader(batchSize=128,shuffle=True)
@@ -72,18 +75,20 @@ def main():
     for word in wordDict:
         rev_vocab[wordDict[word]] = word
     
-    recovery = True
     PATH = 'LMcheckpoint'
+
     
     model = DecoderRNN(vocab_size, max_len, hidden_size, embedding_size, sos_id, eos_id, embedding=embedding, rnn_cell='lstm')
-    if recovery:
+    if recovery=='1':
         model = loadCheckpoint(PATH, model)
     optimizer = optim.Adam(model.parameters(), lr=0.003)
     criterion = nn.CrossEntropyLoss(ignore_index=pad_id)
     if torch.cuda.is_available():
         model = model.cuda()
         criterion = criterion.cuda()
-    train_LM(lmloader, model, optimizer, criterion, pad_id, max_epoch)
+    if mode == 'train':
+        train_LM(lmloader, model, optimizer, criterion, pad_id, max_epoch)
+
     sampleSentence(model, testloader, rev_vocab)
 
 
