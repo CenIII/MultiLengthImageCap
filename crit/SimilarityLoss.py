@@ -42,24 +42,28 @@ class SimilarityLoss(nn.Module):
             spinds = np.zeros(5,dtype=np.int32)
             spinds[0] = i
             spinds[1:] = np.random.choice(batch,4)
+            # print('numerator'+str(numerator))
             for i in spinds:
                 e_sub = text[i][:length_info[i]]
                 v_sub = image[i].permute(0, 3, 2, 1)
                 v_sub = v_sub.contiguous().view(M * H_r * H_w, D)
                 denum, _ = self.calculate_matching_score(v, e_sub, M, H_r, H_w)
                 denum2, _ = self.calculate_matching_score(v_sub, e, M, H_r, H_w)
+                # print(denum.data)
+                # print(denum2.data)
                 P_DQ_denum += self.gamma3 * torch.exp(denum)
                 P_QD_denum += self.gamma3 * torch.exp(denum2)
+                # print('P_DQ_denum'+str(P_DQ_denum))
+                # print('P_QD_denum'+str(P_QD_denum))
+            
             loss1_w -= numerator / P_DQ_denum
             loss2_w -= numerator / P_QD_denum
-
+            # print('loss1:'+str(loss1_w))
+            # print('loss2:'+str(loss2_w))
         loss1_w = loss1_w/batch
         loss2_w = loss2_w/batch 
         loss_reg = loss_reg/(batch*T*M)
-        print('P_QD_denum'+str(P_QD_denum))
-        print('loss1:'+str(loss1_w))
-        print('loss2:'+str(loss2_w))
-        print('loss_reg: '+str(loss_reg))
+        # print('loss_reg: '+str(loss_reg))
         return loss1_w + loss2_w + loss_reg
 
     def calculate_matching_score(self, v, e, M, H_r, H_w):
@@ -89,9 +93,9 @@ class SimilarityLoss(nn.Module):
         #                 torch.norm(v_tidal[i], 2) * torch.norm(e[i], 2))) * self.gamma2)
         # R_QD = torch.log(torch.pow(R_QD, 1 / self.gamma2))
 
-
-        R_QD = torch.log(torch.pow(torch.sum(torch.exp(torch.diag(v_tidal.mm(e.t())) * self.gamma2)), 1 / self.gamma2))
-
+        v_e_norm = torch.norm(v_tidal) * torch.norm(e.t())
+        R_QD = torch.log(torch.pow(torch.sum(torch.exp(torch.diag(v_tidal.mm(e.t())) / v_e_norm * self.gamma2)), 1 / self.gamma2)+1e-10)
+        # print('R_QD'+str(R_QD.data))
         # regard image box as query, might consider overflow
         similarity_matrix_copy = normalized_similarity_matrix.clone()
         similarity_matrix_copy = torch.exp(similarity_matrix_copy)
@@ -129,13 +133,16 @@ class SimilarityLoss(nn.Module):
             #     return reference
             v_local = v[i * (H_r * H_w) : (i + 1) * (H_r * H_w)]
             v_local_e = v_local.mm(e_prime[:, i].unsqueeze(1)).squeeze()
+            # print('v_local_e'+str(v_local_e))
             v_local_e_norm = torch.sum(
-                v_local_e / (torch.norm(v_local, dim=1) * torch.norm(e_prime[:, i])))
+                v_local_e / ((torch.norm(v_local, dim=1)+1e-10) * torch.norm(e_prime[:, i])))
+            # print('v_local_e_norm'+str(v_local_e_norm.data))
             reference = v_local_e_norm / ( H_r * H_w)
+            # print('reference'+str(reference))
             R_QD2 += torch.exp(reference)
         # print("2 ", time.time() - time2)
-        R_QD2 = torch.log(torch.pow(R_QD2, 1 / self.gamma2))
-
+        R_QD2 = torch.log(torch.pow(R_QD2, 1 / self.gamma2)+1e-10)
+        # print('R_QD2'+str(R_QD2))
         # add matching score for two directions.
         return R_QD + R_QD2, beta
 
