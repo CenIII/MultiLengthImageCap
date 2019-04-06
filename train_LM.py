@@ -40,7 +40,7 @@ def sampleSentence(model, lmloader, rev_vocab):
     if torch.cuda.is_available():
         sample_input = sample_input.cuda()
     with torch.no_grad():
-        _,_, out = model(sample_input,teacher_forcing_ratio=0)
+        _,_, out = model(sample_input,teacher_forcing_ratio=1)
     sentence = []
     for word in out['sequence']:
         sentence.append(rev_vocab[word.item()])
