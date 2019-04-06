@@ -34,7 +34,7 @@ def train_LM(lmloader, model, optimizer, criterion, pad_id, max_epoch):
 def sampleSentence(model, lmloader, rev_vocab):
     sample_input = next(iter(lmloader))['sentence']
     input_sentence = []
-    for i in range(sample_input.shape[0]):
+    for i in range(sample_input.shape[1]):
         input_sentence.append(rev_vocab[sample_input[0,i].item()])
     print(input_sentence)
     if torch.cuda.is_available():
