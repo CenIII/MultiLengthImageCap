@@ -33,6 +33,8 @@ def train_LM(lmloader, model, optimizer, criterion, pad_id, max_epoch):
 
 def sampleSentence(model, lmloader, rev_vocab):
     sample_input = next(iter(lmloader))['sentence']
+    if torch.cuda.is_available():
+        sample_input = sample_input.cuda()
     with torch.no_grad():
         _,_, out = model(sample_input,teacher_forcing_ratio=0)
     sentence = []
@@ -54,8 +56,8 @@ def main():
         FullImageCaps = pickle.load(f)
     
     
-    recovery = sys.argv[1]
-    mode = sys.argv[2]
+    recovery = sys.argv[2]
+    mode = sys.argv[1]
 
     lmdata = LMDataset(VocabData, FullImageCaps)
     lmloader = lmdata.getLoader(batchSize=128,shuffle=True)
