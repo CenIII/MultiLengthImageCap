@@ -2,6 +2,8 @@
 *.swp
 /vis/data/*.jpg
 /vis/data/*.json
+*.pkl
+LMcheckpoint
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
