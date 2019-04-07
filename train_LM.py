@@ -32,19 +32,21 @@ def train_LM(lmloader, model, optimizer, criterion, pad_id, max_epoch):
         torch.save(model.state_dict(), PATH)
 
 def sampleSentence(model, lmloader, rev_vocab):
-    sample_input = next(iter(lmloader))['sentence']
-    input_sentence = []
-    for i in range(sample_input.shape[1]):
-        input_sentence.append(rev_vocab[sample_input[0,i].item()])
-    print(input_sentence)
-    if torch.cuda.is_available():
-        sample_input = sample_input.cuda()
-    with torch.no_grad():
-        _,_, out = model(sample_input,teacher_forcing_ratio=1)
-    sentence = []
-    for word in out['sequence']:
-        sentence.append(rev_vocab[word.item()])
-    print(' '.join(sentence))
+    for i in range(10):
+        print('Sample sentence {}:'.format(i))
+        sample_input = next(iter(lmloader))['sentence']
+        input_sentence = []
+        for i in range(sample_input.shape[1]):
+            input_sentence.append(rev_vocab[sample_input[0,i].item()])
+        print(' '.join(input_sentence))
+        if torch.cuda.is_available():
+            sample_input = sample_input.cuda()
+        with torch.no_grad():
+            _,_, out = model(sample_input,teacher_forcing_ratio=1)
+        sentence = []
+        for word in out['sequence']:
+            sentence.append(rev_vocab[word.item()])
+        print(' '.join(sentence))
 
 def loadCheckpoint(PATH, model):
     model.load_state_dict(torch.load(PATH))
