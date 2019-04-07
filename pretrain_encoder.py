@@ -50,7 +50,7 @@ optimizer = torch.optim.Adam(list(filter(lambda p: p.requires_grad, lstmEnc.para
 while True:
 	qdar = tqdm.tqdm(range(numiters-1), total= numiters-1, ascii=True)
 	for i in qdar:
-		data, itr, numiters = loader.getBatch()
+		data, itr, _ = loader.getBatch()
 
 		box_feats = torch.tensor(data['box_feats'])
 		glob_feat = torch.tensor(data['glob_feat'])
