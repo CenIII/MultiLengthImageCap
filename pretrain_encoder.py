@@ -74,7 +74,7 @@ while True:
 		# print('model forward: '+str(end1-start)+'s')
 		# print('calc loss')
 		loss = crit(out1, out2, capLens)
-		loss_itr_list.append(loss.data.cpu().tonumpy())
+		loss_itr_list.append(loss.data.cpu().numpy())
 		end2 = time.time()
 		# print('crit forward: '+str(end2-end1)+'s')
 		# print('backward')
