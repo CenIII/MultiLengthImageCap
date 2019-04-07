@@ -32,9 +32,10 @@ def train_LM(lmloader, model, optimizer, criterion, pad_id, max_epoch):
         torch.save(model.state_dict(), PATH)
 
 def sampleSentence(model, lmloader, rev_vocab):
+    ld = iter(lmloader)
     for i in range(10):
         print('Sample sentence {}:'.format(i))
-        sample_input = next(iter(lmloader))['sentence']
+        sample_input = next(ld)['sentence']
         input_sentence = []
         for i in range(sample_input.shape[1]):
             input_sentence.append(rev_vocab[sample_input[0,i].item()])
