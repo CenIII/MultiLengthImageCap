@@ -44,11 +44,15 @@ if torch.cuda.is_available():
 	crit = crit.cuda()
 
 
-optimizer = torch.optim.Adam(list(filter(lambda p: p.requires_grad, lstmEnc.parameters()))+list(linNet.parameters()), 0.0001)
+optimizer = torch.optim.Adam(list(filter(lambda p: p.requires_grad, lstmEnc.parameters()))+list(linNet.parameters()), 0.001)
 
 
+epoch = 0
+# loss_epoch_list = []
+logger = open('loss_history','w')
 while True:
 	qdar = tqdm.tqdm(range(numiters-1), total= numiters-1, ascii=True)
+	loss_itr_list = []
 	for i in qdar:
 		data, itr, _ = loader.getBatch()
 
@@ -70,6 +74,7 @@ while True:
 		# print('model forward: '+str(end1-start)+'s')
 		# print('calc loss')
 		loss = crit(out1, out2, capLens)
+		loss_itr_list.append(loss.data.cpu().tonumpy())
 		end2 = time.time()
 		# print('crit forward: '+str(end2-end1)+'s')
 		# print('backward')
@@ -81,10 +86,16 @@ while True:
 		# print('backward: '+str(end3-end2)+'s')
 		qdar.set_postfix(loss=str(np.round(loss.data.cpu().numpy(),3)))
 
+	loss_epoch_mean = np.mean(loss_itr_list)
+	print('epoch '+str(epoch)+' mean loss:'+str(np.round(loss_epoch_mean,5)))
+	# loss_epoch_list.append(loss_epoch_mean)
+	logger.write(str(np.round(loss_epoch_mean,5))+'\n')
+	logger.flush()
 	models = {}
 	models['linNet'] = linNet.state_dict()
 	models['lstmEnc'] = lstmEnc.state_dict()
 	torch.save(models,'lstmEnc.pt')
+	epoch += 1
 
 
 
