@@ -44,42 +44,47 @@ if torch.cuda.is_available():
 	crit = crit.cuda()
 
 
-optimizer = torch.optim.Adam(list(filter(lambda p: p.requires_grad, lstmEnc.parameters()))+list(linNet.parameters()), 0.001)
+optimizer = torch.optim.Adam(list(filter(lambda p: p.requires_grad, lstmEnc.parameters()))+list(linNet.parameters()), 0.0001)
 
 
-qdar = tqdm.tqdm(range(numiters-1), total= numiters-1, ascii=True)
-for i in qdar:
-	data, itr, numiters = loader.getBatch()
+while True:
+	qdar = tqdm.tqdm(range(numiters-1), total= numiters-1, ascii=True)
+	for i in qdar:
+		data, itr, numiters = loader.getBatch()
 
-	box_feats = torch.tensor(data['box_feats'])
-	glob_feat = torch.tensor(data['glob_feat'])
-	box_captions =  torch.LongTensor(data['box_captions_gt'])
-	capLens = getLengths(box_captions)
-	if torch.cuda.is_available():
-		box_feats = box_feats.cuda()
-		glob_feat = glob_feat.cuda()
-		box_captions = box_captions.cuda()
-		capLens = capLens.cuda()
+		box_feats = torch.tensor(data['box_feats'])
+		glob_feat = torch.tensor(data['glob_feat'])
+		box_captions =  torch.LongTensor(data['box_captions_gt'])
+		capLens = getLengths(box_captions)
+		if torch.cuda.is_available():
+			box_feats = box_feats.cuda()
+			glob_feat = glob_feat.cuda()
+			box_captions = box_captions.cuda()
+			capLens = capLens.cuda()
 
-	# output1 output2 fed into Similarity loss  # todo: incorporate glob feat
-	start = time.time()
-	out1 = linNet(box_feats, glob_feat)[2].unsqueeze(1)
-	out2 = lstmEnc(box_captions)[0]
-	end1 = time.time()
-	# print('model forward: '+str(end1-start)+'s')
-	# print('calc loss')
-	loss = crit(out1, out2, capLens)
-	end2 = time.time()
-	# print('crit forward: '+str(end2-end1)+'s')
-	# print('backward')
-	optimizer.zero_grad()
-	# loss.backward()
-	loss.backward()
-	optimizer.step()
-	end3 = time.time()
-	# print('backward: '+str(end3-end2)+'s')
-	qdar.set_postfix(loss=str(np.round(loss.data.cpu().numpy(),3)))
+		# output1 output2 fed into Similarity loss  # todo: incorporate glob feat
+		start = time.time()
+		out1 = linNet(box_feats, glob_feat)[2].unsqueeze(1)
+		out2 = lstmEnc(box_captions)[0]
+		end1 = time.time()
+		# print('model forward: '+str(end1-start)+'s')
+		# print('calc loss')
+		loss = crit(out1, out2, capLens)
+		end2 = time.time()
+		# print('crit forward: '+str(end2-end1)+'s')
+		# print('backward')
+		optimizer.zero_grad()
+		# loss.backward()
+		loss.backward()
+		optimizer.step()
+		end3 = time.time()
+		# print('backward: '+str(end3-end2)+'s')
+		qdar.set_postfix(loss=str(np.round(loss.data.cpu().numpy(),3)))
 
+	models = {}
+	models['linNet'] = linNet.state_dict()
+	models['lstmEnc'] = lstmEnc.state_dict()
+	torch.save(models,'lstmEnc.pt')
 
 
 
