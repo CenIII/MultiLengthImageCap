@@ -146,6 +146,26 @@ class SimilarityLoss(nn.Module):
         # add matching score for two directions.
         return R_QD + R_QD2, beta
 
+    
+    def generate_similarity_matrix(self, image, text, length_info):
+        """
+        Generate similarity matrix for evaluation
+        """
+        batch = image.size()[0]
+        similarity_matrix = torch.zeros(batch, batch) # similarity matrix is a square matrix
+        for i in range(batch):
+            e = text[i][:length_info[i]]  # remove zero padding
+            for j in range(batch):
+                v = image[i]
+                M, D, H_r, H_w = v.size()
+                v = v.permute(0, 3, 2, 1)
+                v = v.contiguous().view(M * H_r * H_w, D)
+                score, _ = self.calculate_matching_score(v, e, M, H_r, H_w)
+                similarity_matrix[i, j] = score
+        return similarity_matrix
+
+
+
 
     def forward(self, image, text, length_info):
         """
