@@ -192,6 +192,8 @@ if __name__ == "__main__":
     length_info = torch.tensor([10, 12, 11, 9, 8, 14, 5, 10, 7, 10])
     m = SimilarityLoss(1, 1, 1)
     loss = m(image, text, length_info)
+    matrix = m.generate_similarity_matrix(image, text, length_info)
+    print(matrix)
     print(loss)
     loss.backward()
     # M = 2

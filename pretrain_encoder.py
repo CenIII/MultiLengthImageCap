@@ -7,6 +7,7 @@ from model.LinearModel import LinearModel
 from crit.SimilarityLoss import SimilarityLoss
 import pickle
 import time
+import sys
 
 def getLengths(caps):
 	batchSize = len(caps)
@@ -15,6 +16,21 @@ def getLengths(caps):
 		cap = caps[i]
 		lengths[i] = torch.argmax(cap==0.)
 	return lengths
+
+
+# check the similarity matrix after training
+def check_similarity(pretrained_model_file):
+	pretrained_model = torch.load(pretrained_model_file)
+	linNet_dict = pretrained_model['linNet']
+	lstmEnc_dict = pretrained_model['listEnc']
+	linNet.load_state_dict(linNet_dict)
+	linNet.eval()
+	lstmEnc.load_state_dict(lstmEnc_dict)
+	lstmEnc.eval()
+	out1 = linNet(box_feats, glob_feat)[2].unsqueeze(1)
+	out2 = lstmEnc(box_captions)[0]
+	Similarity_matrix = crit.generate_similarity_matrix(out1, out2, capLens)
+	return Similarity_matrix
 
 # load sample data
 
@@ -73,6 +89,12 @@ while True:
 		end1 = time.time()
 		# print('model forward: '+str(end1-start)+'s')
 		# print('calc loss')
+		
+		# check the similarity loss based on argument
+		if sys.argv[1] == 'check_similarity':
+			similarity_matrix = check_similarity('lstmEnc.pt')
+			torch.save(similarity_matrix, "similarity_matrix")
+			exit()
 		loss = crit(out1, out2, capLens)
 		loss_itr_list.append(loss.data.cpu().numpy())
 		end2 = time.time()
