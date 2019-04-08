@@ -22,7 +22,7 @@ def getLengths(caps):
 def check_similarity(pretrained_model_file):
 	pretrained_model = torch.load(pretrained_model_file)
 	linNet_dict = pretrained_model['linNet']
-	lstmEnc_dict = pretrained_model['listEnc']
+	lstmEnc_dict = pretrained_model['lstmEnc']
 	linNet.load_state_dict(linNet_dict)
 	linNet.eval()
 	lstmEnc.load_state_dict(lstmEnc_dict)
@@ -89,7 +89,7 @@ while True:
 		end1 = time.time()
 		# print('model forward: '+str(end1-start)+'s')
 		# print('calc loss')
-		
+
 		# check the similarity loss based on argument
 		if sys.argv[1] == 'check_similarity':
 			similarity_matrix = check_similarity('lstmEnc.pt')
