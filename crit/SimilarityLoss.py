@@ -35,8 +35,8 @@ class SimilarityLoss(nn.Module):
             T, D = e.size()
             numerator, beta = self.calculate_matching_score(v, e, M, H_r, H_w)
             numerator = self.gamma3 * torch.exp(numerator)
-            tmp = beta.t().mm(beta)#beta.mm(beta.t())
-            loss_reg += torch.sqrt(torch.sum(tmp**2) - torch.sum(torch.diag(tmp)**2))
+            # tmp = beta.t().mm(beta)#beta.mm(beta.t())
+            # loss_reg += torch.sqrt(torch.sum(tmp**2) - torch.sum(torch.diag(tmp)**2))
             P_DQ_denum = 0
             P_QD_denum = 0
             spinds = np.zeros(5,dtype=np.int32)
@@ -62,9 +62,9 @@ class SimilarityLoss(nn.Module):
             # print('loss2:'+str(loss2_w))
         loss1_w = loss1_w/batch
         loss2_w = loss2_w/batch 
-        loss_reg = loss_reg/(batch*T*M)
+        # loss_reg = loss_reg/(batch*T*M)
         # print('loss_reg: '+str(loss_reg))
-        return loss1_w + loss2_w + loss_reg
+        return loss1_w + loss2_w #+ loss_reg
 
     def calculate_matching_score(self, v, e, M, H_r, H_w):
 
