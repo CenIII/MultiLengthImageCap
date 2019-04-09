@@ -156,7 +156,7 @@ class SimilarityLoss(nn.Module):
         for i in range(batch):
             e = text[i][:length_info[i]]  # remove zero padding
             for j in range(batch):
-                v = image[i]
+                v = image[j]
                 M, D, H_r, H_w = v.size()
                 v = v.permute(0, 3, 2, 1)
                 v = v.contiguous().view(M * H_r * H_w, D)
