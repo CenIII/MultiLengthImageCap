@@ -56,9 +56,9 @@ if __name__ == '__main__':
 		VocabData = pickle.load(f)
 
 	# load linear model, transform feature tensor to semantic space
-	linNet = LinearModel(hiddenSize=512)
+	linNet = LinearModel(hiddenSize=4096)
 	# load LSTM encoder
-	lstmEnc = EncoderRNN(len(VocabData['word_dict']), 15, 512, 300,
+	lstmEnc = EncoderRNN(len(VocabData['word_dict']), 15, 4096, 300,
 	                 input_dropout_p=0, dropout_p=0,
 	                 n_layers=1, bidirectional=False, rnn_cell='lstm', variable_lengths=False,
 	                 embedding_parameter=VocabData['word_embs'], update_embedding=False)

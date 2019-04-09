@@ -14,7 +14,7 @@ class LinearModel(nn.Module):
         global_feat = global_feat.unsqueeze(dim=0)
         global_feat = self.bn1(self.conv1(global_feat))
         global_hidden = F.avg_pool2d(global_feat, 7).squeeze()
-        box_feat = self.conv2(box_feat)#self.bn2(self.conv2(box_feat))
+        box_feat = self.conv2(box_feat/160.)#self.bn2(self.conv2(box_feat))
         return global_feat, global_hidden, box_feat
 
 
