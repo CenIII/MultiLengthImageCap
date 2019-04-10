@@ -42,7 +42,7 @@ class _BaseDataLoader(object):
 		# list data_$pipIndex_*
 		pInd = self.pipeIndex
 		while True:
-			filename = glob.glob(self.dataPipePath+'data_'+str(pInd)+'*')
+			filename = glob.glob(self.dataPipePath+'data_'+str(pInd)+'_*')
 			if len(filename)>=1:
 				if (not os.path.isfile(self.dataPipePath+'pick_confirm_'+str(pInd))) or mode=='test':
 					# pick_confirm file has been removed by lua loader. so this file is new. 
