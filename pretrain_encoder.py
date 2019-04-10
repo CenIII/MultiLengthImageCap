@@ -65,6 +65,12 @@ def train(loader,linNet,lstmEnc,crit,optimizer,savepath):
 		box_captions = torch.cat(box_captions)
 		capLens = torch.cat(capLens)
 
+		# sort decreasing order
+		inds = np.argsort(-capLens)
+		box_feats = box_feats[inds]
+		box_captions = box_captions[inds]
+		capLens = capLens[inds]
+
 		return box_feats, box_captions, capLens
 
 
