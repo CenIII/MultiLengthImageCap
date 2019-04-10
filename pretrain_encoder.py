@@ -60,7 +60,7 @@ def train(loader,linNet,lstmEnc,crit,optimizer,savepath):
 			data, itr, _ = loader.getBatch()
 			box_feats.append(torch.tensor(data['box_feats']).to(device))
 			box_captions.append(torch.LongTensor(data['box_captions_gt']).to(device))
-			capLens.append(getLengths(box_captions).to(device))
+			capLens.append(getLengths(box_captions[-1]).to(device))
 		box_feats = torch.cat(box_feats)
 		box_captions = torch.cat(box_captions)
 		capLens = torch.cat(capLens)
