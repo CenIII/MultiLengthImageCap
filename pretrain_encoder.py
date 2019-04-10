@@ -121,6 +121,11 @@ def eval(loader,linNet,lstmEnc,crit):
 	# glob_feat = torch.tensor(data['glob_feat'])
 	box_captions =  torch.LongTensor(data['box_captions_gt']).to(device)
 	capLens = getLengths(box_captions).to(device)
+	# sort decreasing order
+	inds = torch.argsort(-capLens)
+	box_feats = box_feats[inds]
+	box_captions = box_captions[inds]
+	capLens = capLens[inds]
 
 	# check the similarity loss based on argument
 	out1 = linNet(box_feats)
