@@ -19,7 +19,7 @@ def getLengths(caps):
 	lengths = torch.zeros(batchSize,dtype=torch.int32)
 	for i in range(batchSize):
 		cap = caps[i]
-		lengths[i] = torch.argmax(cap==0.)
+		lengths[i] = (cap==0).nonzero()[0][0]
 	return lengths
 
 def parseArgs():
