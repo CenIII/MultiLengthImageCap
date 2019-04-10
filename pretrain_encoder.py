@@ -22,32 +22,20 @@ def getLengths(caps):
 		lengths[i] = (cap==0).nonzero()[0][0]
 	return lengths
 
-def parseArgs():
-	parser = argparse.ArgumentParser()
-	parser.add_argument('-e','--evaluate_mode',
-		action='store_true',
-	  	help='check similarity matrix.')
-	parser.add_argument('-p','--model_path',
-		default='./lstmEnc.pt')
-	parser.add_argument('-s','--save_path',
-		default='./save/default/')
-	args = parser.parse_args()
-	return args
-
 def reloadModel(model_path,linNet,lstmEnc):
 	model = torch.load(model_path)
 	linNet.load_state_dict(model['linNet'])
 	lstmEnc.load_state_dict(model['lstmEnc'])
 	return linNet,lstmEnc
 
-def train(loader,linNet,lstmEnc,crit,optimizer,savepath):
+def train(loader,linNet,lstmEnc,crit,optimizer,savepath, batchImgs=4):
 	os.makedirs(savepath,exist_ok=True)
 	# if torch.cuda.is_available():
 	linNet = nn.DataParallel(linNet).to(device)
 	lstmEnc = nn.DataParallel(lstmEnc).to(device)
 	crit = crit.to(device)
 	data, itr, numiters = loader.getBatch()
-	numiters = int(numiters)
+	numiters = int(numiters/batchImgs)
 	epoch = 0
 	# loss_epoch_list = []
 	logger = open(os.path.join(savepath,'loss_history'),'w')
@@ -78,7 +66,7 @@ def train(loader,linNet,lstmEnc,crit,optimizer,savepath):
 		qdar = tqdm.tqdm(range(numiters-1), total= numiters-1, ascii=True)
 		loss_itr_list = []
 		for i in qdar:
-			box_feats, box_captions, capLens = loadMultiImgData(loader,numImgs=4)
+			box_feats, box_captions, capLens = loadMultiImgData(loader,numImgs=batchImgs)
 			
 			# output1 output2 fed into Similarity loss  # todo: incorporate glob feat
 			out1 = linNet(box_feats)
@@ -127,6 +115,20 @@ def eval(loader,linNet,lstmEnc,crit):
 	torch.save(Similarity_matrix, "similarity_matrix")
 
 
+def parseArgs():
+	parser = argparse.ArgumentParser()
+	parser.add_argument('-e','--evaluate_mode',
+		action='store_true',
+	  	help='check similarity matrix.')
+	parser.add_argument('-p','--model_path',
+		default='./lstmEnc.pt')
+	parser.add_argument('-s','--save_path',
+		default='./save/default/')
+	parser.add_argument('-b','--batch_imgs',
+		default=4)
+	args = parser.parse_args()
+	return args
+
 if __name__ == '__main__':
 
 	args = parseArgs()
@@ -152,7 +154,7 @@ if __name__ == '__main__':
 	else:							# train mode
 		optimizer = torch.optim.Adam(list(filter(lambda p: p.requires_grad, lstmEnc.parameters()))+list(linNet.parameters()), 0.001)
 		loader = LoaderEnc()
-		train(loader,linNet,lstmEnc,crit,optimizer,args.save_path)
+		train(loader,linNet,lstmEnc,crit,optimizer,args.save_path,batchImgs=args.batch_imgs)
 
 	
 
