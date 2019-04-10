@@ -82,7 +82,7 @@ def train(loader,linNet,lstmEnc,crit,optimizer,savepath):
 			
 			# output1 output2 fed into Similarity loss  # todo: incorporate glob feat
 			out1 = linNet(box_feats)
-			out2 = lstmEnc(box_captions,input_lengths=capLens)[0]
+			out2 = lstmEnc(box_captions,input_lengths=capLens)
 			
 			loss = crit(out1, out2, capLens)
 			loss_itr_list.append(loss.data.cpu().numpy())
@@ -122,7 +122,7 @@ def eval(loader,linNet,lstmEnc,crit):
 
 	# check the similarity loss based on argument
 	out1 = linNet(box_feats)
-	out2 = lstmEnc(box_captions)[0]
+	out2 = lstmEnc(box_captions)
 	Similarity_matrix = crit.generate_similarity_matrix(out1, out2, capLens)
 	torch.save(Similarity_matrix, "similarity_matrix")
 

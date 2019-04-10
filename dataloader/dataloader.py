@@ -12,7 +12,7 @@ class _BaseDataLoader(object):
 		self.pipeIndex = 0
 		# save pick_confirm for all pip indices
 		self.dataPipePath = './densecap/data_pipeline/'
-		self.pipeLen = 10
+		self.pipeLen = 30
 
 	def updatePipeIndex(self):
 		self.pipeIndex = (self.pipeIndex+1)%self.pipeLen
