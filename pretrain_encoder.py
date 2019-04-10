@@ -19,25 +19,25 @@ def getLengths(caps):
 	return lengths
 
 
-# check the similarity matrix after training
-def check_similarity(pretrained_model_file):
-	pretrained_model = torch.load(pretrained_model_file)
-	linNet_dict = pretrained_model['linNet']
-	lstmEnc_dict = pretrained_model['lstmEnc']
-	linNet.load_state_dict(linNet_dict)
-	linNet.eval()
-	lstmEnc.load_state_dict(lstmEnc_dict)
-	lstmEnc.eval()
-	out1 = linNet(box_feats, glob_feat)[2].unsqueeze(1)
-	out2 = lstmEnc(box_captions)[0]
-	Similarity_matrix = crit.generate_similarity_matrix(out1, out2, capLens)
-	return Similarity_matrix
+# # check the similarity matrix after training
+# def check_similarity(pretrained_model_file):
+# 	pretrained_model = torch.load(pretrained_model_file)
+# 	linNet_dict = pretrained_model['linNet']
+# 	lstmEnc_dict = pretrained_model['lstmEnc']
+# 	linNet.load_state_dict(linNet_dict)
+# 	linNet.eval()
+# 	lstmEnc.load_state_dict(lstmEnc_dict)
+# 	lstmEnc.eval()
+# 	out1 = linNet(box_feats, glob_feat)[2].unsqueeze(1)
+# 	out2 = lstmEnc(box_captions)[0]
+# 	Similarity_matrix = crit.generate_similarity_matrix(out1, out2, capLens)
+# 	return Similarity_matrix
 
 def parseArgs():
 	parser = argparse.ArgumentParser()
-	parser.add_argument('-c','--check_similarity',
-	  action='store_true',
-	  help='check similarity matrix.')
+	# parser.add_argument('-c','--check_similarity',
+	#   action='store_true',
+	#   help='check similarity matrix.')
 	parser.add_argument('-e','--evaluate_mode',
 		action='store_true',
 	  	help='check similarity matrix.')
@@ -154,7 +154,7 @@ if __name__ == '__main__':
 	if args.evaluate_mode:			# evaluation mode
 		loader = LoaderEnc(mode='test')
 		linNet,lstmEnc = reloadModel(args.model_path,linNet,lstmEnc)
-		eval(loader,linNet,lstmEnc)
+		eval(loader,linNet,lstmEnc,crit)
 	else:							# train mode
 
 		# load crit 	
