@@ -151,7 +151,7 @@ if __name__ == '__main__':
 		# load crit 	
 		optimizer = torch.optim.Adam(list(filter(lambda p: p.requires_grad, lstmEnc.parameters()))+list(linNet.parameters()), 0.001)
 		loader = LoaderEnc()
-		train(loader,linNet,lstmEnc,crit,optimizer)
+		train(loader,linNet,lstmEnc,crit,optimizer,args.save_path)
 
 	
 
