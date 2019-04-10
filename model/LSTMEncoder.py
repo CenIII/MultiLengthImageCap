@@ -41,7 +41,7 @@ class EncoderRNN(BaseRNN):
 
     def __init__(self, vocab_size, max_len, hidden_size, embedding_size,
                  input_dropout_p=0, dropout_p=0,
-                 n_layers=1, bidirectional=False, rnn_cell='gru', variable_lengths=False,
+                 n_layers=1, bidirectional=False, rnn_cell='gru', variable_lengths=True,
                  embedding_parameter=None, update_embedding=False):
 
         super(EncoderRNN, self).__init__(vocab_size, max_len, hidden_size,
@@ -73,6 +73,7 @@ class EncoderRNN(BaseRNN):
             - **output** (batch, seq_len, hidden_size): variable containing the encoded features of the input sequence
             - **hidden** (num_layers * num_directions, batch, hidden_size): variable containing the features in the hidden state h
         """
+        total_length = padded_input.size(1)
         if use_prob_vector:
             embedded = self.linear(input_var)
         else:
@@ -85,7 +86,7 @@ class EncoderRNN(BaseRNN):
         output, hidden = self.rnn(embedded)
 
         if self.variable_lengths:
-            output, _ = nn.utils.rnn.pad_packed_sequence(output, batch_first=True)
+            output, _ = nn.utils.rnn.pad_packed_sequence(output, batch_first=True, totoal_length=total_length)
 
         return output, hidden
 """

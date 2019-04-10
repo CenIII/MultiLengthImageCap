@@ -76,7 +76,7 @@ def train(loader,linNet,lstmEnc,crit,optimizer,savepath):
 			
 			# output1 output2 fed into Similarity loss  # todo: incorporate glob feat
 			out1 = linNet(box_feats)
-			out2 = lstmEnc(box_captions)[0]
+			out2 = lstmEnc(box_captions,capLens)[0]
 			
 			loss = crit(out1, out2, capLens)
 			loss_itr_list.append(loss.data.cpu().numpy())
