@@ -43,9 +43,9 @@ class SimilarityLoss(nn.Module):
             spinds[0] = i
             spinds[1:] = np.random.choice(batch,4)
             # print('numerator'+str(numerator))
-            for i in spinds:
-                e_sub = text[i][:length_info[i]]
-                v_sub = image[i].permute(0, 3, 2, 1)
+            for j in spinds:
+                e_sub = text[j][:length_info[j]]
+                v_sub = image[j].permute(0, 3, 2, 1)
                 v_sub = v_sub.contiguous().view(M * H_r * H_w, D)
                 denum, _ = self.calculate_matching_score(v, e_sub, M, H_r, H_w)
                 denum2, _ = self.calculate_matching_score(v_sub, e, M, H_r, H_w)
