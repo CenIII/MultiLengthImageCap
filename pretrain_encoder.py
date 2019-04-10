@@ -23,9 +23,23 @@ def getLengths(caps):
 	return lengths
 
 def reloadModel(model_path,linNet,lstmEnc):
-	model = torch.load(model_path)
-	linNet.load_state_dict(model['linNet'])
-	lstmEnc.load_state_dict(model['lstmEnc'])
+	pt = torch.load(model_path)
+
+	def subload(model,pt_dict):
+		model_dict = model.state_dict()
+		pretrained_dict = {}
+		for k, v in pt_dict.items():
+			if(k[7:] in model_dict):
+				pretrained_dict[k] = v
+		# 2. overwrite entries in the existing state dict
+		model_dict.update(pretrained_dict)
+		# 3. load the new state dict
+		model.load_state_dict(model_dict)
+		return model
+
+	linNet = subload(linNet,pt['linNet'])
+	lstmEnc = subload(lstmEnc,pt['lstmEnc'])
+	
 	return linNet,lstmEnc
 
 def train(loader,linNet,lstmEnc,crit,optimizer,savepath, batchImgs=4):
