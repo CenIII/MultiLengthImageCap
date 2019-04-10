@@ -18,21 +18,6 @@ def getLengths(caps):
 		lengths[i] = torch.argmax(cap==0.)
 	return lengths
 
-
-# # check the similarity matrix after training
-# def check_similarity(pretrained_model_file):
-# 	pretrained_model = torch.load(pretrained_model_file)
-# 	linNet_dict = pretrained_model['linNet']
-# 	lstmEnc_dict = pretrained_model['lstmEnc']
-# 	linNet.load_state_dict(linNet_dict)
-# 	linNet.eval()
-# 	lstmEnc.load_state_dict(lstmEnc_dict)
-# 	lstmEnc.eval()
-# 	out1 = linNet(box_feats, glob_feat)[2].unsqueeze(1)
-# 	out2 = lstmEnc(box_captions)[0]
-# 	Similarity_matrix = crit.generate_similarity_matrix(out1, out2, capLens)
-# 	return Similarity_matrix
-
 def parseArgs():
 	parser = argparse.ArgumentParser()
 	# parser.add_argument('-c','--check_similarity',
@@ -51,8 +36,6 @@ def reloadModel(model_path,linNet,lstmEnc):
 	linNet.load_state_dict(model['linNet'])
 	lstmEnc.load_state_dict(model['lstmEnc'])
 	return linNet,lstmEnc
-
-
 
 def train(loader,linNet,lstmEnc,crit,optimizer):
 	if torch.cuda.is_available():
@@ -127,6 +110,11 @@ def eval(loader,linNet,lstmEnc,crit):
 	glob_feat = torch.tensor(data['glob_feat'])
 	box_captions =  torch.LongTensor(data['box_captions_gt'])
 	capLens = getLengths(box_captions)
+	if torch.cuda.is_available():
+		box_feats = box_feats.cuda()
+		glob_feat = glob_feat.cuda()
+		box_captions = box_captions.cuda()
+		capLens = capLens.cuda()
 	# check the similarity loss based on argument
 	out1 = linNet(box_feats, glob_feat)[2].unsqueeze(1)
 	out2 = lstmEnc(box_captions)[0]
