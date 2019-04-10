@@ -87,7 +87,8 @@ class EncoderRNN(BaseRNN):
 
         if self.variable_lengths:
             output, _ = nn.utils.rnn.pad_packed_sequence(output, batch_first=True, total_length=total_length)
-
+        print('output shape: '+str(output.shape))
+        print('hidden shape: '+str(hidden.shape))
         return output, hidden
 """
 def train_EncoderRNN(trainloader, net, criterion, optimizer, device):
