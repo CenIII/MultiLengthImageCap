@@ -134,7 +134,7 @@ if __name__ == '__main__':
 	# load LSTM encoder
 	lstmEnc = EncoderRNN(len(VocabData['word_dict']), 15, 1024, 300,
 	                 input_dropout_p=0, dropout_p=0,
-	                 n_layers=1, bidirectional=False, rnn_cell='lstm', variable_lengths=False,
+	                 n_layers=1, bidirectional=False, rnn_cell='lstm', variable_lengths=True,
 	                 embedding_parameter=VocabData['word_embs'], update_embedding=False)
 	# load crit
 	crit = SimilarityLoss(0.5,0.5,1)

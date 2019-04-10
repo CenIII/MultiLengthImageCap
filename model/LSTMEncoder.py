@@ -73,7 +73,7 @@ class EncoderRNN(BaseRNN):
             - **output** (batch, seq_len, hidden_size): variable containing the encoded features of the input sequence
             - **hidden** (num_layers * num_directions, batch, hidden_size): variable containing the features in the hidden state h
         """
-        total_length = padded_input.size(1)
+        total_length = input_var.size(1)
         if use_prob_vector:
             embedded = self.linear(input_var)
         else:
