@@ -30,7 +30,7 @@ def reloadModel(model_path,linNet,lstmEnc):
 		pretrained_dict = {}
 		for k, v in pt_dict.items():
 			if(k[7:] in model_dict):
-				pretrained_dict[k] = v
+				pretrained_dict[k[7:]] = v
 		# 2. overwrite entries in the existing state dict
 		model_dict.update(pretrained_dict)
 		# 3. load the new state dict
