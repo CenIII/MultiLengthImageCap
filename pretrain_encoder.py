@@ -1,4 +1,5 @@
 import torch
+import torch.nn as nn
 import tqdm
 import numpy as np
 from model.LSTMEncoder import EncoderRNN
