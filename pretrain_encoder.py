@@ -125,7 +125,7 @@ def parseArgs():
 	parser.add_argument('-s','--save_path',
 		default='./save/default/')
 	parser.add_argument('-b','--batch_imgs',
-		default=4)
+		default=4, type=int)
 	args = parser.parse_args()
 	return args
 
