@@ -81,6 +81,7 @@ class EncoderRNN(BaseRNN):
         if self.variable_lengths:
             embedded = nn.utils.rnn.pack_padded_sequence(embedded, input_lengths, batch_first=True)
 
+        self.rnn.flatten_parameters()
         output, hidden = self.rnn(embedded)
 
         if self.variable_lengths:
