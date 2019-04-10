@@ -41,6 +41,7 @@ def reloadModel(model_path,linNet,lstmEnc):
 	return linNet,lstmEnc
 
 def train(loader,linNet,lstmEnc,crit,optimizer,savepath):
+	os.makedirs(savepath,exist_ok=True)
 	if torch.cuda.is_available():
 		linNet = linNet.cuda()
 		lstmEnc = lstmEnc.cuda()
