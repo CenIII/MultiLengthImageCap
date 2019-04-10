@@ -9,6 +9,7 @@ import pickle
 import time
 import sys
 import argparse
+import os
 
 def getLengths(caps):
 	batchSize = len(caps)
@@ -28,6 +29,8 @@ def parseArgs():
 	  	help='check similarity matrix.')
 	parser.add_argument('-p','--model_path',
 		default='./lstmEnc.pt')
+	parser.add_argument('-s','--save_path',
+		default='./save/default/')
 	args = parser.parse_args()
 	return args
 
@@ -37,7 +40,7 @@ def reloadModel(model_path,linNet,lstmEnc):
 	lstmEnc.load_state_dict(model['lstmEnc'])
 	return linNet,lstmEnc
 
-def train(loader,linNet,lstmEnc,crit,optimizer):
+def train(loader,linNet,lstmEnc,crit,optimizer,savepath):
 	if torch.cuda.is_available():
 		linNet = linNet.cuda()
 		lstmEnc = lstmEnc.cuda()
@@ -46,7 +49,7 @@ def train(loader,linNet,lstmEnc,crit,optimizer):
 	numiters = int(numiters)
 	epoch = 0
 	# loss_epoch_list = []
-	logger = open('loss_history','w')
+	logger = open(os.path.join(savepath,'loss_history'),'w')
 	while True:
 		qdar = tqdm.tqdm(range(numiters-1), total= numiters-1, ascii=True)
 		loss_itr_list = []
@@ -92,7 +95,7 @@ def train(loader,linNet,lstmEnc,crit,optimizer):
 		models = {}
 		models['linNet'] = linNet.state_dict()
 		models['lstmEnc'] = lstmEnc.state_dict()
-		torch.save(models,'lstmEnc.pt')
+		torch.save(models,os.path.join(savepath ,'lstmEnc.pt'))
 		epoch += 1
 
 

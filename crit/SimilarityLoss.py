@@ -56,8 +56,8 @@ class SimilarityLoss(nn.Module):
                 # print('P_DQ_denum'+str(P_DQ_denum))
                 # print('P_QD_denum'+str(P_QD_denum))
             
-            loss1_w -= numerator / P_DQ_denum
-            loss2_w -= numerator / P_QD_denum
+            loss1_w -= torch.log(numerator / P_DQ_denum)
+            loss2_w -= torch.log(numerator / P_QD_denum)
             # print('loss1:'+str(loss1_w))
             # print('loss2:'+str(loss2_w))
         loss1_w = loss1_w/batch
