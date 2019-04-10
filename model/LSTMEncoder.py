@@ -86,7 +86,7 @@ class EncoderRNN(BaseRNN):
         output, hidden = self.rnn(embedded)
 
         if self.variable_lengths:
-            output, _ = nn.utils.rnn.pad_packed_sequence(output, batch_first=True, totoal_length=total_length)
+            output, _ = nn.utils.rnn.pad_packed_sequence(output, batch_first=True, total_length=total_length)
 
         return output, hidden
 """
