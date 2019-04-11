@@ -133,8 +133,10 @@ def eval(loader,linNet,lstmEnc,crit):
 	Similarity_matrix = crit.generate_similarity_matrix(out1, out2, capLens)
 	# torch.save(Similarity_matrix, "similarity_matrix")
 	zzz = torch.argmax(Similarity_matrix,dim=0)
-	print(zzz)
-	
+	print('find image by text:'+str(zzz.data))
+	zzz = torch.argmax(Similarity_matrix,dim=1)
+	print('find text by image:'+str(zzz.data))
+
 def parseArgs():
 	parser = argparse.ArgumentParser()
 	parser.add_argument('-e','--evaluate_mode',
