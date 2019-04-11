@@ -7,7 +7,7 @@ class LinearModel(nn.Module):
         super(LinearModel, self).__init__()
         # self.conv1 = nn.Conv2d(512, hiddenSize, (10, 9), (4, 6))
         # self.bn1 = nn.BatchNorm2d(hiddenSize)
-        self.conv2 = nn.Conv2d(512, hiddenSize, 5, 5,stride=1)
+        self.conv2 = nn.Conv2d(512, hiddenSize, 5 ,stride=1)
         # self.bn2 = nn.BatchNorm2d(hiddenSize)
 
     def forward(self, box_feat):#, global_feat):
