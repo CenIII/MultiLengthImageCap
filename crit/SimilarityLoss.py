@@ -4,6 +4,7 @@ import torch.nn.functional as F
 import random
 import numpy as np
 import time
+import pdb
 
 # class version of similarity loss
 class SimilarityLoss(nn.Module):
@@ -114,7 +115,7 @@ class SimilarityLoss(nn.Module):
         score_mat = torch.cat(score_temp, dim=1)
         log_score_mat_1 = torch.log(torch.pow(score_mat, 1 / self.gamma2)+1e-10) # B x B 
         # print(log_score_mat_1.size())
-        checkNan(log_score_mat_1)
+        # checkNan(log_score_mat_1)
 
         # step 1: reshape s  (B x M x H_r x W_r) x Tb -> B x M x (H x W) x Tb
         s_nt_2 = F.softmax(s.view(B,-1,Tb),dim=1)
@@ -152,7 +153,7 @@ class SimilarityLoss(nn.Module):
         logit_mat_2 = torch.sum(em_temp.bmm(v_temp).squeeze().view(B, M, H_r * H_w, B), dim=2) / (H_r * H_w) # B x M x B
         score_mat_2 = torch.pow(torch.sum(torch.exp(logit_mat_2), dim=1), 1 / self.gamma2)
         log_score_mat_2 = torch.log(score_mat_2+1e-10)
-        checkNan(log_score_mat_2)
+        # checkNan(log_score_mat_2)
 
         # reg term
         beta = beta.view(B,M,Tb)
@@ -162,7 +163,7 @@ class SimilarityLoss(nn.Module):
         for i in range(B):
             loss_reg += torch.norm(tmp[i]-torch.diag(torch.diag(tmp[i])))
         loss_reg = loss_reg/B
-        checkNan(loss_reg)
+        # checkNan(loss_reg)
         # print('loss_reg: '+str(loss_reg.data))
         log_score_mat_1 = self.gamma3 * log_score_mat_1
         log_score_mat_2 = self.gamma3 * log_score_mat_2
@@ -172,9 +173,9 @@ class SimilarityLoss(nn.Module):
         pdq = -torch.sum(torch.log(match_qd/torch.sum(log_score_mat,dim=1)+1e-10))
         pqd = -torch.sum(torch.log(match_qd/torch.sum(log_score_mat,dim=0)+1e-10))
         loss1 = (pdq + pqd)/B
-        checkNan(loss1)
-
-
+        # checkNan(loss1)
+        if bool((loss1 != loss1).any()):
+            pdb.set_trace()
 
         return loss1+loss_reg
 
