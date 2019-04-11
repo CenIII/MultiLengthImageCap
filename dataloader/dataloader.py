@@ -50,8 +50,9 @@ class _BaseDataLoader(Dataset):
 			if len(filename)>=1:
 				if (not os.path.isfile(self.dataPipePath+'pick_confirm_'+str(pInd))) or mode=='test':
 					# pick_confirm file has been removed by lua loader. so this file is new. 
-					if not os.path.isfile(self.dataPipePath+'writing_block_'+str(pInd)):
+					if (not os.path.isfile(self.dataPipePath+'writing_block_'+str(pInd))) and (not os.path.isfile(self.dataPipePath+'reading_block_'+str(pInd))):
 						# lua writing file finished.
+						os.mknod(self.dataPipePath+'reading_block_'+str(pInd))
 						break
 		assert(len(filename)==1)
 		filename = filename[0]
@@ -69,8 +70,8 @@ class _BaseDataLoader(Dataset):
 		if mode=='train':
 			os.remove(filename)
 			# place pick_confirm_$pipIndex to notify lua program
-			with open(self.dataPipePath+'pick_confirm_'+str(pInd), 'w') as f:
-				f.write('a')
+			os.mknod(self.dataPipePath+'pick_confirm_'+str(pInd))
+			
 
 		# update pInd
 		# self.updatePipeIndex()
