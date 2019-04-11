@@ -11,13 +11,13 @@ class _BaseDataLoader(Dataset):
 	"""docstring for BaseDataLoader"""
 	def __init__(self):
 		super(_BaseDataLoader, self).__init__()
-		self.pipeIndex = 0
+		# self.pipeIndex = 0
 		# save pick_confirm for all pip indices
 		self.dataPipePath = './densecap/data_pipeline/'
 		self.pipeLen = 30
 
-	def updatePipeIndex(self):
-		self.pipeIndex = (self.pipeIndex+1)%self.pipeLen
+	# def updatePipeIndex(self):
+	# 	self.pipeIndex = (self.pipeIndex+1)%self.pipeLen
 
 	def init_pick_confirm_files(self):
 		for i in range(self.pipeLen):
@@ -27,7 +27,7 @@ class _BaseDataLoader(Dataset):
 				with open(save_file,'w') as f:
 					f.write('a')
 
-	def loadOneJson(self, mode):
+	def loadOneJson(self, mode, pInd):
 		'''
 		Every time loadJson load data for ONE image. The loaded data variable contains fields below:
 		# data['info'] = info[1]
@@ -42,7 +42,7 @@ class _BaseDataLoader(Dataset):
 		'''
 
 		# list data_$pipIndex_*
-		pInd = self.pipeIndex
+		# pInd = self.pipeIndex
 		while True:
 			filename = glob.glob(self.dataPipePath+'data_'+str(pInd)+'_*')
 			if len(filename)>=1:
@@ -71,7 +71,7 @@ class _BaseDataLoader(Dataset):
 				f.write('a')
 
 		# update pInd
-		self.updatePipeIndex()
+		# self.updatePipeIndex()
 		# return data, iter, numiters
 		return data, itr, numiters
 
@@ -136,13 +136,13 @@ class LoaderEnc(_BaseDataLoader):
 
 		return box_feats, box_captions, capLens
 
-	def getBatch(self):
+	def getBatch(self, pipIndx):
 		'''
 		For LSTM encoder training, the "batch" here is actually 
 		a batch of boxes and captions for ONE image. 
 		Every image has up to 128 boxes, numbers may vary. 
 		'''
-		data, itr, numiters = self.loadOneJson(self.mode)
+		data, itr, numiters = self.loadOneJson(self.mode,pipIndx)
 		filtInds = self.filtReplicate(data)
 		# return only useful data fields
 		ret = {}
@@ -160,7 +160,7 @@ class LoaderEnc(_BaseDataLoader):
 
 	def __getitem__(self, idx):
 		"""Support indexing such that dataset[i] get ith sample. Required to override"""
-		return self.getBatch()
+		return self.getBatch(idx%self.pipeLen)
 
 
 		
