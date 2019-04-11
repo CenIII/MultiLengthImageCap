@@ -133,7 +133,6 @@ def eval(loader,linNet,lstmEnc,crit):
 	Similarity_matrix = crit.generate_similarity_matrix(out1, out2, capLens)
 	torch.save(Similarity_matrix, "similarity_matrix")
 
-
 def parseArgs():
 	parser = argparse.ArgumentParser()
 	parser.add_argument('-e','--evaluate_mode',
@@ -174,8 +173,6 @@ if __name__ == '__main__':
 		optimizer = torch.optim.Adam(list(filter(lambda p: p.requires_grad, lstmEnc.parameters()))+list(linNet.parameters()), 0.001)
 		loader = LoaderEnc()
 		train(loader,linNet,lstmEnc,crit,optimizer,args.save_path,batchImgs=args.batch_imgs)
-
-	
 
 
 

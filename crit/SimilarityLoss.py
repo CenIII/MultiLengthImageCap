@@ -70,31 +70,34 @@ class SimilarityLoss(nn.Module):
 
         """
         calculate matching score of (Q, D) pair, consider bi-direction
-        :param v: 2D tensor for img with dimension (M x H_r x W_r) x D
-        :param text: 2D tensor for text with dimension (T x D)
+        :param v: 3D tensor for img with dimension B x (M x H_r x W_r) x D
+        :param text: 3D tensor for text with dimension (B x T x D)
         :param gamma1: factor
         :param gamma2: factor
         :return: maching score for (Q, D) pair
         """
-        T, _ = e.size()
-        similarity_matrix = e.mm(v.t())
-        # return torch.sum(similarity_matrix)
+        B, T, _ = e.size()
+        
+        expand_e = []
+        for i in range(e.size()[0]):
+            expand_e.append(e[i].repeat(B, 1, 1))
+        expanded_e = torch.cat(expand_e, dim=0)
+        expanded_v = v.repeat(B, 1, 1)
+
+        similarity_matrix = expanded_e.bmm(expanded_v)  # generate B^2 x (M x H x W) x D matrix
 
         # might consider overflow
-        normalized_similarity_matrix = F.softmax(similarity_matrix, dim=0)
+        normalized_similarity_matrix = F.softmax(similarity_matrix, dim=1)
 
         # #regard text as query, might consider overflow
-        attn_score = F.softmax(self.gamma1 * normalized_similarity_matrix, dim=1)
+        attn_score = F.softmax(self.gamma1 * normalized_similarity_matrix, dim=2)
         # each row of v_tidal represent the attention output
-        v_tidal = attn_score.mm(v)
+        v_tidal = attn_score.bmm(expanded_v)
         R_QD = 0  # define matching score for one direction
-        # for i in range(e.size()[0]):
-        #     R_QD += torch.exp((v_tidal[i].view(1, -1).mm(e[i].view(-1, 1)).squeeze() / (
-        #                 torch.norm(v_tidal[i], 2) * torch.norm(e[i], 2))) * self.gamma2)
-        # R_QD = torch.log(torch.pow(R_QD, 1 / self.gamma2))
 
         v_e_norm = torch.norm(v_tidal) * torch.norm(e.t())
-        R_QD = torch.log(torch.pow(torch.sum(torch.exp(torch.diag(v_tidal.mm(e.t())) / v_e_norm * self.gamma2)), 1 / self.gamma2)+1e-10)
+        # R_QD = torch.log(torch.pow(torch.sum(torch.exp(torch.diag(v_tidal.mm(e.t())) / v_e_norm * self.gamma2)), 1 / self.gamma2)+1e-10)
+        R_QD = torch.log(torch.pow(torch.sum(torch.exp(torch.sum(v_tidal * e, dim=1) / v_e_norm * self.gamma2)), 1 / self.gamma2)+1e-10)
         # print('R_QD'+str(R_QD.data))
         # regard image box as query, might consider overflow
         similarity_matrix_copy = normalized_similarity_matrix.clone()
