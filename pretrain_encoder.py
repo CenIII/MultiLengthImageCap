@@ -84,7 +84,6 @@ def train(loader,linNet,lstmEnc,crit,optimizer,savepath):
 		torch.save(models,os.path.join(savepath ,'lstmEnc.pt'))
 		epoch += 1
 
-
 def eval(loader,linNet,lstmEnc,crit):
 	# for now evaluation means to do similarity matrix check.
 	linNet = linNet.to(device)
@@ -92,7 +91,7 @@ def eval(loader,linNet,lstmEnc,crit):
 	linNet.eval()
 	lstmEnc.eval()
 
-	data, itr, _ = loader.getBatch()
+	data, itr, _ = loader.getBatch(0)
 
 	box_feats = torch.tensor(data['box_feats']).to(device)
 	# glob_feat = torch.tensor(data['glob_feat'])
