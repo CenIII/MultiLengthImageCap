@@ -67,7 +67,7 @@ class SimilarityLoss(nn.Module):
         # print('loss_reg: '+str(loss_reg))
         return loss1_w + loss2_w #+ loss_reg
 
-    def calculate_matching_score(self, v, e, lenAry, M, H_r, H_w):
+    def calculate_matching_score(self, v, e, lenAry, M, H_r, H_w,check_score_mat=False):
 
         """
         calculate matching score of (Q, D) pair, consider bi-direction
@@ -79,8 +79,8 @@ class SimilarityLoss(nn.Module):
         :return: maching score for (Q, D) pair
         """
 
-        def checkNan(var):
-            assert(not bool((var != var).any()))
+        # def checkNan(var):
+        #     assert(not bool((var != var).any()))
         # step 1 : concatnate: v:  B x (M x H_r x W_r) x D 
         B, _, D = v.size()
         Tb = e.size()[0]
@@ -168,6 +168,8 @@ class SimilarityLoss(nn.Module):
         log_score_mat_2 = self.gamma3 * log_score_mat_2
         log_score_mat = log_score_mat_1 + log_score_mat_2
         exp_score_mat = torch.exp(log_score_mat)
+        if check_score_mat:
+            return exp_score_mat
 
         match_qd = torch.diag(exp_score_mat)
         pdq = -torch.sum(torch.log(match_qd/torch.sum(exp_score_mat,dim=1)+1e-10))
@@ -262,7 +264,20 @@ class SimilarityLoss(nn.Module):
     #     return similarity_matrix
 
 
-
+    def generate_similarity_matrix(self, image, text, length_info):
+        B, M, D, H_r, H_w = image.size()
+        
+        loss = 0
+        # rand inds
+        
+        
+        image = image.permute(0,1,3,4,2).contiguous().view(B,-1,D) #B x M x H_r x W_r x D
+        
+        image_b = image
+        text_b = torch.cat([text[j][:length_info[j]] for j in range(B)],dim=0).contiguous()
+        len_b = [torch.sum(length_info[0:j+1]) for j in range(B)]
+        score_mat = self.calculate_matching_score(image_b, text_b, len_b, M, H_r, H_w,check_score_mat=True)
+        return score_mat
 
     def forward(self, image, text, length_info):
         """
