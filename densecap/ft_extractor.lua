@@ -133,7 +133,7 @@ local function saveJson(outputs, pipeLen, odd)
   -- body
   -- check "confirm" file
   idx = 0
-  if odd then idx += 1 end
+  if odd then idx = 1 end
   while true do
     if check_pick_confirm(idx) then
       break
