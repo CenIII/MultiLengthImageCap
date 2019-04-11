@@ -155,11 +155,11 @@ class LoaderEnc(_BaseDataLoader):
 		return ret, itr, numiters
 	def __len__(self):
 		"""Make sure len(dataset) return the size of dataset. Required to override."""
-		raise self.numiters
+		return self.numiters
 
 	def __getitem__(self, idx):
 		"""Support indexing such that dataset[i] get ith sample. Required to override"""
-		raise self.getBatch
+		return self.getBatch
 
 
 		
