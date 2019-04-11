@@ -129,15 +129,16 @@ local function check_pick_confirm(idx)
   end
 end
 
-local function saveJson(outputs, pipeLen)
+local function saveJson(outputs, pipeLen, odd)
   -- body
   -- check "confirm" file
   idx = 0
+  if odd then idx += 1 end
   while true do
     if check_pick_confirm(idx) then
       break
     end
-    idx = (idx+1)%pipeLen
+    idx = (idx+2)%pipeLen
   end
   
   -- local enc = json.encode(outputs)
@@ -163,7 +164,7 @@ while true do
   -- print('success!')
   out_packed = pack_outputs(outputs, info)
   -- save to json file
-  saveJson(out_packed, pipeLen)
+  saveJson(out_packed, pipeLen, opt.odd)
   counter = counter + 1
 
 end
