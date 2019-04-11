@@ -117,8 +117,8 @@ class SimilarityLoss(nn.Module):
         # checkNan(log_score_mat_1)
 
         # step 1: reshape s  (B x M x H_r x W_r) x Tb -> B x M x (H x W) x Tb
-        # s_nt_2 = F.softmax(s.view(B,-1,Tb),dim=1)
-        s_nt_2 = s.view(B, M , -1, Tb) # B x M x (H x W) x Tb
+        s_nt_2 = F.softmax(s.view(B,-1,Tb),dim=1)
+        s_nt_2 = s_nt_2.view(B, M , -1, Tb) # B x M x (H x W) x Tb
         
         # step 2: generate s_d as denominator B x M x B
         s_exp = torch.exp(s_nt_2)
