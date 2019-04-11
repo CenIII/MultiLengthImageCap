@@ -45,18 +45,22 @@ class _BaseDataLoader(Dataset):
 
 		# list data_$pipIndex_*
 		# pInd = self.pipeIndex
+		data_file = self.dataPipePath+'data_'+str(pInd)+'_*'
+		pick_confirm_file = self.dataPipePath+'pick_confirm_'+str(pInd)
+		writing_block_file = self.dataPipePath+'writing_block_'+str(pInd)
+		reading_block_file = self.dataPipePath+'reading_block_'+str(pInd)
+
 		while True:
-			filename = glob.glob(self.dataPipePath+'data_'+str(pInd)+'_*')
+			filename = glob.glob(data_file)
 			if len(filename)>=1:
-				if (not os.path.isfile(self.dataPipePath+'pick_confirm_'+str(pInd))) or mode=='test':
+				if (not os.path.isfile(pick_confirm_file)) or mode=='test':
 					# pick_confirm file has been removed by lua loader. so this file is new. 
-					if (not os.path.isfile(self.dataPipePath+'writing_block_'+str(pInd))) and (not os.path.isfile(self.dataPipePath+'reading_block_'+str(pInd))):
+					if (not os.path.isfile(writing_block_file)) and (not os.path.isfile(reading_block_file)):
 						# lua writing file finished.
-						os.mknod(self.dataPipePath+'reading_block_'+str(pInd))
+						os.mknod(reading_block_file)
 						break
 		assert(len(filename)==1)
 		filename = filename[0]
-		# print(filename)
 		# read iter and numiters
 		tmp = filename.split('/')[-1].split('_')
 		numiters = tmp[-1]
@@ -69,8 +73,9 @@ class _BaseDataLoader(Dataset):
 
 		if mode=='train':
 			os.remove(filename)
+			os.remove(reading_block_file)
 			# place pick_confirm_$pipIndex to notify lua program
-			os.mknod(self.dataPipePath+'pick_confirm_'+str(pInd))
+			os.mknod(pick_confirm_file)
 			
 
 		# update pInd
