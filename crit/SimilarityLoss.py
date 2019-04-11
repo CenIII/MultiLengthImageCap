@@ -110,7 +110,7 @@ class SimilarityLoss(nn.Module):
             score_temp.append(torch.sum(exp_mat[:, prev: idx], dim=1).unsqueeze(1))
             prev = idx
         score_mat = torch.cat(score_temp, dim=1)
-        log_score_mat_1 = torch.log(torch.pow(score_mat, 1 / self.gamma2)) # B x B 
+        log_score_mat_1 = torch.log(torch.pow(score_mat, 1 / self.gamma2)+1e-10) # B x B 
         # print(log_score_mat_1.size())
 
 
@@ -149,7 +149,7 @@ class SimilarityLoss(nn.Module):
         v_temp = F.normalize(v.view(-1, D, 1),dim=1)
         logit_mat_2 = torch.sum(em_temp.bmm(v_temp).squeeze().view(B, M, H_r * H_w, B), dim=2) / (H_r * H_w) # B x M x B
         score_mat_2 = torch.pow(torch.sum(torch.exp(logit_mat_2), dim=1), 1 / self.gamma2)
-        log_score_mat_2 = torch.log(score_mat_2)
+        log_score_mat_2 = torch.log(score_mat_2+1e-10)
 
 
         # reg term
@@ -166,8 +166,8 @@ class SimilarityLoss(nn.Module):
         log_score_mat = log_score_mat_1 + log_score_mat_2
 
         match_qd = torch.diag(log_score_mat)
-        pdq = -torch.sum(torch.log(match_qd/torch.sum(log_score_mat,dim=1)))
-        pqd = -torch.sum(torch.log(match_qd/torch.sum(log_score_mat,dim=0)))
+        pdq = -torch.sum(torch.log(match_qd/torch.sum(log_score_mat,dim=1)+1e-10))
+        pqd = -torch.sum(torch.log(match_qd/torch.sum(log_score_mat,dim=0)+1e-10))
         loss1 = (pdq + pqd)/B
 
         return loss1+loss_reg
