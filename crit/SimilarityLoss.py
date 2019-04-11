@@ -8,7 +8,7 @@ import time
 # class version of similarity loss
 class SimilarityLoss(nn.Module):
 
-    def __init__(self, gamma1, gamma2, gamma3, bsize=5):
+    def __init__(self, gamma1, gamma2, gamma3, bsize=25):
         super(SimilarityLoss, self).__init__()
         self.gamma1 = gamma1
         self.gamma2 = gamma2

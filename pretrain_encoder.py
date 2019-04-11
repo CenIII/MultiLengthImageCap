@@ -54,7 +54,7 @@ def train(loader,linNet,lstmEnc,crit,optimizer,savepath, batchImgs=4):
 	# loss_epoch_list = []
 	logger = open(os.path.join(savepath,'loss_history'),'w')
 
-	def loadMultiImgData(loader,numImgs=4):
+	def loadMultiImgData(loader,numImgs=8):
 		box_feats = []
 		box_captions = []
 		capLens = []
@@ -131,8 +131,10 @@ def eval(loader,linNet,lstmEnc,crit):
 	out1 = linNet(box_feats)
 	out2 = lstmEnc(box_captions,input_lengths=capLens)
 	Similarity_matrix = crit.generate_similarity_matrix(out1, out2, capLens)
-	torch.save(Similarity_matrix, "similarity_matrix")
-
+	# torch.save(Similarity_matrix, "similarity_matrix")
+	zzz = torch.argmax(Similarity_matrix,dim=0)
+	print(zzz)
+	
 def parseArgs():
 	parser = argparse.ArgumentParser()
 	parser.add_argument('-e','--evaluate_mode',
