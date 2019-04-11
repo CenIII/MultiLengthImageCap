@@ -4,8 +4,9 @@ import glob
 # import json
 import torchfile
 import random
+from torch.utils.data import Dataset, DataLoader
 
-class _BaseDataLoader(object):
+class _BaseDataLoader(Dataset):
 	"""docstring for BaseDataLoader"""
 	def __init__(self):
 		super(_BaseDataLoader, self).__init__()
@@ -76,6 +77,14 @@ class _BaseDataLoader(object):
 	def getBatch(self):
 		raise NotImplementedError
 
+	def __len__(self):
+		"""Make sure len(dataset) return the size of dataset. Required to override."""
+		raise NotImplementedError
+
+	def __getitem__(self, idx):
+		"""Support indexing such that dataset[i] get ith sample. Required to override"""
+		raise NotImplementedError
+
 
 class LoaderEnc(_BaseDataLoader):
 	"""docstring for LoaderEncTrain"""
@@ -84,6 +93,8 @@ class LoaderEnc(_BaseDataLoader):
 		if mode=='train':
 			self.init_pick_confirm_files()
 		self.mode = mode
+		_,_,numiters = self.getBatch()
+		self.numiters = numiters
 
 	def filtReplicate(self, data):
 		# shuffle 128 gt boxes copy
@@ -101,6 +112,28 @@ class LoaderEnc(_BaseDataLoader):
 				selectInds.append(randInds[i])
 		# return selected inds
 		return selectInds
+		
+	def collate_fn(self,batch): #loader,numImgs=8
+		box_feats = []
+		box_captions = []
+		capLens = []
+		numImgs = len(batch)
+		for i in range(numImgs):
+			data = batch[i][0]
+			box_feats.append(torch.tensor(data['box_feats']).to(device))
+			box_captions.append(torch.LongTensor(data['box_captions_gt']).to(device))
+			capLens.append(getLengths(box_captions[-1]).to(device))
+		box_feats = torch.cat(box_feats)
+		box_captions = torch.cat(box_captions)
+		capLens = torch.cat(capLens)
+
+		# sort decreasing order
+		inds = torch.argsort(-capLens)
+		box_feats = box_feats[inds]
+		box_captions = box_captions[inds]
+		capLens = capLens[inds]
+
+		return box_feats, box_captions, capLens
 		
 	def getBatch(self):
 		'''
@@ -120,6 +153,13 @@ class LoaderEnc(_BaseDataLoader):
 			ret['glob_caption_gt'] = data['glob_caption_gt']
 
 		return ret, itr, numiters
+	def __len__(self):
+		"""Make sure len(dataset) return the size of dataset. Required to override."""
+		raise self.numiters
+
+	def __getitem__(self, idx):
+		"""Support indexing such that dataset[i] get ith sample. Required to override"""
+		raise self.getBatch
 
 
 		

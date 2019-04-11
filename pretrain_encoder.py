@@ -42,45 +42,24 @@ def reloadModel(model_path,linNet,lstmEnc):
 	
 	return linNet,lstmEnc
 
-def train(loader,linNet,lstmEnc,crit,optimizer,savepath, batchImgs=4):
+def train(loader,linNet,lstmEnc,crit,optimizer,savepath):
 	os.makedirs(savepath,exist_ok=True)
 	# if torch.cuda.is_available():
 	linNet = linNet.to(device)#nn.DataParallel(linNet,device_ids=[0, 1]).to(device)
 	lstmEnc = lstmEnc.to(device)#nn.DataParallel(lstmEnc,device_ids=[0, 1]).to(device)
 	crit = crit.to(device)
-	data, itr, numiters = loader.getBatch()
-	numiters = int(int(numiters)/batchImgs)
+	
 	epoch = 0
-	# loss_epoch_list = []
 	logger = open(os.path.join(savepath,'loss_history'),'w')
 
-	def loadMultiImgData(loader,numImgs=8):
-		box_feats = []
-		box_captions = []
-		capLens = []
-		for i in range(numImgs):
-			data, itr, _ = loader.getBatch()
-			box_feats.append(torch.tensor(data['box_feats']).to(device))
-			box_captions.append(torch.LongTensor(data['box_captions_gt']).to(device))
-			capLens.append(getLengths(box_captions[-1]).to(device))
-		box_feats = torch.cat(box_feats)
-		box_captions = torch.cat(box_captions)
-		capLens = torch.cat(capLens)
-
-		# sort decreasing order
-		inds = torch.argsort(-capLens)
-		box_feats = box_feats[inds]
-		box_captions = box_captions[inds]
-		capLens = capLens[inds]
-
-		return box_feats, box_captions, capLens
-
-
 	while True:
-		qdar = tqdm.tqdm(range(numiters-1), total= numiters-1, ascii=True)
+		ld = iter(loader)
+		numiters = len(ld)
+		qdar = tqdm.tqdm(range(numiters), total= numiters, ascii=True)
 		loss_itr_list = []
+
 		for i in qdar:
-			box_feats, box_captions, capLens = loadMultiImgData(loader,numImgs=batchImgs)
+			box_feats, box_captions, capLens = next(ld) #loadMultiImgData(loader,numImgs=batchImgs)
 			
 			# output1 output2 fed into Similarity loss  # todo: incorporate glob feat
 			out1 = linNet(box_feats)
@@ -175,7 +154,8 @@ if __name__ == '__main__':
 		eval(loader,linNet,lstmEnc,crit)
 	else:							# train mode
 		optimizer = torch.optim.Adam(list(filter(lambda p: p.requires_grad, lstmEnc.parameters()))+list(linNet.parameters()), 0.001)
-		loader = LoaderEnc()
+		dataset = LoaderEnc()
+		loader = DataLoader(dataset,batch_size=args.batch_imgs, shuffle=False, num_workers=2, collate_fn=dataset.collate_fn)
 		train(loader,linNet,lstmEnc,crit,optimizer,args.save_path,batchImgs=args.batch_imgs)
 
 
