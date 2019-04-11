@@ -5,6 +5,7 @@ import glob
 import torchfile
 import random
 from torch.utils.data import Dataset
+import torch
 
 class _BaseDataLoader(Dataset):
 	"""docstring for BaseDataLoader"""
