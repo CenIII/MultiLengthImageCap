@@ -4,7 +4,7 @@ import glob
 # import json
 import torchfile
 import random
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset
 
 class _BaseDataLoader(Dataset):
 	"""docstring for BaseDataLoader"""
@@ -134,7 +134,7 @@ class LoaderEnc(_BaseDataLoader):
 		capLens = capLens[inds]
 
 		return box_feats, box_captions, capLens
-		
+
 	def getBatch(self):
 		'''
 		For LSTM encoder training, the "batch" here is actually 
