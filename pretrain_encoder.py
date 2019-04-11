@@ -45,8 +45,8 @@ def reloadModel(model_path,linNet,lstmEnc):
 def train(loader,linNet,lstmEnc,crit,optimizer,savepath, batchImgs=4):
 	os.makedirs(savepath,exist_ok=True)
 	# if torch.cuda.is_available():
-	linNet = nn.DataParallel(linNet,device_ids=[0, 1]).to(device)
-	lstmEnc = nn.DataParallel(lstmEnc,device_ids=[0, 1]).to(device)
+	linNet = linNet.to(device)#nn.DataParallel(linNet,device_ids=[0, 1]).to(device)
+	lstmEnc = lstmEnc.to(device)#nn.DataParallel(lstmEnc,device_ids=[0, 1]).to(device)
 	crit = crit.to(device)
 	data, itr, numiters = loader.getBatch()
 	numiters = int(int(numiters)/batchImgs)
