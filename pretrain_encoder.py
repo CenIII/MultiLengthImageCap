@@ -42,6 +42,11 @@ def reloadModel(model_path,linNet,lstmEnc):
 	lstmEnc = subload(lstmEnc,pt['lstmEnc'])
 	
 	return linNet,lstmEnc
+def makeInp(*inps):
+	ret = []
+	for inp in inps:
+		ret.append(inp.to(device))
+	return ret
 
 def train(loader,linNet,lstmEnc,crit,optimizer,savepath):
 	os.makedirs(savepath,exist_ok=True)
@@ -60,7 +65,7 @@ def train(loader,linNet,lstmEnc,crit,optimizer,savepath):
 		loss_itr_list = []
 
 		for i in qdar:
-			box_feats, box_captions, capLens = next(ld) #loadMultiImgData(loader,numImgs=batchImgs)
+			box_feats, box_captions, capLens = makeInp(next(ld)) #loadMultiImgData(loader,numImgs=batchImgs)
 			
 			# output1 output2 fed into Similarity loss  # todo: incorporate glob feat
 			out1 = linNet(box_feats)

@@ -7,7 +7,7 @@ import random
 from torch.utils.data import Dataset
 import torch
 
-device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+# device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
 class _BaseDataLoader(Dataset):
 	"""docstring for BaseDataLoader"""
@@ -123,9 +123,9 @@ class LoaderEnc(_BaseDataLoader):
 		numImgs = len(batch)
 		for i in range(numImgs):
 			data = batch[i][0]
-			box_feats.append(torch.tensor(data['box_feats']).to(device))
-			box_captions.append(torch.LongTensor(data['box_captions_gt']).to(device))
-			capLens.append(getLengths(box_captions[-1]).to(device))
+			box_feats.append(torch.tensor(data['box_feats']))
+			box_captions.append(torch.LongTensor(data['box_captions_gt']))
+			capLens.append(getLengths(box_captions[-1]))
 		box_feats = torch.cat(box_feats)
 		box_captions = torch.cat(box_captions)
 		capLens = torch.cat(capLens)
