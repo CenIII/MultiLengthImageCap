@@ -29,8 +29,8 @@ def reloadModel(model_path,linNet,lstmEnc):
 		model_dict = model.state_dict()
 		pretrained_dict = {}
 		for k, v in pt_dict.items():
-			if(k[7:] in model_dict):
-				pretrained_dict[k[7:]] = v
+			if(k in model_dict):
+				pretrained_dict[k] = v
 		# 2. overwrite entries in the existing state dict
 		model_dict.update(pretrained_dict)
 		# 3. load the new state dict
