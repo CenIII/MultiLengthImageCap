@@ -94,7 +94,7 @@ class LoaderEnc(_BaseDataLoader):
 			self.init_pick_confirm_files()
 		self.mode = mode
 		_,_,numiters = self.getBatch()
-		self.numiters = numiters
+		self.numiters = int(numiters)
 
 	def filtReplicate(self, data):
 		# shuffle 128 gt boxes copy
