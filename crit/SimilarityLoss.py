@@ -8,11 +8,12 @@ import time
 # class version of similarity loss
 class SimilarityLoss(nn.Module):
 
-    def __init__(self, gamma1, gamma2, gamma3):
+    def __init__(self, gamma1, gamma2, gamma3, bsize=5):
         super(SimilarityLoss, self).__init__()
         self.gamma1 = gamma1
         self.gamma2 = gamma2
         self.gamma3 = gamma3
+        self.bsize = bsize
 
 
     def similarity_loss(self, image, text, length_info):  # consider passing the perceptron layer
@@ -71,7 +72,7 @@ class SimilarityLoss(nn.Module):
         """
         calculate matching score of (Q, D) pair, consider bi-direction
         :param v: 3D tensor for img with dimension B x (M x H_r x W_r) x D
-        :param text: 2D tensor for text with dimension Tb x D
+        :param e (text): 2D tensor for text with dimension Tb x D
         :param lengthArray with size B every value is the end index of every short sentence.
         :param gamma1: factor
         :param gamma2: factor
@@ -110,7 +111,7 @@ class SimilarityLoss(nn.Module):
             prev = idx
         score_mat = torch.cat(score_temp, dim=1)
         log_score_mat_1 = torch.log(torch.pow(score_mat, 1 / self.gamma2)) # B x B 
-        print(log_score_mat_1.size())
+        # print(log_score_mat_1.size())
 
 
         # step 1: reshape s  (B x M x H_r x W_r) x Tb -> B x M x (H x W) x Tb
@@ -129,7 +130,7 @@ class SimilarityLoss(nn.Module):
 
         # step 3: compute beta B x M x Tb
         sd_rep = sd.unsqueeze(2).repeat(1,1,(H_r*H_w),1) # B x M x (H x W) x Tb
-        beta = torch.sum(s/sd_rep,dim=2) # B x M x Tb 
+        beta = torch.sum(s_exp/sd_rep,dim=2) # B x M x Tb 
 
         # step 4: compute em_prime B x M x B x D
         beta = beta.view(-1, Tb)
@@ -146,7 +147,7 @@ class SimilarityLoss(nn.Module):
         em_prime_rep = em_prime.unsqueeze(2).repeat(1, 1, H_r * H_w, 1, 1)
         em_temp = F.normalize(em_prime_rep.view(-1, B, D),dim=2)
         v_temp = F.normalize(v.view(-1, D, 1),dim=1)
-        logit_mat_2 = torch.sum(em_temp.bm(v_temp).squeeze().view(B, M, H_r * H_w, B), dim=2) / (H_r * H_w) # B x M x B
+        logit_mat_2 = torch.sum(em_temp.bmm(v_temp).squeeze().view(B, M, H_r * H_w, B), dim=2) / (H_r * H_w) # B x M x B
         score_mat_2 = torch.pow(torch.sum(torch.exp(logit_mat_2), dim=1), 1 / self.gamma2)
         log_score_mat_2 = torch.log(score_mat_2)
 
@@ -157,15 +158,17 @@ class SimilarityLoss(nn.Module):
         tmp = beta.bmm(beta_prime) # B,M,M
         loss_reg = 0
         for i in range(B):
-            loss_reg += torch.norm(tmp[i]-torch.diag(tmp[i]))
+            loss_reg += torch.norm(tmp[i]-torch.diag(torch.diag(tmp[i])))
+        loss_reg = loss_reg/B
+        # print('loss_reg: '+str(loss_reg.data))
         log_score_mat_1 = self.gamma3 * log_score_mat_1
         log_score_mat_2 = self.gamma3 * log_score_mat_2
         log_score_mat = log_score_mat_1 + log_score_mat_2
 
         match_qd = torch.diag(log_score_mat)
-        pdq = -torch.sum(match_qd/torch.sum(log_score_mat,dim=1))
-        pqd = -torch.sum(match_qd/torch.sum(log_score_mat,dim=0))
-        loss1 = pdq + pqd
+        pdq = -torch.sum(torch.log(match_qd/torch.sum(log_score_mat,dim=1)))
+        pqd = -torch.sum(torch.log(match_qd/torch.sum(log_score_mat,dim=0)))
+        loss1 = (pdq + pqd)/B
 
         return loss1+loss_reg
 
@@ -233,7 +236,7 @@ class SimilarityLoss(nn.Module):
         # R_QD2 = torch.log(torch.pow(R_QD2, 1 / self.gamma2)+1e-10)
         # # print('R_QD2'+str(R_QD2))
         # # add matching score for two directions.
-        return score_mat, log_score_mat
+        # return score_mat, log_score_mat
 
     
     # def generate_similarity_matrix(self, image, text, length_info):
@@ -258,11 +261,28 @@ class SimilarityLoss(nn.Module):
 
     def forward(self, image, text, length_info):
         """
-        image: batch x boxes x D x H x W
-        text: batch x T x D
-        length_info: batch x 1
+        :param image: 3D tensor for img with dimension B x M x D x H_r x W_r
+        :param text: 2D tensor for text with dimension B x 15 x D
+        :param length_info with size B every value is the end index of every short sentence.
         """
-        return self.similarity_loss(image, text, length_info)
+        B, M, D, H_r, H_w = image.size()
+        
+        loss = 0
+        # rand inds
+        inds = list(range(B))
+        random.shuffle(inds)
+        image = image[inds].permute(0,1,3,4,2).contiguous().view(B,-1,D) #B x M x H_r x W_r x D
+        text = text[inds]
+        length_info = length_info[inds]
+
+        numBlcks = int(B/self.bsize)+1
+        for i in range(0,B,self.bsize):
+            image_b = image[i:i+self.bsize]
+            text_b = torch.cat([text[j][:length_info[j]] for j in range(i,min(i+self.bsize,B))],dim=0).contiguous()
+            len_b = [torch.sum(length_info[i:j+1]) for j in range(i,min(i+self.bsize,B))]
+            loss += self.calculate_matching_score(image_b, text_b, len_b, M, H_r, H_w)
+        loss = loss/numBlcks
+        return loss
 
 
 if __name__ == "__main__":
@@ -288,22 +308,39 @@ if __name__ == "__main__":
     # loss.backward()
 
 
+    # torch.manual_seed(7)
+    # torch.backends.cudnn.deterministic=True
+    # image = torch.randn(5, 3*49, 1024)
+    
+    # image.requires_grad = True
+    # torch.manual_seed(7)
+    # text = torch.randn(30, 1024)
+    # text.requires_grad = True
+    # length_info = torch.tensor([5, 12, 18, 23, 30])
+    # m = SimilarityLoss(0.5, 0.5, 1)
+    # loss = m.calculate_matching_score(image, text, length_info, 3, 7, 7)
+    # print('final loss: '+str(loss.data))
+    # # matrix = m.generate_similarity_matrix(image, text, length_info)
+    # # print(matrix)
+    # # print(loss)
+    # loss.backward()
     torch.manual_seed(7)
     torch.backends.cudnn.deterministic=True
-    image = torch.randn(5, 49, 1024)
+    image = torch.randn(78, 1, 1024,7,7)
     
     image.requires_grad = True
     torch.manual_seed(7)
-    text = torch.randn(30, 1024)
+    text = torch.randn(78, 15, 1024)
     text.requires_grad = True
-    length_info = torch.tensor([5, 12, 18, 23, 30])
-    m = SimilarityLoss(1, 1, 1)
-    loss = m.calculate_matching_score(image, text, length_info, 1, 7, 7)
+    length_info = torch.tensor([5, 6, 8, 4, 7]*16)
+    crit = SimilarityLoss(0.5, 0.5, 1)
+    # loss = m.calculate_matching_score(image, text, length_info, 3, 7, 7)
+    loss = crit(image,text,length_info)
+    print('final loss: '+str(loss.data))
     # matrix = m.generate_similarity_matrix(image, text, length_info)
     # print(matrix)
     # print(loss)
-    # loss.backward()
-
+    loss.backward()
 
 
 
