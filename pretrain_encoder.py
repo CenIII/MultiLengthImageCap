@@ -157,7 +157,7 @@ if __name__ == '__main__':
 		optimizer = torch.optim.Adam(list(filter(lambda p: p.requires_grad, lstmEnc.parameters()))+list(linNet.parameters()), 0.001)
 		dataset = LoaderEnc()
 		loader = DataLoader(dataset,batch_size=args.batch_imgs, shuffle=False, num_workers=2, collate_fn=dataset.collate_fn)
-		train(loader,linNet,lstmEnc,crit,optimizer,args.save_path,batchImgs=args.batch_imgs)
+		train(loader,linNet,lstmEnc,crit,optimizer,args.save_path)
 
 
 
