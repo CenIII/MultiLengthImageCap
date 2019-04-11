@@ -15,14 +15,6 @@ from torch.utils.data import DataLoader
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
-def getLengths(caps):
-	batchSize = len(caps)
-	lengths = torch.zeros(batchSize,dtype=torch.int32)
-	for i in range(batchSize):
-		cap = caps[i]
-		lengths[i] = (cap==0).nonzero()[0][0]
-	return lengths
-
 def reloadModel(model_path,linNet,lstmEnc):
 	pt = torch.load(model_path)
 

@@ -121,6 +121,13 @@ class LoaderEnc(_BaseDataLoader):
 		box_captions = []
 		capLens = []
 		numImgs = len(batch)
+		def getLengths(caps):
+			batchSize = len(caps)
+			lengths = torch.zeros(batchSize,dtype=torch.int32)
+			for i in range(batchSize):
+				cap = caps[i]
+				lengths[i] = (cap==0).nonzero()[0][0]
+			return lengths
 		for i in range(numImgs):
 			data = batch[i][0]
 			box_feats.append(torch.tensor(data['box_feats']))
