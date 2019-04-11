@@ -93,10 +93,10 @@ class SimilarityLoss(nn.Module):
         # for idx in lenAry:
         #     norm_temp.append(F.softmax(s[:, prev: idx], dim=1))
         #     prev = idx
-        s_nt = s#self.gamma1 * torch.cat(norm_temp, dim=1)  # (B x M x H_r x W_r) x Tb
+        s_nt = s.view(B, -1, Tb)#self.gamma1 * torch.cat(norm_temp, dim=1)  # (B x M x H_r x W_r) x Tb
         # step 4: softmax in dimension Vb reshape into 3 dimension and call softmax B x (M x H_r x W_r) x Tb, define (M x H_r x W_r) = Mhw
 
-        alpha = F.softmax(s_nt.view(B, -1, Tb), dim=1) # B x Mhw x Tb
+        alpha = F.softmax(s_nt, dim=1) # B x Mhw x Tb
         # step 5: v (B x Mhw x D), \alpha (B x Mhw x Tb) --> v\tilde (B x Tb x D)
         v = v.view(B, -1, D)
         v_tidal = alpha.permute(0, 2, 1).bmm(v) # (B x Tb x D)
