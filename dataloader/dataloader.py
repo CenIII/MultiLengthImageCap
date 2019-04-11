@@ -94,7 +94,7 @@ class LoaderEnc(_BaseDataLoader):
 		if mode=='train':
 			self.init_pick_confirm_files()
 		self.mode = mode
-		_,_,numiters = self.getBatch()
+		_,_,numiters = self.getBatch(self.pipeLen-1)
 		self.numiters = int(numiters)
 
 	def filtReplicate(self, data):
