@@ -4,7 +4,6 @@ import torch.nn.functional as F
 import random
 import numpy as np
 import time
-import pdb
 
 # class version of similarity loss
 class SimilarityLoss(nn.Module):
@@ -168,14 +167,13 @@ class SimilarityLoss(nn.Module):
         log_score_mat_1 = self.gamma3 * log_score_mat_1
         log_score_mat_2 = self.gamma3 * log_score_mat_2
         log_score_mat = log_score_mat_1 + log_score_mat_2
+        exp_score_mat = torch.exp(log_score_mat)
 
-        match_qd = torch.diag(log_score_mat)
-        pdq = -torch.sum(torch.log(match_qd/torch.sum(log_score_mat,dim=1)+1e-10))
-        pqd = -torch.sum(torch.log(match_qd/torch.sum(log_score_mat,dim=0)+1e-10))
+        match_qd = torch.diag(exp_score_mat)
+        pdq = -torch.sum(torch.log(match_qd/torch.sum(exp_score_mat,dim=1)+1e-10))
+        pqd = -torch.sum(torch.log(match_qd/torch.sum(exp_score_mat,dim=0)+1e-10))
         loss1 = (pdq + pqd)/B
         # checkNan(loss1)
-        if bool((loss1 != loss1).any()):
-            pdb.set_trace()
 
         return loss1+loss_reg
 
