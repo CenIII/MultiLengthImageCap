@@ -118,6 +118,8 @@ class LoaderEnc(_BaseDataLoader):
 		box_captions = []
 		capLens = []
 		numImgs = len(batch)
+		print(numImgs)
+		print(batch)
 		for i in range(numImgs):
 			data = batch[i][0]
 			box_feats.append(torch.tensor(data['box_feats']).to(device))
