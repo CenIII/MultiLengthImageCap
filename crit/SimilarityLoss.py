@@ -109,7 +109,7 @@ class SimilarityLoss(nn.Module):
         score_temp = []
         prev = 0
         for idx in lenAry:
-            score_temp.append((torch.sum(exp_mat[:, prev: idx], dim=1))/(idx-prev).unsqueeze(1))
+            score_temp.append((torch.sum(exp_mat[:, prev: idx], dim=1)/(idx-prev)).unsqueeze(1))
             prev = idx
         score_mat = torch.cat(score_temp, dim=1)
         log_score_mat_1 = torch.log(torch.pow(score_mat, 1 / self.gamma2)+1e-10) # B x B 
