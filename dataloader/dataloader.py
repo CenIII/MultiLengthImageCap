@@ -7,6 +7,8 @@ import random
 from torch.utils.data import Dataset
 import torch
 
+device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+
 class _BaseDataLoader(Dataset):
 	"""docstring for BaseDataLoader"""
 	def __init__(self):
