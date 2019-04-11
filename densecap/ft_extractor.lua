@@ -120,7 +120,13 @@ end
 local function check_pick_confirm(idx)
   -- body
   local fr = io.open('./data_pipeline/pick_confirm_'..tostring(idx), "r")
-   if fr~=nil then io.close(fr) return true else return false end
+  if fr~=nil then 
+    os.remove('./data_pipeline/pick_confirm_'..tostring(idx))
+    io.close(fr) 
+    return true 
+  else 
+    return false 
+  end
 end
 
 local function saveJson(outputs, pipeLen)
@@ -129,7 +135,6 @@ local function saveJson(outputs, pipeLen)
   idx = 0
   while true do
     if check_pick_confirm(idx) then
-      os.remove('./data_pipeline/pick_confirm_'..tostring(idx))
       break
     end
     idx = (idx+1)%pipeLen

@@ -167,7 +167,7 @@ if __name__ == '__main__':
 	                 n_layers=1, bidirectional=False, rnn_cell='lstm', variable_lengths=True,
 	                 embedding_parameter=VocabData['word_embs'], update_embedding=False)
 	# load crit
-	crit = SimilarityLoss(0.5,0.5,1)
+	crit = SimilarityLoss(2,2,4)
 
 	if args.evaluate_mode:			# evaluation mode
 		loader = LoaderEnc(mode='test')
