@@ -108,7 +108,7 @@ function DenseCapModel:__init(opt)
     idx_to_token = opt.idx_to_token,
     image_vector_dim=fc_dim,
   }
-  self.nets.language_model = nn.LanguageModel(lm_opt)
+  -- self.nets.language_model = nn.LanguageModel(lm_opt)
 
   self.nets.recog_net = self:_buildRecognitionNet()
   self.net:add(self.nets.recog_net)
@@ -352,7 +352,7 @@ function DenseCapModel:forward_test(input)
   local final_boxes = output[4]
   local objectness_scores = output[1]
   local captions = output[5]
-  local captions = self.nets.language_model:decodeSequence(captions)
+  local captions = nil--self.nets.language_model:decodeSequence(captions)
   return final_boxes, objectness_scores, captions
 end
 
