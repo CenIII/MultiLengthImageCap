@@ -11,16 +11,9 @@ import time
 import sys
 import argparse
 import os
+from torch.utils.data import DataLoader
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-
-def getLengths(caps):
-	batchSize = len(caps)
-	lengths = torch.zeros(batchSize,dtype=torch.int32)
-	for i in range(batchSize):
-		cap = caps[i]
-		lengths[i] = (cap==0).nonzero()[0][0]
-	return lengths
 
 def reloadModel(model_path,linNet,lstmEnc):
 	pt = torch.load(model_path)
@@ -29,8 +22,8 @@ def reloadModel(model_path,linNet,lstmEnc):
 		model_dict = model.state_dict()
 		pretrained_dict = {}
 		for k, v in pt_dict.items():
-			if(k[7:] in model_dict):
-				pretrained_dict[k[7:]] = v
+			if(k in model_dict):
+				pretrained_dict[k] = v
 		# 2. overwrite entries in the existing state dict
 		model_dict.update(pretrained_dict)
 		# 3. load the new state dict
@@ -41,46 +34,30 @@ def reloadModel(model_path,linNet,lstmEnc):
 	lstmEnc = subload(lstmEnc,pt['lstmEnc'])
 	
 	return linNet,lstmEnc
+def makeInp(*inps):
+	ret = []
+	for inp in inps:
+		ret.append(inp.to(device))
+	return ret
 
-def train(loader,linNet,lstmEnc,crit,optimizer,savepath, batchImgs=4):
+def train(loader,linNet,lstmEnc,crit,optimizer,savepath):
 	os.makedirs(savepath,exist_ok=True)
 	# if torch.cuda.is_available():
-	linNet = nn.DataParallel(linNet,device_ids=[0, 1]).to(device)
-	lstmEnc = nn.DataParallel(lstmEnc,device_ids=[0, 1]).to(device)
+	linNet = linNet.to(device)#nn.DataParallel(linNet,device_ids=[0, 1]).to(device)
+	lstmEnc = lstmEnc.to(device)#nn.DataParallel(lstmEnc,device_ids=[0, 1]).to(device)
 	crit = crit.to(device)
-	data, itr, numiters = loader.getBatch()
-	numiters = int(int(numiters)/batchImgs)
+	
 	epoch = 0
-	# loss_epoch_list = []
 	logger = open(os.path.join(savepath,'loss_history'),'w')
 
-	def loadMultiImgData(loader,numImgs=4):
-		box_feats = []
-		box_captions = []
-		capLens = []
-		for i in range(numImgs):
-			data, itr, _ = loader.getBatch()
-			box_feats.append(torch.tensor(data['box_feats']).to(device))
-			box_captions.append(torch.LongTensor(data['box_captions_gt']).to(device))
-			capLens.append(getLengths(box_captions[-1]).to(device))
-		box_feats = torch.cat(box_feats)
-		box_captions = torch.cat(box_captions)
-		capLens = torch.cat(capLens)
-
-		# sort decreasing order
-		inds = torch.argsort(-capLens)
-		box_feats = box_feats[inds]
-		box_captions = box_captions[inds]
-		capLens = capLens[inds]
-
-		return box_feats, box_captions, capLens
-
-
 	while True:
-		qdar = tqdm.tqdm(range(numiters-1), total= numiters-1, ascii=True)
+		ld = iter(loader)
+		numiters = len(ld)
+		qdar = tqdm.tqdm(range(numiters), total= numiters, ascii=True)
 		loss_itr_list = []
+
 		for i in qdar:
-			box_feats, box_captions, capLens = loadMultiImgData(loader,numImgs=batchImgs)
+			box_feats, box_captions, capLens = makeInp(*next(ld)) #loadMultiImgData(loader,numImgs=batchImgs)
 			
 			# output1 output2 fed into Similarity loss  # todo: incorporate glob feat
 			out1 = linNet(box_feats)
@@ -107,7 +84,6 @@ def train(loader,linNet,lstmEnc,crit,optimizer,savepath, batchImgs=4):
 		torch.save(models,os.path.join(savepath ,'lstmEnc.pt'))
 		epoch += 1
 
-
 def eval(loader,linNet,lstmEnc,crit):
 	# for now evaluation means to do similarity matrix check.
 	linNet = linNet.to(device)
@@ -115,7 +91,7 @@ def eval(loader,linNet,lstmEnc,crit):
 	linNet.eval()
 	lstmEnc.eval()
 
-	data, itr, _ = loader.getBatch()
+	data, itr, _ = loader.getBatch(0)
 
 	box_feats = torch.tensor(data['box_feats']).to(device)
 	# glob_feat = torch.tensor(data['glob_feat'])
@@ -131,7 +107,11 @@ def eval(loader,linNet,lstmEnc,crit):
 	out1 = linNet(box_feats)
 	out2 = lstmEnc(box_captions,input_lengths=capLens)
 	Similarity_matrix = crit.generate_similarity_matrix(out1, out2, capLens)
-	torch.save(Similarity_matrix, "similarity_matrix")
+	# torch.save(Similarity_matrix, "similarity_matrix")
+	zzz = torch.argmax(Similarity_matrix,dim=0)
+	print('find image by text:'+str(zzz.data))
+	zzz = torch.argmax(Similarity_matrix,dim=1)
+	print('find text by image:'+str(zzz.data))
 
 def parseArgs():
 	parser = argparse.ArgumentParser()
@@ -163,7 +143,7 @@ if __name__ == '__main__':
 	                 n_layers=1, bidirectional=False, rnn_cell='lstm', variable_lengths=True,
 	                 embedding_parameter=VocabData['word_embs'], update_embedding=False)
 	# load crit
-	crit = SimilarityLoss(0.5,0.5,1)
+	crit = SimilarityLoss(2,2,4)
 
 	if args.evaluate_mode:			# evaluation mode
 		loader = LoaderEnc(mode='test')
@@ -171,8 +151,9 @@ if __name__ == '__main__':
 		eval(loader,linNet,lstmEnc,crit)
 	else:							# train mode
 		optimizer = torch.optim.Adam(list(filter(lambda p: p.requires_grad, lstmEnc.parameters()))+list(linNet.parameters()), 0.001)
-		loader = LoaderEnc()
-		train(loader,linNet,lstmEnc,crit,optimizer,args.save_path,batchImgs=args.batch_imgs)
+		dataset = LoaderEnc()
+		loader = DataLoader(dataset,batch_size=args.batch_imgs, shuffle=False, num_workers=2, collate_fn=dataset.collate_fn)
+		train(loader,linNet,lstmEnc,crit,optimizer,args.save_path)
 
 
 
