@@ -1,4 +1,5 @@
 require 'densecap.modules.PosSlicer'
+require 'nn'
 
 local M = {}
 
@@ -9,6 +10,7 @@ function M.setup(opt)
     model = DenseCapModel(opt)
   else
     print('initializing a DenseCap model from ' .. opt.checkpoint_start_from)
+    new_model = DenseCapModel(opt)
     model = torch.load(opt.checkpoint_start_from).model
     model.opt.end_objectness_weight = opt.end_objectness_weight
     model.nets.localization_layer.opt.mid_objectness_weight = opt.mid_objectness_weight
@@ -19,6 +21,13 @@ function M.setup(opt)
     model.opt.train_remove_outbounds_boxes = opt.train_remove_outbounds_boxes
     model.opt.captioning_weight = opt.captioning_weight
     model.nets.posslice_net = nn.PosSlicer()
+    tmpnet = nn.Sequential()
+    tmpnet:add(model.nets.conv_net1)
+    tmpnet:add(model.nets.conv_net2)
+    tmpnet:add(model.nets.localization_layer)
+    tmpnet:add(new_model._buildRecognitionNet(model))
+    model.net = tmpnet
+
     if cudnn then
       cudnn.convert(model.net, cudnn)
       cudnn.convert(model.nets.localization_layer.nets.rpn, cudnn)
