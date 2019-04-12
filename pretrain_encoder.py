@@ -58,6 +58,12 @@ def train(loader,linNet,lstmEnc,crit,optimizer,savepath):
 	
 	epoch = 0
 	logger = open(os.path.join(savepath,'loss_history'),'w')
+	
+	def saveStateDict(linNet,lstmEnc):
+		models = {}
+		models['linNet'] = linNet.state_dict()
+		models['lstmEnc'] = lstmEnc.state_dict()
+		torch.save(models,os.path.join(savepath ,'lstmEnc.pt'))
 
 	while True:
 		ld = iter(loader)
@@ -81,16 +87,15 @@ def train(loader,linNet,lstmEnc,crit,optimizer,savepath):
 			optimizer.step()
 			
 			qdar.set_postfix(loss=str(np.round(loss.data.cpu().numpy(),3)))
+			if i>0 and i%1000==0:
+				saveStateDict(linNet,lstmEnc)
 
 		loss_epoch_mean = np.mean(loss_itr_list)
 		print('epoch '+str(epoch)+' mean loss:'+str(np.round(loss_epoch_mean,5)))
 		# loss_epoch_list.append(loss_epoch_mean)
 		logger.write(str(np.round(loss_epoch_mean,5))+'\n')
 		logger.flush()
-		models = {}
-		models['linNet'] = linNet.state_dict()
-		models['lstmEnc'] = lstmEnc.state_dict()
-		torch.save(models,os.path.join(savepath ,'lstmEnc.pt'))
+		saveStateDict(linNet,lstmEnc)
 		epoch += 1
 
 def eval(loader,linNet,lstmEnc,crit):
