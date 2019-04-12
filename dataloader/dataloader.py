@@ -57,7 +57,8 @@ class _BaseDataLoader(Dataset):
 					# pick_confirm file has been removed by lua loader. so this file is new. 
 					if (not os.path.isfile(writing_block_file)) and (not os.path.isfile(reading_block_file)):
 						# lua writing file finished.
-						os.mknod(reading_block_file)
+						if mode=='train':
+							os.mknod(reading_block_file)
 						break
 		assert(len(filename)==1)
 		filename = filename[0]
