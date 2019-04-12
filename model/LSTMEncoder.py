@@ -72,7 +72,6 @@ class EncoderRNN(BaseRNN):
 
         Returns: output, hidden
             - **output** (batch, seq_len, hidden_size): variable containing the encoded features of the input sequence
-            - **hidden** (num_layers * num_directions, batch, hidden_size): variable containing the features in the hidden state h
         """
         total_length = input_var.size(1)
         if use_prob_vector:
@@ -84,31 +83,9 @@ class EncoderRNN(BaseRNN):
             embedded = nn.utils.rnn.pack_padded_sequence(embedded, input_lengths, batch_first=True)
 
         self.rnn.flatten_parameters()
-        output, hidden = self.rnn(embedded)
+        output, _ = self.rnn(embedded)
 
         if self.variable_lengths:
             output, _ = nn.utils.rnn.pad_packed_sequence(output, batch_first=True, total_length=total_length)
 
-        return output #, hidden
-"""
-def train_EncoderRNN(trainloader, net, criterion, optimizer, device):
-    for epoch in range(50):  
-        start = time.time()
-        running_loss = 0.0
-        for i, (features, prob_vector) in enumerate(trainloader):
-            features = features.to(device)
-            prob_vector = prob_vector.to(device)
-            optimizer.zero_grad()
-            outputs = net(prob_vector)
-            loss = similarity_loss(features, outputs)
-            loss.backward()
-            optimizer.step()
-            running_loss += loss.item()
-            if i % 100 == 99:
-                end = time.time()
-                print('[epoch %d, iter %5d] loss: %.3f eplased time %.3f' %
-                      (epoch + 1, i + 1, running_loss / 100, end-start))
-                start = time.time()
-                running_loss = 0.0
-    print('Finished Training')
-"""
+        return output
