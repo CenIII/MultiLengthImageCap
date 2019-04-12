@@ -108,7 +108,7 @@ function DenseCapModel:__init(opt)
     idx_to_token = opt.idx_to_token,
     image_vector_dim=fc_dim,
   }
-  self.nets.language_model = nn.LanguageModel(lm_opt)
+  -- self.nets.language_model = nn.LanguageModel(lm_opt)
 
   self.nets.recog_net = self:_buildRecognitionNet()
   self.net:add(self.nets.recog_net)
@@ -144,8 +144,8 @@ function DenseCapModel:_buildRecognitionNet()
   local final_box_trans = self.nets.box_reg_branch(pos_roi_codes)
   local final_boxes = nn.ApplyBoxTransform(){pos_roi_boxes, final_box_trans}
 
-  local lm_input = {pos_roi_codes, gt_labels}
-  local lm_output = self.nets.language_model(lm_input)
+  -- local lm_input = {pos_roi_codes, gt_labels}
+  local lm_output = nil --self.nets.language_model(lm_input)
 
   -- Annotate nodes
   roi_codes:annotate{name='recog_base'}
@@ -352,7 +352,7 @@ function DenseCapModel:forward_test(input)
   local final_boxes = output[4]
   local objectness_scores = output[1]
   local captions = output[5]
-  local captions = self.nets.language_model:decodeSequence(captions)
+  local captions = nil--self.nets.language_model:decodeSequence(captions)
   return final_boxes, objectness_scores, captions
 end
 

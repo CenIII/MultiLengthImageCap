@@ -57,7 +57,8 @@ class _BaseDataLoader(Dataset):
 					# pick_confirm file has been removed by lua loader. so this file is new. 
 					if (not os.path.isfile(writing_block_file)) and (not os.path.isfile(reading_block_file)):
 						# lua writing file finished.
-						os.mknod(reading_block_file)
+						if mode=='train':
+							os.mknod(reading_block_file)
 						break
 		assert(len(filename)==1)
 		filename = filename[0]
@@ -132,7 +133,8 @@ class LoaderEnc(_BaseDataLoader):
 			lengths = torch.zeros(batchSize,dtype=torch.int32)
 			for i in range(batchSize):
 				cap = caps[i]
-				lengths[i] = (cap==0).nonzero()[0][0]
+				nonz = (cap==0).nonzero()
+				lengths[i] = nonz[0][0] if len(nonz)>0 else len(cap)
 			return lengths
 		for i in range(numImgs):
 			data = batch[i][0]
