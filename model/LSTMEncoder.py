@@ -65,6 +65,7 @@ class EncoderRNN(BaseRNN):
 
         Args:
             input_var (batch, seq_len): tensor containing the features of the input sequence.
+                   or (batch, seq_len, vocab_size): if use_prob_vector = True
             input_lengths (list of int, optional): A list that contains the lengths of sequences
               in the mini-batch
             use_prob_vector (bool, optional): if use probability vector instead of index vector of word (default: False)
