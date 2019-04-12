@@ -150,6 +150,12 @@ class LoaderEnc(_BaseDataLoader):
 		box_feats = box_feats[inds]
 		box_captions = box_captions[inds]
 		capLens = capLens[inds]
+		nonz = (capLens<=0).nonzero()
+		if len(nonz)>0:
+			ending = nonz[0][0]
+			box_feats = box_feats[:ending]
+			box_captions = box_captions[:ending]
+			capLens = capLens[:ending]
 
 		return box_feats, box_captions, capLens
 
