@@ -67,7 +67,7 @@ function M.setup(opt)
     tmpnet:add(model.nets.conv_net1)
     tmpnet:add(model.nets.conv_net2)
     tmpnet:add(model.nets.localization_layer)
-    tmpnet:add(M._buildRecognitionNet(model))
+    tmpnet:add(M._buildRecognitionNet(model.nets))
     model.net = tmpnet
 
     if cudnn then
