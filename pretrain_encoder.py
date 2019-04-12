@@ -150,21 +150,21 @@ if __name__ == '__main__':
 		VocabData = pickle.load(f)
 
 	# load linear model, transform feature tensor to semantic space
-	linNet = LinearModel(hiddenSize=1024)
+	linNet = LinearModel(hiddenSize=4096)
 	# load LSTM encoder
-	lstmEnc = EncoderRNN(len(VocabData['word_dict']), 15, 1024, 300,
+	lstmEnc = EncoderRNN(len(VocabData['word_dict']), 15, 4096, 300,
 	                 input_dropout_p=0, dropout_p=0,
 	                 n_layers=1, bidirectional=False, rnn_cell='lstm', variable_lengths=True,
 	                 embedding_parameter=VocabData['word_embs'], update_embedding=False)
 	# load crit
-	crit = SimilarityLoss(2,2,4)
+	crit = SimilarityLoss(0.5,0.5,1)
 
 	if args.evaluate_mode:			# evaluation mode
 		loader = LoaderEnc(mode='test')
 		linNet,lstmEnc = reloadModel(args.model_path,linNet,lstmEnc)
 		eval(loader,linNet,lstmEnc,crit)
 	else:							# train mode
-		optimizer = torch.optim.Adam(list(filter(lambda p: p.requires_grad, lstmEnc.parameters()))+list(linNet.parameters()), 0.001)
+		optimizer = torch.optim.Adam(list(filter(lambda p: p.requires_grad, lstmEnc.parameters()))+list(linNet.parameters()), 0.0001)
 		dataset = LoaderEnc()
 		loader = DataLoader(dataset,batch_size=args.batch_imgs, shuffle=False, num_workers=2, collate_fn=dataset.collate_fn)
 		train(loader,linNet,lstmEnc,crit,optimizer,args.save_path)
