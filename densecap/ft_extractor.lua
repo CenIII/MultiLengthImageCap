@@ -137,6 +137,7 @@ local function saveJson(outputs, pipeLen, odd)
   if odd>0 then
     inc = 4
     idx = odd
+  end
   -- if odd>0 then idx = odd end
   while true do
     if check_pick_confirm(idx) then
