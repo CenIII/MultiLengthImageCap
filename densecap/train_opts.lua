@@ -97,7 +97,7 @@ function M.parse(arg)
   cmd:option('-eval_first_iteration',0,
     'evaluate on first iteration? 1 = do, 0 = dont.')
   cmd:option('-pipe_len', 60, 'pipeline length. (how many tmp data you wanna keep in ./data_pipeline dir)')
-  cmd:option('-odd',false,'data index even or odd.')
+  cmd:option('-odd',0,'data index even or odd.')
   cmd:text()
   local opt = cmd:parse(arg or {})
   return opt
