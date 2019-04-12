@@ -20,9 +20,10 @@ def getLengths(caps):
 	lengths = torch.zeros(batchSize,dtype=torch.int32)
 	for i in range(batchSize):
 		cap = caps[i]
-		lengths[i] = (cap==0).nonzero()[0][0]
+		nonz = (cap==0).nonzero()
+		lengths[i] = nonz[0][0] if len(nonz)>0 else len(cap)
 	return lengths
-			
+
 def reloadModel(model_path,linNet,lstmEnc):
 	pt = torch.load(model_path)
 
