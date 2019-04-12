@@ -35,7 +35,7 @@ function M._buildRecognitionNet(nets)
   local outputs = {
     objectness_scores,
     pos_roi_boxes, final_box_trans, final_boxes,
-    objectness_scores,
+    roi_codes,
     gt_boxes, gt_labels
     -- pos_roi_feats,
     -- pos_roi_codes
