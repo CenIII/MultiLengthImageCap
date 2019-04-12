@@ -22,7 +22,7 @@ function M._buildRecognitionNet(nets)
   local final_boxes = nn.ApplyBoxTransform(){pos_roi_boxes, final_box_trans}
 
   -- local lm_input = {pos_roi_codes, gt_labels}
-  local lm_output = nil --self.nets.language_model(lm_input)
+  local lm_output = 0 --self.nets.language_model(lm_input)
 
   -- Annotate nodes
   roi_codes:annotate{name='recog_base'}
