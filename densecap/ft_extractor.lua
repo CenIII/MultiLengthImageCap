@@ -151,10 +151,11 @@ local function saveJson(outputs, pipeLen, odd)
   
   -- local enc = json.encode(outputs)
   local iter = outputs['info']['split_bounds'][1]
-  local numiters = outputs['info']['split_bounds'][2]
+  local true_imid = outputs['info']['split_bounds'][2]
+  local numiters = outputs['info']['split_bounds'][3]
   local fblk = io.open('./data_pipeline/writing_block_'..tostring(idx),"w")
   fblk:close()
-  torch.save('./data_pipeline/data_'..tostring(idx)..'_'..tostring(iter)..'_'..tostring(numiters), outputs)
+  torch.save('./data_pipeline/data_'..tostring(idx)..'_'..tostring(true_imid)..'_'..tostring(numiters), outputs)
   -- local f = io.open('./data_pipeline/data_'..tostring(idx)..'_'..tostring(iter)..'_'..tostring(numiters),"w")
   -- f:write(enc)
   -- f:close()
