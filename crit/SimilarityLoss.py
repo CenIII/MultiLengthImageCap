@@ -279,6 +279,37 @@ class SimilarityLoss(nn.Module):
         score_mat = self.calculate_matching_score(image_b, text_b, len_b, M, H_r, H_w,check_score_mat=True)
         return score_mat
 
+    
+    def image_text_alignment(self, score_mat, k):
+        """
+        image sentence alignment evaluation, k is the top k element.
+        """
+        # check image anaotation, text as row and image as column
+        _, img_rank = torch.topk(score_mat, score_mat.size()[0])
+        anotation_val = 0
+        anotation_rank = 0
+        for i, val in enumerate(img_rank):
+            if i in val[: k]:
+                anotation_val += 1
+            anotation_rank += (val == i).nonzero().item()
+            
+        # check image search, image as row and text as column
+        _, text_rank = torch.topk(score_mat.t(), score_mat.size()[0])
+        search_val = 0
+        search_rank = 0
+        for i, val in enumerate(text_rank):
+            if i in val[: k]:
+                search_val += 1
+            search_rank += (val == i).nonzero().item()
+        
+        anotation_recall = anotation_val / score_mat.size()[0]
+        med_score_anotate = anotation_rank / score_mat.size()[0]
+        search_recall = search_val / score_mat.size()[0]
+        med_score_search = search_rank / score_mat.size()[0]
+        
+        return anotation_recall, med_score_anotate, search_recall, med_score_search
+        
+
     def forward(self, image, text, length_info):
         """
         :param image: 3D tensor for img with dimension B x M x D x H_r x W_r
@@ -344,23 +375,33 @@ if __name__ == "__main__":
     # # print(matrix)
     # # print(loss)
     # loss.backward()
-    torch.manual_seed(7)
-    torch.backends.cudnn.deterministic=True
-    image = torch.randn(78, 1, 1024,7,7)
+    # torch.manual_seed(7)
+    # torch.backends.cudnn.deterministic=True
+    # image = torch.randn(78, 1, 1024,7,7)
     
-    image.requires_grad = True
-    torch.manual_seed(7)
-    text = torch.randn(78, 15, 1024)
-    text.requires_grad = True
-    length_info = torch.tensor([5, 6, 8, 4, 7]*16)
-    crit = SimilarityLoss(0.5, 0.5, 1)
-    # loss = m.calculate_matching_score(image, text, length_info, 3, 7, 7)
-    loss = crit(image,text,length_info)
-    print('final loss: '+str(loss.data))
-    # matrix = m.generate_similarity_matrix(image, text, length_info)
-    # print(matrix)
-    # print(loss)
-    loss.backward()
+    # image.requires_grad = True
+    # torch.manual_seed(7)
+    # text = torch.randn(78, 15, 1024)
+    # text.requires_grad = True
+    # length_info = torch.tensor([5, 6, 8, 4, 7]*16)
+    # crit = SimilarityLoss(0.5, 0.5, 1)
+    # # loss = m.calculate_matching_score(image, text, length_info, 3, 7, 7)
+    # loss = crit(image,text,length_info)
+    # print('final loss: '+str(loss.data))
+    # # matrix = m.generate_similarity_matrix(image, text, length_info)
+    # # print(matrix)
+    # # print(loss)
+    # loss.backward()
+    sample_score = torch.rand(10, 10)
+    sample_score_2 = torch.tensor([
+        [10, 18, 0],
+        [12, 10, 15],
+        [17, 15, 16]
+    ])
+    m = SimilarityLoss(1, 1, 1)
+    a, b, c, d = m.image_text_alignment(sample_score_2, 3)
+    print(a, b, c, d)
+
 
 
 
