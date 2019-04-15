@@ -7,9 +7,15 @@ import torch
 
 class LanguageModelLoss(nn.Module):
 
-    def __init__(self, model):
+    def __init__(self, PATH, vocab_size, max_len, hidden_size, embedding_size, sos_id, eos_id):
         super(LanguageModelLoss, self).__init__()
-        self.model = model
+        model = DecoderRNN(vocab_size, max_len, hidden_size, embedding_size, sos_id, eos_id, rnn_cell='lstm')
+        self.model = self.loadCheckpoint(PATH, model)
+
+    def loadCheckpoint(self, PATH, model):
+        model.load_state_dict(torch.load(PATH))
+        model.eval()
+        return model
 
     def criterion(self, decoder_out, lm_out, mask=None):
         N = decoder_out.shape[0]
@@ -28,6 +34,8 @@ class LanguageModelLoss(nn.Module):
         lm_output_reshape = torch.cat([lm_output[i].unsqueeze(1) for i in range(len(lm_output))],1)
         out_reshaped = out_reshaped[:,1:,:].contiguous().view(-1, vocab_size)
         lm_output_reshape = lm_output_reshape[:,:-1,:].contiguous().view(-1, vocab_size)
+        if mask is not None:
+            mask = mask[:,1:].contiguous().view(-1, 1)
         loss = self.criterion(out_reshaped,lm_output_reshape, mask)
 
         return loss
