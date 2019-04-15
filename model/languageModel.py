@@ -13,7 +13,7 @@ class LanguageModelLoss(nn.Module):
 
     def criterion(self, decoder_out, lm_out, mask=None):
         N = decoder_out.shape[0]
-        _loss = torch.mul(torch.log(decoeder_out), lm_out)
+        _loss = torch.mul(torch.log(decoder_out), lm_out)
         if mask is not None:
             _loss = torch.mul(_loss, mask)
         return -torch.sum(_loss)/N
@@ -33,26 +33,5 @@ class LanguageModelLoss(nn.Module):
         return loss
 
 
-# def train_LM(data, model, optimizer, criterion, pad_id):
-    
 
-#     for epoch in range(max_epoch):
-#         ld = iter(data)
-#         for batch in data:
-#             sentences = []
-#             for i in range(len(batch)):
-#                 sentences.append(batch['full']['caption'])
-#             input = pad_sequence(sentences, batch_first=True, padding_value=pad_id)
-
-#             optimizer.zero_grad()
-#             loss = 0
-#             decoder_output, _, _ = model(input, teacher_forcing_ratio=1)
-#             for i in range(len(sentences)):
-#                 length = sentences[i].shape[0] # need to check shape in debug
-#                 for j in range(length-1):
-#                     loss += criterion(decoder_output[j][i],sentences[i][j+1])
-
-#             loss = criterion(decoder_output, sentences)
-#             loss.backward()
-#             optimizer.step()
         
