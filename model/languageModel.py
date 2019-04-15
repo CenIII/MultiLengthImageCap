@@ -18,7 +18,7 @@ class LanguageModelLoss(nn.Module):
             _loss = torch.mul(_loss, mask)
         return -torch.sum(_loss)/N
 
-    def forward(self, outputs, lengths, mask=None):
+    def forward(self, outputs, mask=None):
         loss = 0
 
         out_reshaped = torch.cat([outputs[i].unsqueeze(1) for i in range(len(outputs))],1)
