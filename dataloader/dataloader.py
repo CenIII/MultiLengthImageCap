@@ -4,19 +4,22 @@ import glob
 # import json
 import torchfile
 import random
+from torch.utils.data import Dataset
+import torch
 
-class _BaseDataLoader(object):
+# device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+
+class _BaseDataLoader(Dataset):
 	"""docstring for BaseDataLoader"""
 	def __init__(self):
 		super(_BaseDataLoader, self).__init__()
-		self.pipeIndex = 0
+		# self.pipeIndex = 0
 		# save pick_confirm for all pip indices
 		self.dataPipePath = './densecap/data_pipeline/'
-		self.pipeLen = 10
-		self.init_pick_confirm_files()
+		self.pipeLen = 60
 
-	def updatePipeIndex(self):
-		self.pipeIndex = (self.pipeIndex+1)%self.pipeLen
+	# def updatePipeIndex(self):
+	# 	self.pipeIndex = (self.pipeIndex+1)%self.pipeLen
 
 	def init_pick_confirm_files(self):
 		for i in range(self.pipeLen):
@@ -26,7 +29,7 @@ class _BaseDataLoader(object):
 				with open(save_file,'w') as f:
 					f.write('a')
 
-	def loadOneJson(self):
+	def loadOneJson(self, mode, pInd):
 		'''
 		Every time loadJson load data for ONE image. The loaded data variable contains fields below:
 		# data['info'] = info[1]
@@ -41,18 +44,24 @@ class _BaseDataLoader(object):
 		'''
 
 		# list data_$pipIndex_*
-		pInd = self.pipeIndex
+		# pInd = self.pipeIndex
+		data_file = self.dataPipePath+'data_'+str(pInd)+'_*'
+		pick_confirm_file = self.dataPipePath+'pick_confirm_'+str(pInd)
+		writing_block_file = self.dataPipePath+'writing_block_'+str(pInd)
+		reading_block_file = self.dataPipePath+'reading_block_'+str(pInd)
+
 		while True:
-			filename = glob.glob(self.dataPipePath+'data_'+str(pInd)+'*')
+			filename = glob.glob(data_file)
 			if len(filename)>=1:
-				if not os.path.isfile(self.dataPipePath+'pick_confirm_'+str(pInd)):
+				if (not os.path.isfile(pick_confirm_file)) or mode=='test':
 					# pick_confirm file has been removed by lua loader. so this file is new. 
-					if not os.path.isfile(self.dataPipePath+'writing_block_'+str(pInd)):
+					if (not os.path.isfile(writing_block_file)) and (not os.path.isfile(reading_block_file)):
 						# lua writing file finished.
+						if mode=='train':
+							os.mknod(reading_block_file)
 						break
 		assert(len(filename)==1)
 		filename = filename[0]
-		# print(filename)
 		# read iter and numiters
 		tmp = filename.split('/')[-1].split('_')
 		numiters = tmp[-1]
@@ -63,24 +72,39 @@ class _BaseDataLoader(object):
 			reader = torchfile.T7Reader(f, utf8_decode_strings=True)
 			data = reader.read_obj()
 
-		os.remove(filename)
-		# place pick_confirm_$pipIndex to notify lua program
-		with open(self.dataPipePath+'pick_confirm_'+str(pInd), 'w') as f:
-			f.write('a')
+		if mode=='train':
+			os.remove(filename)
+			os.remove(reading_block_file)
+			# place pick_confirm_$pipIndex to notify lua program
+			os.mknod(pick_confirm_file)
+			
 
 		# update pInd
-		self.updatePipeIndex()
+		# self.updatePipeIndex()
 		# return data, iter, numiters
 		return data, itr, numiters
 
 	def getBatch(self):
 		raise NotImplementedError
 
+	def __len__(self):
+		"""Make sure len(dataset) return the size of dataset. Required to override."""
+		raise NotImplementedError
 
-class LoaderEncTrain(_BaseDataLoader):
+	def __getitem__(self, idx):
+		"""Support indexing such that dataset[i] get ith sample. Required to override"""
+		raise NotImplementedError
+
+
+class LoaderEnc(_BaseDataLoader):
 	"""docstring for LoaderEncTrain"""
-	def __init__(self):
-		super(LoaderEncTrain, self).__init__()
+	def __init__(self,mode='train'):
+		super(LoaderEnc, self).__init__()
+		if mode=='train':
+			self.init_pick_confirm_files()
+		self.mode = mode
+		_,_,numiters = self.getBatch(self.pipeLen-1)
+		self.numiters = int(numiters)
 
 	def filtReplicate(self, data):
 		# shuffle 128 gt boxes copy
@@ -99,13 +123,49 @@ class LoaderEncTrain(_BaseDataLoader):
 		# return selected inds
 		return selectInds
 		
-	def getBatch(self):
+	def collate_fn(self,batch): #loader,numImgs=8
+		box_feats = []
+		box_captions = []
+		capLens = []
+		numImgs = len(batch)
+		def getLengths(caps):
+			batchSize = len(caps)
+			lengths = torch.zeros(batchSize,dtype=torch.int32)
+			for i in range(batchSize):
+				cap = caps[i]
+				nonz = (cap==0).nonzero()
+				lengths[i] = nonz[0][0] if len(nonz)>0 else len(cap)
+			return lengths
+		for i in range(numImgs):
+			data = batch[i][0]
+			box_feats.append(torch.tensor(data['box_feats']))
+			box_captions.append(torch.LongTensor(data['box_captions_gt']))
+			capLens.append(getLengths(box_captions[-1]))
+		box_feats = torch.cat(box_feats)
+		box_captions = torch.cat(box_captions)
+		capLens = torch.cat(capLens)
+
+		# sort decreasing order
+		inds = torch.argsort(-capLens)
+		box_feats = box_feats[inds]
+		box_captions = box_captions[inds]
+		capLens = capLens[inds]
+		nonz = (capLens<=0).nonzero()
+		if len(nonz)>0:
+			ending = nonz[0][0]
+			box_feats = box_feats[:ending]
+			box_captions = box_captions[:ending]
+			capLens = capLens[:ending]
+
+		return box_feats, box_captions, capLens
+
+	def getBatch(self, pipIndx):
 		'''
 		For LSTM encoder training, the "batch" here is actually 
 		a batch of boxes and captions for ONE image. 
 		Every image has up to 128 boxes, numbers may vary. 
 		'''
-		data, itr, numiters = self.loadOneJson()
+		data, itr, numiters = self.loadOneJson(self.mode,pipIndx)
 		filtInds = self.filtReplicate(data)
 		# return only useful data fields
 		ret = {}
@@ -117,6 +177,13 @@ class LoaderEncTrain(_BaseDataLoader):
 			ret['glob_caption_gt'] = data['glob_caption_gt']
 
 		return ret, itr, numiters
+	def __len__(self):
+		"""Make sure len(dataset) return the size of dataset. Required to override."""
+		return self.numiters
+
+	def __getitem__(self, idx):
+		"""Support indexing such that dataset[i] get ith sample. Required to override"""
+		return self.getBatch(idx%self.pipeLen)
 
 
 		
@@ -124,6 +191,7 @@ class _LoaderDec(_BaseDataLoader):
 	"""docstring for LoaderDec"""
 	def __init__(self, arg):
 		super(_LoaderDec, self).__init__()
+		self.init_pick_confirm_files()
 		self.arg = arg
 
 	def randomSample(self,data,boxes,sampleNum):

@@ -120,27 +120,42 @@ end
 local function check_pick_confirm(idx)
   -- body
   local fr = io.open('./data_pipeline/pick_confirm_'..tostring(idx), "r")
-   if fr~=nil then io.close(fr) return true else return false end
+  if fr~=nil then 
+    os.remove('./data_pipeline/pick_confirm_'..tostring(idx))
+    io.close(fr) 
+    return true 
+  else 
+    return false 
+  end
 end
 
-local function saveJson(outputs, pipeLen)
+local function saveJson(outputs, pipeLen, odd)
   -- body
   -- check "confirm" file
-  idx = 0
+  local idx = 0
+  local inc = 1
+  if odd>0 then
+    inc = 4
+    idx = odd
+  end
+  -- if odd>0 then idx = odd end
   while true do
     if check_pick_confirm(idx) then
-      os.remove('./data_pipeline/pick_confirm_'..tostring(idx))
       break
     end
-    idx = (idx+1)%pipeLen
+    idx = (idx+inc)%pipeLen
+    if odd==0 and idx%2==0 then
+      idx = (idx+2)%pipeLen
+    end
   end
   
   -- local enc = json.encode(outputs)
   local iter = outputs['info']['split_bounds'][1]
-  local numiters = outputs['info']['split_bounds'][2]
+  local true_imid = outputs['info']['split_bounds'][2]
+  local numiters = outputs['info']['split_bounds'][3]
   local fblk = io.open('./data_pipeline/writing_block_'..tostring(idx),"w")
   fblk:close()
-  torch.save('./data_pipeline/data_'..tostring(idx)..'_'..tostring(iter)..'_'..tostring(numiters), outputs)
+  torch.save('./data_pipeline/data_'..tostring(idx)..'_'..tostring(true_imid)..'_'..tostring(numiters), outputs)
   -- local f = io.open('./data_pipeline/data_'..tostring(idx)..'_'..tostring(iter)..'_'..tostring(numiters),"w")
   -- f:write(enc)
   -- f:close()
@@ -158,7 +173,7 @@ while true do
   -- print('success!')
   out_packed = pack_outputs(outputs, info)
   -- save to json file
-  saveJson(out_packed, pipeLen)
+  saveJson(out_packed, pipeLen, opt.odd)
   counter = counter + 1
 
 end

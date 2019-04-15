@@ -83,7 +83,8 @@ function DataLoader:__init(opt)
     if self.split[i] == 1 then table.insert(self.val_ix, i) end
     if self.split[i] == 2 then table.insert(self.test_ix, i) end
   end
-
+  math.randomseed(os.time()) -- be sure to set randomseed somewhere for better randomness
+  self.train_ix = self:shuffleInds(self.train_ix)
   self.iterators = {[0]=1,[1]=1,[2]=1} -- iterators (indices to split lists) for train/val/test
   print(string.format('assigned %d/%d/%d images to train/val/test.', #self.train_ix, #self.val_ix, #self.test_ix))
 
@@ -140,6 +141,28 @@ function DataLoader:resetIterator(split)
   self.iterators[split] = 1
 end
 
+function DataLoader:shuffleInds(array)
+    -- fisher-yates
+    local output = { }
+    local random = math.random
+
+    for index = 1, #array do
+        local offset = index - 1
+        local value = array[index]
+        local randomIndex = offset*random()
+        local flooredIndex = randomIndex - randomIndex%1
+
+        if flooredIndex == offset then
+            output[#output + 1] = value
+        else
+            output[#output + 1] = output[flooredIndex + 1]
+            output[flooredIndex + 1] = value
+        end
+    end
+
+    return output
+end
+
 --[[
   split is an integer: 0 = train, 1 = val, 2 = test
   Returns a batch of data in two Tensors:
@@ -152,7 +175,7 @@ end
 --]]
 function DataLoader:getBatch(opt)
   local split = utils.getopt(opt, 'split', 0)
-  local iterate = utils.getopt(opt, 'iterate', false)
+  local iterate = utils.getopt(opt, 'iterate', true)
 
   assert(split == 0 or split == 1 or split == 2, 'split must be integer, either 0 (train), 1 (val) or 2 (test)')
   local split_ix
@@ -168,7 +191,11 @@ function DataLoader:getBatch(opt)
   if iterate then
     ri = self.iterators[split] -- get next index from iterator
     local ri_next = ri + 1 -- increment iterator
-    if ri_next > max_index then ri_next = 1 end -- wrap back around
+    if ri_next > max_index then
+      math.randomseed(os.time()) -- be sure to set randomseed somewhere for better randomness
+      split_ix = self:shuffleInds(split_ix)
+      ri_next = 1 
+    end -- wrap back around
     self.iterators[split] = ri_next
   else
     -- pick an index randomly
@@ -215,7 +242,7 @@ function DataLoader:getBatch(opt)
   local w,h = self.image_widths[ix], self.image_heights[ix]
   local ow,oh = self.original_widths[ix], self.original_heights[ix]
   local info_table = { {filename = filename, 
-                        split_bounds = {ri, #split_ix},
+                        split_bounds = {ri, ix, #split_ix},
                         width = w, height = h, ori_width = ow, ori_height = oh} }
 
   -- read regions if applicable
