@@ -142,11 +142,13 @@ def eval(loader,linNet,lstmEnc,crit):
 	lstmEnc.eval()
 
 	batch_lst = []
-	for i in range(60):
+	for i in range(2):
 		data, _, _ = loader.getBatch(i)
 		batch_lst.append(data)
 	box_feats, box_captions, capLens = collate_fn(batch_lst)
-
+	box_feats = box_feats.to(device)
+	box_captions = box_captions.to(device)
+	capLens = capLens.to(device)
 	# box_feats = torch.tensor(data['box_feats']).to(device)
 	# # glob_feat = torch.tensor(data['glob_feat'])
 	# box_captions =  torch.LongTensor(data['box_captions_gt']).to(device)
