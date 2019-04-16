@@ -3,7 +3,7 @@ import torch.nn as nn
 import tqdm
 import numpy as np
 from model.LSTMEncoder import EncoderRNN
-from dataloader.dataloader import LoaderEnc, collate_fn
+from dataloader.dataloader import LoaderEnc
 from model.LinearModel import LinearModel
 from crit.SimilarityLoss import SimilarityLoss
 import pickle
@@ -48,6 +48,42 @@ def makeInp(*inps):
 	for inp in inps:
 		ret.append(inp.to(device))
 	return ret
+
+def collate_fn(batch): #loader,numImgs=8
+		box_feats = []
+		box_captions = []
+		capLens = []
+		numImgs = len(batch)
+		def getLengths(caps):
+			batchSize = len(caps)
+			lengths = torch.zeros(batchSize,dtype=torch.int32)
+			for i in range(batchSize):
+				cap = caps[i]
+				nonz = (cap==0).nonzero()
+				lengths[i] = nonz[0][0] if len(nonz)>0 else len(cap)
+			return lengths
+		for i in range(numImgs):
+			data = batch[i][0]
+			box_feats.append(torch.tensor(data['box_feats']))
+			box_captions.append(torch.LongTensor(data['box_captions_gt']))
+			capLens.append(getLengths(box_captions[-1]))
+		box_feats = torch.cat(box_feats)
+		box_captions = torch.cat(box_captions)
+		capLens = torch.cat(capLens)
+
+		# sort decreasing order
+		inds = torch.argsort(-capLens)
+		box_feats = box_feats[inds]
+		box_captions = box_captions[inds]
+		capLens = capLens[inds]
+		nonz = (capLens<=0).nonzero()
+		if len(nonz)>0:
+			ending = nonz[0][0]
+			box_feats = box_feats[:ending]
+			box_captions = box_captions[:ending]
+			capLens = capLens[:ending]
+
+		return box_feats, box_captions, capLens
 
 def train(loader,linNet,lstmEnc,crit,optimizer,savepath):
 	os.makedirs(savepath,exist_ok=True)
