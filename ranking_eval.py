@@ -63,7 +63,7 @@ def collate_fn(batch): #loader,numImgs=8
 				lengths[i] = nonz[0][0] if len(nonz)>0 else len(cap)
 			return lengths
 		for i in range(numImgs):
-			data = batch[i][0]
+			data = batch[i]
 			box_feats.append(torch.tensor(data['box_feats']))
 			box_captions.append(torch.LongTensor(data['box_captions_gt']))
 			capLens.append(getLengths(box_captions[-1]))
