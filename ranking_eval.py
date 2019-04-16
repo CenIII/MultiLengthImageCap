@@ -149,7 +149,7 @@ def eval(loader,linNet,lstmEnc,crit):
 	box_feats = box_feats.to(device)
 	box_captions = box_captions.to(device)
 	capLens = capLens.to(device)
-	Similarity_matrix = torch.zeros(1000, 1000)
+	# Similarity_matrix = torch.zeros(1000, 1000)
 	for i in range(10):
 		for j in range(10):
 			box_caption = box_captions[i * 100 : (i + 1) * 100]
@@ -158,7 +158,7 @@ def eval(loader,linNet,lstmEnc,crit):
 			out1 = linNet(box_feat)
 			out2 = lstmEnc(box_caption,input_lengths=capLen)
 			s_matrix = crit.generate_similarity_matrix(out1, out2, capLens)
-			Similarity_matrix[i * 100 : (i + 1) * 100, j * 100 : (j + 1) * 100] = s_matrix
+			# Similarity_matrix[i * 100 : (i + 1) * 100, j * 100 : (j + 1) * 100] = s_matrix
 	# box_feats = torch.tensor(data['box_feats']).to(device)
 	# # glob_feat = torch.tensor(data['glob_feat'])
 	# box_captions =  torch.LongTensor(data['box_captions_gt']).to(device)
@@ -173,12 +173,12 @@ def eval(loader,linNet,lstmEnc,crit):
 	# out1 = linNet(box_feats)
 	# out2 = lstmEnc(box_captions,input_lengths=capLens)
 	# Similarity_matrix = crit.generate_similarity_matrix(out1, out2, capLens)
-	anotation_recall, med_score_anotate, search_recall, med_score_search =\
-	 crit.image_text_alignment(Similarity_matrix, 4)
-	print("anotation_recall", anotation_recall)
-	print("med_score_anotate", med_score_anotate)
-	print("search_recal", search_recall)
-	print("med_score_search", med_score_search)
+			anotation_recall, med_score_anotate, search_recall, med_score_search =\
+			crit.image_text_alignment(s_matrix, 4)
+			print("anotation_recall", anotation_recall)
+			print("med_score_anotate", med_score_anotate)
+			print("search_recal", search_recall)
+			print("med_score_search", med_score_search)
 
 def parseArgs():
 	parser = argparse.ArgumentParser()
