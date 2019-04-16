@@ -1,3 +1,6 @@
+.idea
+.DS
+
 /data
 *.swp
 /vis/data/*.jpg
