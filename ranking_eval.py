@@ -149,7 +149,7 @@ def eval(loader,linNet,lstmEnc,crit):
 	box_feats = box_feats.to(device)
 	box_captions = box_captions.to(device)
 	capLens = capLens.to(device)
-	Similarity_matrix = torch.zero(1500, 1500)
+	Similarity_matrix = torch.zeros(1500, 1500)
 	for i in range(15):
 		for j in range(15):
 			box_caption = box_captions[i * 100 : (i + 1) * 100]
