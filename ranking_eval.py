@@ -142,30 +142,30 @@ def eval(loader,linNet,lstmEnc,crit):
 	lstmEnc.eval()
 
 	batch_lst = []
-	# for i in range(2):
-	# 	data, _, _ = loader.getBatch(i)
-	# 	batch_lst.append(data)
-	# box_feats, box_captions, capLens = collate_fn(batch_lst)
-	# box_feats = box_feats.to(device)
-	# box_captions = box_captions.to(device)
-	# capLens = capLens.to(device)
-
-	for i in range(60):
+	for i in range(2):
 		data, _, _ = loader.getBatch(i)
-		box_feats, box_captions, capLens = collate_fn([data])
-		box_feats = box_feats.to(device)
-		box_captions = box_captions.to(device)
-		capLens = capLens.to(device)
-	# Similarity_matrix = torch.zeros(1000, 1000)
-	# for i in range(10):
-	# 	# for j in range(10):
-	# 	box_caption = box_captions[i * 100 : (i + 1) * 100]
-	# 	box_feat = box_feats[i * 100 : (i + 1) * 100]
-	# 	capLen = capLens[i * 100 : (i + 1) * 100]
-	# 	out1 = linNet(box_feat)
-	# 	out2 = lstmEnc(box_caption,input_lengths=capLen)
-	# 	s_matrix = crit.generate_similarity_matrix(out1, out2, capLens)
-			# Similarity_matrix[i * 100 : (i + 1) * 100, j * 100 : (j + 1) * 100] = s_matrix
+		batch_lst.append(data)
+	box_feats, box_captions, capLens = collate_fn(batch_lst)
+	box_feats = box_feats.to(device)
+	box_captions = box_captions.to(device)
+	capLens = capLens.to(device)
+
+	# for i in range(60):
+	# 	data, _, _ = loader.getBatch(i)
+	# 	box_feats, box_captions, capLens = collate_fn([data])
+	# 	box_feats = box_feats.to(device)
+	# 	box_captions = box_captions.to(device)
+	# 	capLens = capLens.to(device)
+	Similarity_matrix = torch.zeros(1000, 1000)
+	for i in range(10):
+		for j in range(10):
+			box_caption = box_captions[i * 100 : (i + 1) * 100]
+			box_feat = box_feats[i * 100 : (i + 1) * 100]
+			capLen = capLens[i * 100 : (i + 1) * 100]
+			out1 = linNet(box_feat)
+			out2 = lstmEnc(box_caption,input_lengths=capLen)
+			s_matrix = crit.generate_similarity_matrix(out1, out2, capLens)
+			Similarity_matrix[i * 100 : (i + 1) * 100, j * 100 : (j + 1) * 100] = s_matrix.clone()
 	# box_feats = torch.tensor(data['box_feats']).to(device)
 	# # glob_feat = torch.tensor(data['glob_feat'])
 	# box_captions =  torch.LongTensor(data['box_captions_gt']).to(device)
@@ -177,15 +177,15 @@ def eval(loader,linNet,lstmEnc,crit):
 	# capLens = capLens[inds]
 
 	# check the similarity loss based on argument
-		out1 = linNet(box_feats)
-		out2 = lstmEnc(box_captions,input_lengths=capLens)
-		Similarity_matrix = crit.generate_similarity_matrix(out1, out2, capLens)
-		anotation_recall, med_score_anotate, search_recall, med_score_search =\
-		crit.image_text_alignment(Similarity_matrix, 4)
-		print("anotation_recall", anotation_recall)
-		print("med_score_anotate", med_score_anotate)
-		print("search_recal", search_recall)
-		print("med_score_search", med_score_search)
+	# out1 = linNet(box_feats)
+	# out2 = lstmEnc(box_captions,input_lengths=capLens)
+	# Similarity_matrix = crit.generate_similarity_matrix(out1, out2, capLens)
+	anotation_recall, med_score_anotate, search_recall, med_score_search =\
+	crit.image_text_alignment(Similarity_matrix, 4)
+	print("anotation_recall", anotation_recall)
+	print("med_score_anotate", med_score_anotate)
+	print("search_recal", search_recall)
+	print("med_score_search", med_score_search)
 
 def parseArgs():
 	parser = argparse.ArgumentParser()
