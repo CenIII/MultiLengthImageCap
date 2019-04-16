@@ -142,16 +142,16 @@ def eval(loader,linNet,lstmEnc,crit):
 	lstmEnc.eval()
 
 	batch_lst = []
-	for i in range(6):
+	for i in range(60):
 		data, _, _ = loader.getBatch(i)
 		batch_lst.append(data)
 	box_feats, box_captions, capLens = collate_fn(batch_lst)
 	box_feats = box_feats.to(device)
 	box_captions = box_captions.to(device)
 	capLens = capLens.to(device)
-	Similarity_matrix = torch.zeros(1500, 1500)
-	for i in range(15):
-		for j in range(15):
+	Similarity_matrix = torch.zeros(1000, 1000)
+	for i in range(10):
+		for j in range(10):
 			box_caption = box_captions[i * 100 : (i + 1) * 100]
 			box_feat = box_feats[j * 100 : (j + 1) * 100]
 			capLen = capLens[i * 100 : (i + 1) * 100]
