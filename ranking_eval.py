@@ -166,7 +166,8 @@ def eval(loader,linNet,lstmEnc,crit):
 			capLen = capLens[i * 100 : (i + 1) * 100]
 			out1 = linNet(box_feat)
 			out2 = lstmEnc(box_caption,input_lengths=capLen)
-			s_matrix = crit.generate_similarity_matrix(out1, out2, capLens).item()
+			s_matrix = crit.generate_similarity_matrix(out1, out2, capLens)
+			s_matrix = s_matrix.numpy()
 			# Similarity_matrix[i * 100 : (i + 1) * 100, j * 100 : (j + 1) * 100] = s_matrix.clone()
 			mat_lst.append(s_matrix)
 		temp_mat = np.concatenate(mat_lst, axis=1)
