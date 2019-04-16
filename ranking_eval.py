@@ -142,7 +142,7 @@ def eval(loader,linNet,lstmEnc,crit):
 	lstmEnc.eval()
 
 	batch_lst = []
-	for i in range(2):
+	for i in range(60):
 		data, _, _ = loader.getBatch(i)
 		batch_lst.append(data)
 	box_feats, box_captions, capLens = collate_fn(batch_lst)
