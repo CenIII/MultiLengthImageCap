@@ -166,12 +166,15 @@ def eval(loader,linNet,lstmEnc,crit):
 			capLen = capLens[i * 100 : (i + 1) * 100]
 			out1 = linNet(box_feat)
 			out2 = lstmEnc(box_caption,input_lengths=capLen)
-			s_matrix = crit.generate_similarity_matrix(out1, out2, capLens)
+			s_matrix = crit.generate_similarity_matrix(out1, out2, capLens).item()
 			# Similarity_matrix[i * 100 : (i + 1) * 100, j * 100 : (j + 1) * 100] = s_matrix.clone()
 			mat_lst.append(s_matrix)
-		temp_mat = torch.cat(mat_lst, dim=1)
+		temp_mat = np.concatenate(mat_lst, axis=1)
+		# temp_mat = torch.cat(mat_lst, dim=1)
 		sm_lst.append(temp_mat)
-	Similarity_matrix = torch.cat(sm_lst, dim=0)
+	Similarity_matrix = np.concatenate(sm_lst, axis=0)
+	Similarity_matrix = torch.from_numpy(Similarity_matrix)
+	# Similarity_matrix = torch.cat(sm_lst, dim=0)
 
 	anotation_recall, med_score_anotate, search_recall, med_score_search =\
 	crit.image_text_alignment(Similarity_matrix, 4)
