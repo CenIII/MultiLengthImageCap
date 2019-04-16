@@ -1,0 +1,23 @@
+[
+    {
+        "image_id" : 1,
+        "regions": [
+            {
+                "feature_tensor": [],
+                "caption": []
+            },
+            {
+                "feature_tensor": [],
+                "caption": []
+            },
+            {
+                "feature_tensor": [],
+                "caption": []
+            }
+        ],
+        "full":{
+            "feature_tensor": [],
+            "caption": []
+        }
+    }
+]
