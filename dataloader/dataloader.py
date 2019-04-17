@@ -6,7 +6,7 @@ import torchfile
 import random
 from torch.utils.data import Dataset
 import torch
-
+from utils.math import softmax
 # device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
 class _BaseDataLoader(Dataset):
@@ -208,6 +208,11 @@ class LoaderDec(_BaseDataLoader):
 		# sampledData = data['box_feats'][filtInds][Maxindex]
 		# sampledData = sampledData[np.newaxis,:]
 		# sampledData[0,:,:,:]=pipIndx
+		scores = scores[:len(box_feats)]
+		prob = softmax(scores)
+		index = np.random.choice(len(box_feats),5, replace= False)
+		box_feats = box_feats[index]
+		
 		return scores,box_feats
 
 	def filtReplicate(self, data):
@@ -279,7 +284,7 @@ class LoaderDec(_BaseDataLoader):
 
 
 if __name__ == '__main__':
-	loader = LoaderEncTrain()
+	loader = LoaderDec()
 	cnt = 0
 	while True:
 		data, itr, numiters = loader.getBatch()
