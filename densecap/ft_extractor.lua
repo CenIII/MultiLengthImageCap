@@ -134,19 +134,12 @@ local function saveJson(outputs, pipeLen, odd)
   -- check "confirm" file
   local idx = 0
   local inc = 1
-  if odd>0 then
-    inc = 4
-    idx = odd
-  end
   -- if odd>0 then idx = odd end
   while true do
     if check_pick_confirm(idx) then
       break
     end
     idx = (idx+inc)%pipeLen
-    if odd==0 and idx%2==0 then
-      idx = (idx+2)%pipeLen
-    end
   end
   
   -- local enc = json.encode(outputs)
