@@ -28,7 +28,6 @@ class LanguageModelLoss(nn.Module):
             model_dict.update(pretrained_dict)
             # 3. load the new state dict
             model.load_state_dict(model_dict)
-            model.eval()
             return model
 
         model = subload(model, pt)
