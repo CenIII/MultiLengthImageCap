@@ -36,7 +36,7 @@ def reloadModel(model_path, linNet, lstmEnc):
 		pretrained_dict = {}
 		for k, v in pt_dict.items():
 			if (k in model_dict):
-				pretrained_dict[k] = v
+				pretrained_dict[k] = v if ('linear.weight' not in k) else v.transpose(1,0)
 		# 2. overwrite entries in the existing state dict
 		model_dict.update(pretrained_dict)
 		# 3. load the new state dict
@@ -76,6 +76,13 @@ def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath):
 		models['lstmEnc'] = lstmEnc.state_dict()
 		torch.save(models, os.path.join(savepath, 'lstmEnc.pt'))
 
+	def linOut2DecIn(global_hidden, box_feat):	# box_feat [8, 4, 4096, 3, 3]
+		global_hidden = global_hidden.unsqueeze(0)
+		encoder_hidden = (global_hidden,torch.zeros_like(global_hidden).to(device))
+		B,M,D,H,W = box_feat.size()
+		encoder_outputs = box_feat.permute(0,1,3,4,2).contiguous().view(B,-1,D)
+		return encoder_hidden, encoder_outputs
+
 	while True:
 		ld = iter(loader)
 		numiters = len(ld)
@@ -85,20 +92,24 @@ def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath):
 		for i in qdar:
 
 			# step 1: load data
-			box_feats, box_global_feats = makeInp(*next(ld))  # box_feats: (numImage,numBoxes,512,7,7) box_global_feats: list, numImage [(512,34,56)]
+			batchdata = next(ld)
+			box_feats, box_global_feats = makeInp(*batchdata)  # box_feats: (numImage,numBoxes,512,7,7) box_global_feats: list, numImage [(512,34,56)]
 			
 			# step 2: data transform by linNet
 			box_feat, global_hidden = linNet(box_feats, box_global_feats)
 			
 			# step 3: decode to captions by lstmDec
-			decoder_outputs, decoder_hidden, ret_dict = lstmDec(encoder_hidden=(global_hidden.unsqueeze(0),torch.zeros_like(global_hidden)), encoder_outputs=box_feat)
+			encoder_hidden, encoder_outputs = linOut2DecIn(global_hidden,box_feat)
+			decoder_outputs, decoder_hidden, ret_dict = lstmDec(encoder_hidden=encoder_hidden, encoder_outputs=encoder_outputs) # box_feat [8, 4, 4096, 3, 3]
 			
 			# step 4: calculate loss
 				# Loss 1: Similarity loss
-			encoder_outputs = lstmEnc(decoder_outputs, use_prob_vector=True)
-			loss1 = crit(box_feat, encoder_outputs, ret_dict['length'])
+			lengths = torch.LongTensor(ret_dict['length']).to(device)
+			decoder_outputs = torch.stack([decoder_outputs[i] for i in range(len(decoder_outputs))], 1) # decoder_outputs [8, 15, 10878]
+			encoder_outputs = lstmEnc(decoder_outputs, use_prob_vector=True, input_lengths=lengths)
+			loss1 = crit(box_feat, encoder_outputs, lengths) #box_feat [8, 5, 4096, 3, 3], encoder_outputs [8, 15, 4096]
 				# Loss 2: LM loss
-			loss2 =  LM(decoder_outputs, ret_dict['length'])
+			loss2 =  LM(decoder_outputs, lengths)
 
 
 			loss = loss1+loss2
@@ -164,7 +175,7 @@ if __name__ == '__main__':
 	linNet,lstmEnc = reloadModel(args.model_path, linNet, lstmEnc)
 
 	LM =  LanguageModelLoss(
-		PATH="./data/LMcheckpoint", vocab_size=len(VocabData['word_dict']),max_len=15,sos_id=sos_id, eos_id=eos_id , embedding_size=300,hidden_size=1024
+		PATH="./data/LMcheckpoint", vocab_size=len(VocabData['word_dict']),max_len=15,sos_id=sos_id, eos_id=eos_id , embedding_size=300,hidden_size=1024, use_prob_vector=True
 	)
 	crit = SimilarityLoss(0.5, 0.5, 1)
 
@@ -177,7 +188,7 @@ if __name__ == '__main__':
 		optimizer = torch.optim.Adam(
 			list(filter(lambda p: p.requires_grad, lstmDec.parameters())) + list(linNet.parameters()), 0.0001)
 		dataset = LoaderDec()
-		loader = DataLoader(dataset, batch_size=2, shuffle=False, num_workers=1,
+		loader = DataLoader(dataset, batch_size=args.batch_imgs, shuffle=False, num_workers=1,
 							collate_fn=dataset.collate_fn)
 		train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, args.save_path)
 

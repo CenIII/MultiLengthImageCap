@@ -8,6 +8,7 @@ from torch.utils.data import Dataset
 import torch
 from utils.math import softmax
 # device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+import numpy as np
 
 class _BaseDataLoader(Dataset):
 	"""docstring for BaseDataLoader"""
@@ -208,9 +209,10 @@ class LoaderDec(_BaseDataLoader):
 		# sampledData = data['box_feats'][filtInds][Maxindex]
 		# sampledData = sampledData[np.newaxis,:]
 		# sampledData[0,:,:,:]=pipIndx
+		scores = np.squeeze(scores)
 		scores = scores[:len(box_feats)]
 		prob = softmax(scores)
-		index = np.random.choice(len(box_feats),5, replace= False)
+		index = np.random.choice(len(box_feats),5, replace= False,p=prob)
 		box_feats = box_feats[index]
 		
 		return scores,box_feats
@@ -251,7 +253,7 @@ class LoaderDec(_BaseDataLoader):
 
 
 	def collate_fn(self,batch): #loader,numImgs=8
-		numBoxes = np.random.choice(4, 1)+2
+		numBoxes = int(np.random.choice(4, 1)+2)
 		box_feats = []
 		box_global_feats=[]
 		numImgs = len(batch)
@@ -260,7 +262,7 @@ class LoaderDec(_BaseDataLoader):
 			# A =  data['glob_feat'].shape[0]
 			box_feats.append(torch.tensor(data['box_feats'][:numBoxes]))
 			box_global_feats.append(torch.tensor(data['glob_feat']))
-		box_feats = torch.cat(box_feats)
+		box_feats = torch.stack(box_feats,dim=0)
 
 		# box_global_feats = torch.cat(box_global_feats)
 		# _,B,C = box_global_feats.shape

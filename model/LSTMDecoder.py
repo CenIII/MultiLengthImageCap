@@ -15,6 +15,7 @@ if torch.cuda.is_available():
 else:
     import torch as device
 
+device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
 class DecoderRNN(BaseRNN):
     r"""
@@ -68,7 +69,7 @@ class DecoderRNN(BaseRNN):
     def __init__(self, vocab_size, max_len, hidden_size, embedding_size,
                  sos_id, eos_id, embedding_parameter=None,
                  n_layers=1, rnn_cell='lstm', bidirectional=False,
-                 input_dropout_p=0, dropout_p=0, use_attention=False, update_embedding=False, use_prob_vector=False):
+                 input_dropout_p=0, dropout_p=0, use_attention=False, update_embedding=False, use_prob_vector=False, force_max_len=False):
         super(DecoderRNN, self).__init__(vocab_size, max_len, hidden_size,
                                          input_dropout_p, dropout_p,
                                          n_layers, rnn_cell)
@@ -81,6 +82,7 @@ class DecoderRNN(BaseRNN):
         self.use_attention = use_attention
         self.eos_id = eos_id
         self.sos_id = sos_id
+        self.force_max_len = force_max_len
 
         self.init_input = None
 
@@ -90,7 +92,7 @@ class DecoderRNN(BaseRNN):
         else:
             self.embedding = nn.Embedding(vocab_size,embedding_size)
         if embedding_parameter is not None:
-            embedding_parameter = torch.FloatTensor(embedding_parameter)
+            embedding_parameter = torch.FloatTensor(embedding_parameter).to(device)
 
             self.embedding.weight = nn.Parameter(embedding_parameter)
         self.embedding.weight.requires_grad = update_embedding
@@ -139,8 +141,8 @@ class DecoderRNN(BaseRNN):
             sequence_symbols.append(symbols)
 
             eos_batches = symbols.data.eq(self.eos_id)
-            if eos_batches.dim() > 0:
-                eos_batches = eos_batches.cpu().view(-1).numpy()
+            if (eos_batches.dim() > 0) and (not self.force_max_len):
+                eos_batches = eos_batches.cpu().view(-1).numpy()       
                 update_idx = ((lengths > step) & eos_batches) != 0
                 lengths[update_idx] = len(sequence_symbols)
             return symbols
@@ -214,7 +216,7 @@ class DecoderRNN(BaseRNN):
                 raise ValueError("Teacher forcing has to be disabled (set 0) when no inputs is provided.")
             inputs = torch.LongTensor([self.sos_id] * batch_size).view(batch_size, 1)
             if torch.cuda.is_available():
-                inputs = inputs.cuda()
+                inputs = inputs.to(device)
             max_length = self.max_length
         else:
             max_length = inputs.size(1) - 1 # minus the start of sequence symbol

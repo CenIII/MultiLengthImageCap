@@ -1,3 +1,5 @@
+import numpy as np
+
 def softmax(X, theta = 1.0, axis = None):
     """
     Compute the softmax of each element along an axis of X.
