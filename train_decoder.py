@@ -46,7 +46,9 @@ def reloadModel(model_path, linNet, lstmEnc):
 	linNet = subload(linNet, pt['linNet'])
 	lstmEnc = subload(lstmEnc, pt['lstmEnc'])
 	pt = None
-
+	for p in linNet.conv2.parameters():
+		p.requires_grad = False
+		
 	return linNet, lstmEnc
 
 
@@ -115,9 +117,13 @@ def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath):
 
 			loss = loss1+loss2
 
+
 			loss_itr_list.append(loss.data.cpu().numpy())
 
+			lstmEnc.zero_grad()
+			LM.zero_grad()
 			optimizer.zero_grad()
+
 
 			loss.backward()
 			optimizer.step()
