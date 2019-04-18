@@ -48,7 +48,7 @@ def reloadModel(model_path, linNet, lstmEnc):
 	pt = None
 	for p in linNet.conv2.parameters():
 		p.requires_grad = False
-		
+
 	return linNet, lstmEnc
 
 
@@ -195,7 +195,7 @@ if __name__ == '__main__':
 		optimizer = torch.optim.Adam(
 			list(filter(lambda p: p.requires_grad, lstmDec.parameters())) + list(linNet.conv1.parameters()), 0.0001)
 		dataset = LoaderDec()
-		loader = DataLoader(dataset, batch_size=args.batch_imgs, shuffle=False, num_workers=1,
+		loader = DataLoader(dataset, batch_size=args.batch_imgs, shuffle=False, num_workers=2,
 							collate_fn=dataset.collate_fn)
 		train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, args.save_path)
 
