@@ -4,7 +4,7 @@ import tqdm
 import numpy as np
 from model.LSTMEncoder import EncoderRNN
 from model.LSTMDecoder import DecoderRNN
-from dataloader.dataloader import LoaderDecTrain
+from dataloader.dataloader import LoaderDec
 from model.LinearModel import LinearModel
 from crit.SimilarityLoss import SimilarityLoss
 from model.languageModel  import LanguageModelLoss
@@ -154,7 +154,7 @@ if __name__ == '__main__':
 	# load LSTM encoder
 
 	lstmDec = DecoderRNN(vocab_size=len(VocabData['word_dict']),max_len=15,sos_id=sos_id, eos_id=eos_id , embedding_size=300,hidden_size=4096,
-						 embedding_parameter= VocabData['word_embs'], update_embedding=False ,use_attention=True)
+						 embedding=VocabData['word_embs'], update_embedding=False ,use_attention=True)
 
 	lstmEnc = EncoderRNN(len(VocabData['word_dict']), max_len=15, hidden_size=4096, embedding_size=300,
 						 input_dropout_p=0, dropout_p=0,
@@ -164,7 +164,7 @@ if __name__ == '__main__':
 	linNet,lstmEnc = reloadModel(args.model_path, linNet, lstmEnc)
 
 	LM =  LanguageModelLoss(
-		PATH="LMcheckpoint.dms", vocab_size=len(VocabData['word_dict']),max_len=15,sos_id=sos_id, eos_id=eos_id , embedding_size=300,hidden_size=4096
+		PATH="./data/LMcheckpoint", vocab_size=len(VocabData['word_dict']),max_len=15,sos_id=sos_id, eos_id=eos_id , embedding_size=300,hidden_size=4096
 	)
 	crit = SimilarityLoss(0.5, 0.5, 1)
 
@@ -176,7 +176,7 @@ if __name__ == '__main__':
 
 		optimizer = torch.optim.Adam(
 			list(filter(lambda p: p.requires_grad, lstmDec.parameters())) + list(linNet.parameters()), 0.0001)
-		dataset = LoaderDecTrain()
+		dataset = LoaderDec()
 		loader = DataLoader(dataset, batch_size=2, shuffle=False, num_workers=1,
 							collate_fn=dataset.collate_fn)
 		train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, args.save_path)

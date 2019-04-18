@@ -14,7 +14,7 @@ class LinearModel(nn.Module):
         box_feat = self.conv2(box_feat).view(B,M,512,7,7)
 
         global_vec = []
-        for i in range(len(global_feat))
+        for i in range(len(global_feat)):
             global_vec.append(self.conv1(global_feat[i]).view(hiddenSize,-1).max(dim=1))
         global_vec = torch.cat(global_vec,dim=0)
         return box_feat, global_vec #global_feat, global_hidden,
