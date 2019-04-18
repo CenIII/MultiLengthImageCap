@@ -186,7 +186,7 @@ if __name__ == '__main__':
 	else:  # train mode
 
 		optimizer = torch.optim.Adam(
-			list(filter(lambda p: p.requires_grad, lstmDec.parameters())) + list(linNet.parameters()), 0.0001)
+			list(filter(lambda p: p.requires_grad, lstmDec.parameters())) + list(linNet.conv1.parameters()), 0.0001)
 		dataset = LoaderDec()
 		loader = DataLoader(dataset, batch_size=args.batch_imgs, shuffle=False, num_workers=1,
 							collate_fn=dataset.collate_fn)
