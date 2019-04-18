@@ -85,7 +85,8 @@ def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath):
 		for i in qdar:
 
 			# step 1: load data
-			box_feats, box_global_feats = makeInp(*next(ld))  # box_feats: (numImage,numBoxes,512,7,7) box_global_feats: list, numImage [(512,34,56)]
+			batchdata = next(ld)
+			box_feats, box_global_feats = makeInp(*batchdata)  # box_feats: (numImage,numBoxes,512,7,7) box_global_feats: list, numImage [(512,34,56)]
 			
 			# step 2: data transform by linNet
 			box_feat, global_hidden = linNet(box_feats, box_global_feats)
