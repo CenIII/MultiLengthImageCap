@@ -53,7 +53,7 @@ class LanguageModelLoss(nn.Module):
         lm_output, _, _ = self.model(out_reshaped, teacher_forcing_ratio=1)
         lm_output_reshape = torch.cat([lm_output[i].unsqueeze(1) for i in range(len(lm_output))],1)
         out_reshaped = out_reshaped[:,1:,:].contiguous().view(-1, vocab_size)
-        lm_output_reshape = lm_output_reshape[:,:-1,:].contiguous().view(-1, vocab_size)
+        lm_output_reshape = lm_output_reshape.contiguous().view(-1, vocab_size)
         
         mask = None
         if lengths is not None:
