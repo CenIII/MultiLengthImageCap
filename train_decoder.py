@@ -36,7 +36,7 @@ def reloadModel(model_path, linNet, lstmEnc):
 		pretrained_dict = {}
 		for k, v in pt_dict.items():
 			if (k in model_dict):
-				pretrained_dict[k] = v
+				pretrained_dict[k] = v if 'linear.weight' in k else v.transpose(1,0)
 		# 2. overwrite entries in the existing state dict
 		model_dict.update(pretrained_dict)
 		# 3. load the new state dict
@@ -104,6 +104,8 @@ def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath):
 			
 			# step 4: calculate loss
 				# Loss 1: Similarity loss
+
+			decoder_outputs = torch.cat([decoder_outputs[i].unsqueeze(1) for i in range(len(decoder_outputs))], 1)
 			encoder_outputs = lstmEnc(decoder_outputs, use_prob_vector=True)
 			loss1 = crit(box_feat, encoder_outputs, ret_dict['length'])
 				# Loss 2: LM loss
