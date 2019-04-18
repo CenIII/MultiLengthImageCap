@@ -12,10 +12,30 @@ class LanguageModelLoss(nn.Module):
         model = DecoderRNN(vocab_size, max_len, hidden_size, embedding_size, sos_id, eos_id, rnn_cell='lstm', use_prob_vector=use_prob_vector)
         self.model = self.loadCheckpoint(PATH, model)
 
-    def loadCheckpoint(self, PATH, model):
-        model.load_state_dict(torch.load(PATH))
-        model.eval()
+    def loadCheckpoint(self, model_path, model):
+        pt = torch.load(model_path)
+
+        def subload(model, pt_dict):
+            model_dict = model.state_dict()
+            pretrained_dict = {}
+            for k, v in pt_dict.items():
+                if (k in model_dict):
+                    pretrained_dict[k] = v if ('embedding.weight' not in k) else v.transpose(1,0)
+            # 2. overwrite entries in the existing state dict
+            model_dict.update(pretrained_dict)
+            # 3. load the new state dict
+            model.load_state_dict(model_dict)
+            model.eval()
+            return model
+
+        model = subload(model, pt)
+
         return model
+
+    # def loadCheckpoint(self, PATH, model):
+    #     model.load_state_dict(torch.load(PATH))
+    #     model.eval()
+    #     return model
 
     def criterion(self, decoder_out, lm_out, mask=None):
         N = decoder_out.shape[0]
