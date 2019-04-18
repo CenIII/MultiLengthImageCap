@@ -39,15 +39,15 @@ class LanguageModelLoss(nn.Module):
 
     def criterion(self, decoder_out, lm_out, mask=None):
         N = decoder_out.shape[0]
-        _loss = torch.mul(torch.log(decoder_out), lm_out)
+        _loss = torch.mul(torch.log(decoder_out), lm_out.t())
         if mask is not None:
             _loss = torch.mul(_loss, mask)
         return -torch.sum(_loss)/N
 
-    def forward(self, outputs, lengths=None):
+    def forward(self, outputs, lengths=None):  # [8, 15, 10878]
         loss = 0
 
-        out_reshaped = torch.cat([outputs[i].unsqueeze(1) for i in range(len(outputs))],1)
+        out_reshaped = outputs# torch.cat([outputs[i].unsqueeze(1) for i in range(len(outputs))],1)
         N, T, vocab_size  = out_reshaped.shape
         
         lm_output, _, _ = self.model(out_reshaped, teacher_forcing_ratio=1)
