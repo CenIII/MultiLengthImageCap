@@ -45,6 +45,7 @@ def reloadModel(model_path, linNet, lstmEnc):
 
 	linNet = subload(linNet, pt['linNet'])
 	lstmEnc = subload(lstmEnc, pt['lstmEnc'])
+	pt = None
 
 	return linNet, lstmEnc
 

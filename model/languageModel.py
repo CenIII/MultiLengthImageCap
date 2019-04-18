@@ -31,7 +31,7 @@ class LanguageModelLoss(nn.Module):
             return model
 
         model = subload(model, pt)
-
+        pt = None
         return model
 
     # def loadCheckpoint(self, PATH, model):
