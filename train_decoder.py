@@ -79,7 +79,7 @@ def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath):
 	def linOut2DecIn(global_hidden, box_feat):	# box_feat [8, 4, 4096, 3, 3]
 		encoder_hidden = (global_hidden.unsqueeze(0),torch.zeros_like(global_hidden))
 		B,M,D,H,W = box_feat.size()
-		encoder_outputs = box_feat.permute(0,1,3,4,2).view(B,-1,D)
+		encoder_outputs = box_feat.contiguous().permute(0,1,3,4,2).view(B,-1,D)
 		return encoder_hidden, encoder_outputs
 
 	while True:
