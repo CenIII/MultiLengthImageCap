@@ -16,8 +16,8 @@ class LinearModel(nn.Module):
 
         global_vec = []
         for i in range(len(global_feat)):
-            global_vec.append(self.conv1(global_feat[i]).view(hiddenSize,-1).max(dim=1))
-        global_vec = torch.stack(global_vec,dim=0)
+            global_vec.append(self.conv1(global_feat[i].unsqueeze(0)).view(hiddenSize,-1).max(dim=1))
+        global_vec = torch.cat(global_vec,dim=0)
         return box_feat, global_vec # box_feat [8,2,hiddensize,3,3], global_vec [8, hidden_size]
 
 
