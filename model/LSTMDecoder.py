@@ -81,6 +81,7 @@ class DecoderRNN(BaseRNN):
         self.use_attention = use_attention
         self.eos_id = eos_id
         self.sos_id = sos_id
+        self.force_max_len = force_max_len
 
         self.init_input = None
 
@@ -139,7 +140,7 @@ class DecoderRNN(BaseRNN):
             sequence_symbols.append(symbols)
 
             eos_batches = symbols.data.eq(self.eos_id)
-            if (eos_batches.dim() > 0) and (not force_max_len):
+            if (eos_batches.dim() > 0) and (not self.force_max_len):
                 eos_batches = eos_batches.cpu().view(-1).numpy()       
                 update_idx = ((lengths > step) & eos_batches) != 0
                 lengths[update_idx] = len(sequence_symbols)
