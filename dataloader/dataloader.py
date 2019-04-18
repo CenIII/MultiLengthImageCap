@@ -262,7 +262,7 @@ class LoaderDec(_BaseDataLoader):
 			# A =  data['glob_feat'].shape[0]
 			box_feats.append(torch.tensor(data['box_feats'][:numBoxes]))
 			box_global_feats.append(torch.tensor(data['glob_feat']))
-		box_feats = torch.cat(box_feats)
+		box_feats = torch.stack(box_feats,dim=0)
 
 		# box_global_feats = torch.cat(box_global_feats)
 		# _,B,C = box_global_feats.shape
