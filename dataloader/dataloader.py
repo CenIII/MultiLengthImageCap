@@ -244,7 +244,6 @@ class LoaderDec(_BaseDataLoader):
 		ret['box_feats'] = data['box_feats'][filtInds]
 		ret['glob_feat'] = data['glob_feat']
 
-
 		ret['box_scores'],ret['box_feats'] = self.randomSample(ret['box_scores'],ret['box_feats'])
 		
 
@@ -252,26 +251,24 @@ class LoaderDec(_BaseDataLoader):
 
 
 	def collate_fn(self,batch): #loader,numImgs=8
+		numBoxes = np.random.choice(4, 1)+2
 		box_feats = []
 		box_global_feats=[]
 		numImgs = len(batch)
-
 		for i in range(numImgs):
 			data = batch[i][0]
-
-			A =  data['glob_feat'].shape[0]
-			box_feats.append(torch.tensor(data['box_feats']))
+			# A =  data['glob_feat'].shape[0]
+			box_feats.append(torch.tensor(data['box_feats'][:numBoxes]))
 			box_global_feats.append(torch.tensor(data['glob_feat']))
-		#	box_captions.append(torch.LongTensor(data['box_captions_gt']))
-		#	capLens.append(getLengths(box_captions[-1]))
 		box_feats = torch.cat(box_feats)
 
-		box_global_feats = torch.cat(box_global_feats)
-		_,B,C = box_global_feats.shape
-
-		box_global_feats=box_global_feats.reshape(numImgs,A,B,C )
+		# box_global_feats = torch.cat(box_global_feats)
+		# _,B,C = box_global_feats.shape
+		# box_global_feats=box_global_feats.reshape(numImgs,A,B,C )
 
 		return box_feats, box_global_feats
+
+
 	def __len__(self):
 		"""Make sure len(dataset) return the size of dataset. Required to override."""
 		return self.numiters

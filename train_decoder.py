@@ -52,7 +52,10 @@ def reloadModel(model_path, linNet, lstmEnc):
 def makeInp(*inps):
 	ret = []
 	for inp in inps:
-		ret.append(inp.to(device))
+		if isinstance(inp, list):
+			ret.append(makeInp(*inp))
+		else:
+			ret.append(inp.to(device))
 	return ret
 
 def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath):
@@ -82,7 +85,7 @@ def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath):
 		for i in qdar:
 
 			# step 1: load data
-			box_feats, box_global_feats = makeInp(*next(ld))  # loadMultiImgData(loader,numImgs=batchImgs) 
+			box_feats, box_global_feats = makeInp(*next(ld))  # box_feats: (numImage,numBoxes,512,7,7) box_global_feats: list, numImage [(512,34,56)]
 			
 			# step 2: data transform by linNet
 			box_feat, global_hidden = linNet(box_feats, box_global_feats)

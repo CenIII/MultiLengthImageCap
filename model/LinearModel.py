@@ -5,17 +5,19 @@ import torch.nn.functional as F
 class LinearModel(nn.Module):
     def __init__(self, hiddenSize=1024):
         super(LinearModel, self).__init__()
-        # self.conv1 = nn.Conv2d(512, hiddenSize, (10, 9), (4, 6))
-        # self.bn1 = nn.BatchNorm2d(hiddenSize)
+        self.conv1 = nn.Conv2d(512, hiddenSize, (10, 9), (4, 6))
         self.conv2 = nn.Conv2d(512, hiddenSize, 5 ,stride=1)
-        # self.bn2 = nn.BatchNorm2d(hiddenSize)
 
-    def forward(self, box_feat):#, global_feat):
-        # global_feat = global_feat.unsqueeze(dim=0)
-        # global_feat = self.bn1(self.conv1(global_feat))
-        # global_hidden = F.avg_pool2d(global_feat, 7).squeeze()
-        box_feat = self.conv2(box_feat).unsqueeze(1)#self.bn2(self.conv2(box_feat))
-        return box_feat #global_feat, global_hidden,
+    def forward(self, box_feat, global_feat):
+        B,M = box_feat.size()[:2]
+        box_feat = box_feat.view(-1,512,7,7)
+        box_feat = self.conv2(box_feat).view(B,M,512,7,7)
+
+        global_vec = []
+        for i in range(len(global_feat))
+            global_vec.append(self.conv1(global_feat[i]).view(hiddenSize,-1).max(dim=1))
+        global_vec = torch.cat(global_vec,dim=0)
+        return box_feat, global_vec #global_feat, global_hidden,
 
 
 # if __name__ == "__main__":
