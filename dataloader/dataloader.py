@@ -8,6 +8,7 @@ from torch.utils.data import Dataset
 import torch
 from utils.math import softmax
 # device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+import numpy as np
 
 class _BaseDataLoader(Dataset):
 	"""docstring for BaseDataLoader"""
@@ -208,9 +209,10 @@ class LoaderDec(_BaseDataLoader):
 		# sampledData = data['box_feats'][filtInds][Maxindex]
 		# sampledData = sampledData[np.newaxis,:]
 		# sampledData[0,:,:,:]=pipIndx
+		scores = np.squeeze(scores)
 		scores = scores[:len(box_feats)]
 		prob = softmax(scores)
-		index = np.random.choice(len(box_feats),5, replace= False)
+		index = np.random.choice(len(box_feats),5, replace= False,p=prob)
 		box_feats = box_feats[index]
 		
 		return scores,box_feats
