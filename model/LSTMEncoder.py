@@ -53,7 +53,7 @@ class EncoderRNN(BaseRNN):
         self.embedding = nn.Embedding(vocab_size, embedding_size)
         if embedding_parameter is not None:
             embedding_parameter = torch.FloatTensor(embedding_parameter)
-            self.linear.weight = nn.Parameter(embedding_parameter.transpose(1,0))
+            self.linear.weight = nn.Parameter(embedding_parameter)
             self.embedding.weight = nn.Parameter(embedding_parameter)
         self.embedding.weight.requires_grad = update_embedding
         self.linear.weight.requires_grad = update_embedding
