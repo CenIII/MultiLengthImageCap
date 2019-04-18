@@ -45,18 +45,18 @@ class LanguageModelLoss(nn.Module):
         if mask is not None:
             _loss = torch.mul(_loss, mask)
         return -torch.sum(_loss)/N
-    def length_to_mask(self, length, max_len=None, dtype=None):
-        """length: B.
-        return B x max_len.
-        If max_len is None, then max of length will be used.
-        """
-        length = length.to(device)
-        assert len(length.shape) == 1, 'Length shape should be 1 dimensional.'
-        max_len = max_len or length.max().item()
-        mask = torch.arange(max_len, device=device).expand(len(length), max_len) < length.unsqueeze(1)
-        if dtype is not None:
-            mask = torch.as_tensor(mask, dtype=dtype, device=device)
-        return mask
+    # def length_to_mask(self, length, max_len=None, dtype=None):
+    #     """length: B.
+    #     return B x max_len.
+    #     If max_len is None, then max of length will be used.
+    #     """
+    #     length = length.to(device)
+    #     assert len(length.shape) == 1, 'Length shape should be 1 dimensional.'
+    #     max_len = max_len or length.max().item()
+    #     mask = torch.arange(max_len, device=device).expand(len(length), max_len) < length.unsqueeze(1)
+    #     if dtype is not None:
+    #         mask = torch.as_tensor(mask, dtype=dtype, device=device)
+    #     return mask
 
     def forward(self, outputs, lengths=None):  # [8, 15, 10878]
         loss = 0
@@ -69,12 +69,12 @@ class LanguageModelLoss(nn.Module):
         out_reshaped = out_reshaped[:,1:,:].contiguous().view(-1, vocab_size)
         lm_output_reshape = lm_output_reshape.contiguous().view(-1, vocab_size)
         
-        # mask = None
-        # if lengths is not None:
-        #     mask = torch.zeros(N, T)
-        #     for i in range(len(lengths)):
-        #         mask[i,:lengths[i]] += 1
-        #         mask
+        mask = None
+        if lengths is not None:
+            mask = torch.zeros(N, T).to(device)
+            for i in range(len(lengths)):
+                mask[i,:lengths[i]] += 1
+        
         mask = self.length_to_mask(lengths,dtype=torch.float)
         mask = mask[:,1:].contiguous().view(-1, 1)
         loss = self.criterion(out_reshaped,lm_output_reshape, mask)
