@@ -58,7 +58,7 @@ class LanguageModelLoss(nn.Module):
         mask = None
         if lengths is not None:
             mask = torch.zeros(N, T)
-            for i in range(len(lengths.shape[0])):
+            for i in range(len(lengths)):
                 mask[i,:lengths[i]] += 1
         mask = mask[:,1:].contiguous().view(-1, 1)
         loss = self.criterion(out_reshaped,lm_output_reshape, mask)
