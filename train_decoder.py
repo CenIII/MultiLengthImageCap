@@ -36,7 +36,7 @@ def reloadModel(model_path, linNet, lstmEnc):
 		pretrained_dict = {}
 		for k, v in pt_dict.items():
 			if (k in model_dict):
-				pretrained_dict[k] = v if ('linear.weight' not in k  and 'embedding.weight' not in k ) else v.transpose(1,0)
+				pretrained_dict[k] = v if ('linear.weight' not in k  or 'embedding.weight' not in k ) else v.transpose(1,0)
 		# 2. overwrite entries in the existing state dict
 		model_dict.update(pretrained_dict)
 		# 3. load the new state dict
