@@ -109,7 +109,7 @@ def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath):
 			encoder_outputs = lstmEnc(decoder_outputs, use_prob_vector=True, input_lengths=lengths)
 			loss1 = crit(box_feat, encoder_outputs, lengths) #box_feat [8, 5, 4096, 3, 3], encoder_outputs [8, 15, 4096]
 				# Loss 2: LM loss
-			loss2 =  LM(decoder_outputs, lengths)
+			loss2 =  LM(decoder_outputs, ret_dict['length'])
 
 
 			loss = loss1+loss2
