@@ -104,12 +104,12 @@ def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath):
 			
 			# step 4: calculate loss
 				# Loss 1: Similarity loss
-
-			decoder_outputs = torch.cat([decoder_outputs[i].unsqueeze(1) for i in range(len(decoder_outputs))], 1)
-			encoder_outputs = lstmEnc(decoder_outputs, use_prob_vector=True, input_lengths=ret_dict['length'])
-			loss1 = crit(box_feat, encoder_outputs, ret_dict['length'])
+			lengths = torch.IntTensor(ret_dict['length'])
+			decoder_outputs = torch.stack([decoder_outputs[i] for i in range(len(decoder_outputs))], 1)
+			encoder_outputs = lstmEnc(decoder_outputs, use_prob_vector=True, input_lengths=lengths)
+			loss1 = crit(box_feat, encoder_outputs, lengths)
 				# Loss 2: LM loss
-			loss2 =  LM(decoder_outputs, ret_dict['length'])
+			loss2 =  LM(decoder_outputs, lengths)
 
 
 			loss = loss1+loss2
