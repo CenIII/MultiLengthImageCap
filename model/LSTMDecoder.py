@@ -85,10 +85,10 @@ class DecoderRNN(BaseRNN):
         self.init_input = None
 
         if use_prob_vector:
-            self.embedding = nn.Linear( vocab_size,self.hidden_size)
+            self.embedding = nn.Linear(vocab_size,embedding_size)
 
         else:
-            self.embedding = nn.Embedding(self.output_size, self.hidden_size)
+            self.embedding = nn.Embedding(vocab_size,embedding_size)
         if embedding_parameter is not None:
             embedding_parameter = torch.FloatTensor(embedding_parameter)
 
