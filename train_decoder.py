@@ -105,7 +105,7 @@ def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath):
 			# step 4: calculate loss
 				# Loss 1: Similarity loss
 			lengths = torch.IntTensor(ret_dict['length'])
-			decoder_outputs = torch.stack([decoder_outputs[i] for i in range(len(decoder_outputs))], 1).long() # decoder_outputs [8, 15, 10878]
+			decoder_outputs = torch.stack([decoder_outputs[i] for i in range(len(decoder_outputs))], 1) # decoder_outputs [8, 15, 10878]
 			encoder_outputs = lstmEnc(decoder_outputs, use_prob_vector=True, input_lengths=lengths)
 			loss1 = crit(box_feat, encoder_outputs, lengths) #box_feat [8, 5, 4096, 3, 3], encoder_outputs [8, 15, 4096]
 				# Loss 2: LM loss
