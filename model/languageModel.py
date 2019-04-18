@@ -7,9 +7,9 @@ import torch
 
 class LanguageModelLoss(nn.Module):
 
-    def __init__(self, PATH, vocab_size, max_len, hidden_size, embedding_size, sos_id, eos_id):
+    def __init__(self, PATH, vocab_size, max_len, hidden_size, embedding_size, sos_id, eos_id, embedding=None):
         super(LanguageModelLoss, self).__init__()
-        model = DecoderRNN(vocab_size, max_len, hidden_size, embedding_size, sos_id, eos_id, rnn_cell='lstm')
+        model = DecoderRNN(vocab_size, max_len, hidden_size, embedding_size, sos_id, eos_id,embedding=embedding, rnn_cell='lstm')
         self.model = self.loadCheckpoint(PATH, model)
 
     def loadCheckpoint(self, PATH, model):
@@ -30,10 +30,13 @@ class LanguageModelLoss(nn.Module):
         out_reshaped = torch.cat([outputs[i].unsqueeze(1) for i in range(len(outputs))],1)
         N, T, vocab_size  = out_reshaped.shape
         
-        lm_output, _, _ = self.model(out_reshaped, teacher_forcing_ratio=1)
-        lm_output_reshape = torch.cat([lm_output[i].unsqueeze(1) for i in range(len(lm_output))],1)
+        with torch.no_grad():
+            lm_output, _, _ = self.model(out_reshaped, teacher_forcing_ratio=1)
+            lm_output_reshape = torch.cat([lm_output[i].unsqueeze(1) for i in range(len(lm_output))],1)
+            lm_output_reshape = lm_output_reshape[:,:-1,:].contiguous().view(-1, vocab_size)
+            
         out_reshaped = out_reshaped[:,1:,:].contiguous().view(-1, vocab_size)
-        lm_output_reshape = lm_output_reshape[:,:-1,:].contiguous().view(-1, vocab_size)
+        
         
         mask = None
         if lengths is not None:
