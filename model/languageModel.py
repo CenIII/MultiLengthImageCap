@@ -51,7 +51,7 @@ class LanguageModelLoss(nn.Module):
         return B x max_len.
         If max_len is None, then max of length will be used.
         """
-        lengths = lengths.to(device)
+        length = length.to(device)
         assert len(length.shape) == 1, 'Length shape should be 1 dimensional.'
         max_len = max_len or length.max().item()
         mask = torch.arange(max_len, device=device,
