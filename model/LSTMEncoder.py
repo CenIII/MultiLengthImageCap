@@ -47,11 +47,12 @@ class EncoderRNN(BaseRNN):
         super(EncoderRNN, self).__init__(vocab_size, max_len, hidden_size,
                 input_dropout_p, dropout_p, n_layers, rnn_cell)
 
+        self.max_len = max_len
         self.variable_lengths = variable_lengths
         self.linear = nn.Linear(vocab_size, embedding_size, bias=False)
         self.embedding = nn.Embedding(vocab_size, embedding_size)
         if embedding_parameter is not None:
-            embedding_parameter = torch.FloatTensor(embedding_parameter)
+            embedding_parameter = torch.FloatTensor(embedding_parameter).transpose(1,0)
             self.linear.weight = nn.Parameter(embedding_parameter)
             self.embedding.weight = nn.Parameter(embedding_parameter)
         self.embedding.weight.requires_grad = update_embedding
@@ -73,11 +74,13 @@ class EncoderRNN(BaseRNN):
         Returns: output, hidden
             - **output** (batch, seq_len, hidden_size): variable containing the encoded features of the input sequence
         """
-        total_length = input_var.size(1)
         if use_prob_vector:
             embedded = self.linear(input_var)
         else:
             embedded = self.embedding(input_var)
+
+        input_lengths, indices = torch.sort(input_lengths, descending=True, out=None) #sort for pack_padded
+        embedded = embedded[indices,:,:]
 
         if self.variable_lengths:
             embedded = nn.utils.rnn.pack_padded_sequence(embedded, input_lengths, batch_first=True)
@@ -86,6 +89,6 @@ class EncoderRNN(BaseRNN):
         output, _ = self.rnn(embedded)
 
         if self.variable_lengths:
-            output, _ = nn.utils.rnn.pad_packed_sequence(output, batch_first=True, total_length=total_length)
+            output, _ = nn.utils.rnn.pad_packed_sequence(output, batch_first=True, total_length=self.max_len)
 
         return output

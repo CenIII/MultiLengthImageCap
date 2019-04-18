@@ -63,7 +63,7 @@ def collate_fn(batch): #loader,numImgs=8
 				lengths[i] = nonz[0][0] if len(nonz)>0 else len(cap)
 			return lengths
 		for i in range(numImgs):
-			data = batch[i][0]
+			data = batch[i]
 			box_feats.append(torch.tensor(data['box_feats']))
 			box_captions.append(torch.LongTensor(data['box_captions_gt']))
 			capLens.append(getLengths(box_captions[-1]))
@@ -146,23 +146,40 @@ def eval(loader,linNet,lstmEnc,crit):
 		data, _, _ = loader.getBatch(i)
 		batch_lst.append(data)
 	box_feats, box_captions, capLens = collate_fn(batch_lst)
+	box_feats = box_feats.to(device)
+	box_captions = box_captions.to(device)
+	capLens = capLens.to(device)
 
-	# box_feats = torch.tensor(data['box_feats']).to(device)
-	# # glob_feat = torch.tensor(data['glob_feat'])
-	# box_captions =  torch.LongTensor(data['box_captions_gt']).to(device)
-	# capLens = getLengths(box_captions).to(device)
-	# # sort decreasing order
-	# inds = torch.argsort(-capLens)
-	# box_feats = box_feats[inds]
-	# box_captions = box_captions[inds]
-	# capLens = capLens[inds]
+	# for i in range(60):
+	# 	data, _, _ = loader.getBatch(i)
+	# 	box_feats, box_captions, capLens = collate_fn([data])
+	# 	box_feats = box_feats.to(device)
+	# 	box_captions = box_captions.to(device)
+	# 	capLens = capLens.to(device)
+	Similarity_matrix = torch.zeros(1000, 1000)
+	sm_lst = []
+	for i in range(10):
+		mat_lst = []
+		for j in range(10):
+			box_caption = box_captions[i * 100 : (i + 1) * 100]
+			box_feat = box_feats[j * 100 : (j + 1) * 100]
+			capLen = capLens[i * 100 : (i + 1) * 100]
+			out1 = linNet(box_feat)
+			out2 = lstmEnc(box_caption,input_lengths=capLen)
+			s_matrix = crit.generate_similarity_matrix(out1, out2, capLens)
+			s_matrix = s_matrix.cpu().detach().numpy()
+			# Similarity_matrix[i * 100 : (i + 1) * 100, j * 100 : (j + 1) * 100] = s_matrix.clone()
+			mat_lst.append(s_matrix)
+		temp_mat = np.concatenate(mat_lst, axis=1)
+		# temp_mat = torch.cat(mat_lst, dim=1)
+		sm_lst.append(temp_mat)
+	Similarity_matrix = np.concatenate(sm_lst, axis=0)
+	Similarity_matrix = torch.from_numpy(Similarity_matrix)
+	# Similarity_matrix = torch.cat(sm_lst, dim=0)
 
-	# check the similarity loss based on argument
-	out1 = linNet(box_feats)
-	out2 = lstmEnc(box_captions,input_lengths=capLens)
-	Similarity_matrix = crit.generate_similarity_matrix(out1, out2, capLens)
 	anotation_recall, med_score_anotate, search_recall, med_score_search =\
-	 crit.image_text_alignment(Similarity_matrix, 4)
+	crit.image_text_alignment(Similarity_matrix, 4)
+	# crit.image_text_alignment(Similarity_matrix, 4)
 	print("anotation_recall", anotation_recall)
 	print("med_score_anotate", med_score_anotate)
 	print("search_recal", search_recall)

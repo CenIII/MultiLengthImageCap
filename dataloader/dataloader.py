@@ -6,7 +6,7 @@ import torchfile
 import random
 from torch.utils.data import Dataset
 import torch
-
+from utils.math import softmax
 # device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
 class _BaseDataLoader(Dataset):
@@ -186,45 +186,105 @@ class LoaderEnc(_BaseDataLoader):
 		return self.getBatch(idx%self.pipeLen)
 
 
-		
-class _LoaderDec(_BaseDataLoader):
-	"""docstring for LoaderDec"""
-	def __init__(self, arg):
-		super(_LoaderDec, self).__init__()
-		self.init_pick_confirm_files()
-		self.arg = arg
-
-	def randomSample(self,data,boxes,sampleNum):
-		# diversly distributed sample 
-
-		return sampledData
-		
-class LoaderDecTrain(_LoaderDec):
+class LoaderDec(_BaseDataLoader):
 	"""docstring for LoaderEncTrain"""
-	def __init__(self, arg):
-		super(LoaderDecTrain, self).__init__()
-		self.arg = arg
-	def filtReplicate(self, data):
-		# shuffle 128 gt boxes copy
+	def __init__(self, mode='train'):
+		super(LoaderDec, self).__init__()
+		if mode=='train':
+			self.init_pick_confirm_files()
+		self.mode = mode
+		# _,_,numiters = self.getBatch(self.pipeLen-1)
+		_,_,numiters = self.getBatch(self.pipeLen-1)
+		self.numiters = int(numiters)
 
+	def randomSample(self,scores,box_feats):
+		# diversly distributed sample
+
+		# temp = data['box_scores'][0:data['box_feats'].shape[0]] # get the first ~ 128  boxes scores
+		# temp = temp[filtInds]
+		# temp = temp.reshape(temp.shape[0]*temp.shape[1])
+		# Maxindex = np.argsort(temp)[-samplenum:][::-1]
+
+		# sampledData = data['box_feats'][filtInds][Maxindex]
+		# sampledData = sampledData[np.newaxis,:]
+		# sampledData[0,:,:,:]=pipIndx
+		scores = scores[:len(box_feats)]
+		prob = softmax(scores)
+		index = np.random.choice(len(box_feats),5, replace= False)
+		box_feats = box_feats[index]
+		
+		return scores,box_feats
+
+	def filtReplicate(self, data):
+
+		capsGt = data['box_captions_gt']
 		# get one box per real gt box
 
-		# return selected inds
-		pass
-	def getBatch(self):  # only this one needs to form a batch
-		pass
+		numCaps = len(capsGt)
+		randInds = list(range(numCaps))
+		random.shuffle(randInds)
+		capList = []
+		selectInds = []
+		for i in range(numCaps):
+			zzz = list(capsGt[randInds[i]])
+			if zzz not in capList:
+				capList.append(zzz)
+				selectInds.append(randInds[i])
+
+		return selectInds
+
+	def getBatch(self,pipIndx):  # only this one needs to form a batch
+		data, itr, numiters = self.loadOneJson(self.mode, pipIndx)
+
+		filtInds = self.filtReplicate(data)
+		# return only useful data fields
+		ret = {}
+		ret['info'] = data['info']
+		ret['box_scores'] = data['box_scores'][filtInds]
+		ret['box_feats'] = data['box_feats'][filtInds]
+		ret['glob_feat'] = data['glob_feat']
 
 
-class LoaderDecTest(_LoaderDec):
-	"""docstring for LoaderEncTrain"""
-	def __init__(self, arg):
-		super(LoaderDecTest, self).__init__()
-		self.arg = arg
-	def getBatch(self):
-		pass
+		ret['box_scores'],ret['box_feats'] = self.randomSample(ret['box_scores'],ret['box_feats'])
+		
+
+		return ret, itr, numiters
+
+
+	def collate_fn(self,batch): #loader,numImgs=8
+		box_feats = []
+		box_global_feats=[]
+		numImgs = len(batch)
+
+		for i in range(numImgs):
+			data = batch[i][0]
+
+			A =  data['glob_feat'].shape[0]
+			box_feats.append(torch.tensor(data['box_feats']))
+			box_global_feats.append(torch.tensor(data['glob_feat']))
+		#	box_captions.append(torch.LongTensor(data['box_captions_gt']))
+		#	capLens.append(getLengths(box_captions[-1]))
+		box_feats = torch.cat(box_feats)
+
+		box_global_feats = torch.cat(box_global_feats)
+		_,B,C = box_global_feats.shape
+
+		box_global_feats=box_global_feats.reshape(numImgs,A,B,C )
+
+		return box_feats, box_global_feats
+	def __len__(self):
+		"""Make sure len(dataset) return the size of dataset. Required to override."""
+		return self.numiters
+
+	def __getitem__(self, idx):
+		"""Support indexing such that dataset[i] get ith sample. Required to override"""
+		return self.getBatch(idx%self.pipeLen)
+
+
+
 
 if __name__ == '__main__':
-	loader = LoaderEncTrain()
+	loader = LoaderDec()
 	cnt = 0
 	while True:
 		data, itr, numiters = loader.getBatch()
