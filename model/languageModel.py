@@ -7,9 +7,9 @@ import torch
 
 class LanguageModelLoss(nn.Module):
 
-    def __init__(self, PATH, vocab_size, max_len, hidden_size, embedding_size, sos_id, eos_id):
+    def __init__(self, PATH, vocab_size, max_len, hidden_size, embedding_size, sos_id, eos_id, use_prob_vector=False):
         super(LanguageModelLoss, self).__init__()
-        model = DecoderRNN(vocab_size, max_len, hidden_size, embedding_size, sos_id, eos_id, rnn_cell='lstm')
+        model = DecoderRNN(vocab_size, max_len, hidden_size, embedding_size, sos_id, eos_id, rnn_cell='lstm', use_prob_vector=False)
         self.model = self.loadCheckpoint(PATH, model)
 
     def loadCheckpoint(self, PATH, model):
