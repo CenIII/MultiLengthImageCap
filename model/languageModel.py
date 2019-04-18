@@ -54,8 +54,7 @@ class LanguageModelLoss(nn.Module):
         length = length.to(device)
         assert len(length.shape) == 1, 'Length shape should be 1 dimensional.'
         max_len = max_len or length.max().item()
-        mask = torch.arange(max_len, device=device,
-                            dtype=length.dtype).expand(len(length), max_len) < length.unsqueeze(1)
+        mask = torch.arange(max_len, device=device).expand(len(length), max_len) < length.unsqueeze(1)
         if dtype is not None:
             mask = torch.as_tensor(mask, dtype=dtype, device=device)
         return mask
@@ -77,7 +76,7 @@ class LanguageModelLoss(nn.Module):
         #     for i in range(len(lengths)):
         #         mask[i,:lengths[i]] += 1
         #         mask
-        mask = self.length_to_mask(lengths)
+        mask = self.length_to_mask(lengths,dtype=torch.FloatTensor)
         mask = mask[:,1:].contiguous().view(-1, 1)
         loss = self.criterion(out_reshaped,lm_output_reshape, mask)
 
