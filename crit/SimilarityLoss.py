@@ -177,7 +177,7 @@ class SimilarityLoss(nn.Module):
         loss1 = (pdq + pqd)/B
         # checkNan(loss1)
 
-        return loss1+loss_reg
+        return loss1, loss_reg
 
         # B, T, _ = e.size()
         

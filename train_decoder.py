@@ -86,6 +86,9 @@ def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath):
 		encoder_outputs = box_feat.permute(0,1,3,4,2).contiguous().view(B,-1,D)
 		return encoder_hidden, encoder_outputs
 
+	def lstr(ts,pres=3):
+		return str(np.round(ts.data.cpu().numpy(), 3))
+
 	while True:
 		ld = iter(loader)
 		numiters = len(ld)
@@ -110,15 +113,15 @@ def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath):
 			lengths = torch.LongTensor(ret_dict['length']).to(device)
 			decoder_outputs = torch.stack([decoder_outputs[i] for i in range(len(decoder_outputs))], 1) # decoder_outputs [8, 15, 10878]
 			encoder_outputs = lstmEnc(decoder_outputs, use_prob_vector=True, input_lengths=lengths)
-			loss1 = crit(box_feat, encoder_outputs, lengths) #box_feat [8, 5, 4096, 3, 3], encoder_outputs [8, 15, 4096]
+			loss1, loss_reg = crit(box_feat, encoder_outputs, lengths) #box_feat [8, 5, 4096, 3, 3], encoder_outputs [8, 15, 4096]
 				# Loss 2: LM loss
 			loss2 =  LM(decoder_outputs, lengths)
 
 
-			loss = loss1+loss2
+			loss = loss1+loss_reg+loss2
 
 
-			loss_itr_list.append(loss.data.cpu().numpy())
+			loss_itr_list.append(lstr(loss))
 
 			lstmEnc.zero_grad()
 			LM.zero_grad()
@@ -128,7 +131,7 @@ def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath):
 			loss.backward()
 			optimizer.step()
 
-			qdar.set_postfix(loss=str(np.round(loss.data.cpu().numpy(), 3)))
+			qdar.set_postfix(simiLoss=lstr(loss1),regLoss=lstr(loss_reg),lmLoss=lstr(loss2))
 			if i > 0 and i % 1000 == 0:
 				saveStateDict(linNet, lstmEnc)
 

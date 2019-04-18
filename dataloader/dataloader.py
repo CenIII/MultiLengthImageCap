@@ -198,7 +198,7 @@ class LoaderDec(_BaseDataLoader):
 		_,_,numiters = self.getBatch(self.pipeLen-1)
 		self.numiters = int(numiters)
 
-	def randomSample(self,scores,box_feats):
+	def randomSample(self,scores,box_feats):  # box_feats [3,512,7,7]
 		# diversly distributed sample
 
 		# temp = data['box_scores'][0:data['box_feats'].shape[0]] # get the first ~ 128  boxes scores
@@ -209,10 +209,24 @@ class LoaderDec(_BaseDataLoader):
 		# sampledData = data['box_feats'][filtInds][Maxindex]
 		# sampledData = sampledData[np.newaxis,:]
 		# sampledData[0,:,:,:]=pipIndx
+		
 		scores = np.squeeze(scores)
+
+		if len(scores)<5:
+			M,D,H,W = box_feats.size()
+			tmp = np.zeros([5,D,H,W])
+			tmp[:M] = box_feats
+			tmp[M:] = np.tile(box_feats[0],(5-M,1))
+			box_feats = tmp
+			tmp = np.zeros(5)
+			tmp[:M] = scores
+			tmp[M:] = scores[0]
+			scores = tmp
+
 		scores = scores[:len(box_feats)]
 		prob = softmax(scores)
 		index = np.random.choice(len(box_feats),5, replace= False,p=prob)
+
 		box_feats = box_feats[index]
 		
 		return scores,box_feats
