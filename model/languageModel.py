@@ -75,7 +75,7 @@ class LanguageModelLoss(nn.Module):
             for i in range(len(lengths)):
                 mask[i,:lengths[i]] += 1
         
-        mask = self.length_to_mask(lengths,dtype=torch.float)
+        # mask = self.length_to_mask(lengths,dtype=torch.float)
         mask = mask[:,1:].contiguous().view(-1, 1)
         loss = self.criterion(out_reshaped,lm_output_reshape, mask)
 
