@@ -76,6 +76,12 @@ def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath):
 		models['lstmEnc'] = lstmEnc.state_dict()
 		torch.save(models, os.path.join(savepath, 'lstmEnc.pt'))
 
+	def linOut2DecIn(global_hidden, box_feat):	# box_feat [8, 4, 4096, 3, 3]
+		encoder_hidden = (global_hidden.unsqueeze(0),torch.zeros_like(global_hidden))
+		B,M,D,H,W = box_feat.size()
+		encoder_outputs = box_feat.permute(0,1,3,4,2).view(B,-1,D)
+		return encoder_hidden, encoder_outputs
+
 	while True:
 		ld = iter(loader)
 		numiters = len(ld)
@@ -92,7 +98,8 @@ def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath):
 			box_feat, global_hidden = linNet(box_feats, box_global_feats)
 			
 			# step 3: decode to captions by lstmDec
-			decoder_outputs, decoder_hidden, ret_dict = lstmDec(encoder_hidden=(global_hidden.unsqueeze(0),torch.zeros_like(global_hidden)), encoder_outputs=box_feat)
+			encoder_hidden, encoder_outputs = linOut2DecIn(global_hidden,box_feat)
+			decoder_outputs, decoder_hidden, ret_dict = lstmDec(encoder_hidden=encoder_hidden, encoder_outputs=encoder_outputs) # box_feat [8, 4, 4096, 3, 3]
 			
 			# step 4: calculate loss
 				# Loss 1: Similarity loss
