@@ -15,6 +15,7 @@ if torch.cuda.is_available():
 else:
     import torch as device
 
+device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
 class DecoderRNN(BaseRNN):
     r"""
@@ -91,7 +92,7 @@ class DecoderRNN(BaseRNN):
         else:
             self.embedding = nn.Embedding(vocab_size,embedding_size)
         if embedding_parameter is not None:
-            embedding_parameter = torch.FloatTensor(embedding_parameter)
+            embedding_parameter = torch.FloatTensor(embedding_parameter).to(device)
 
             self.embedding.weight = nn.Parameter(embedding_parameter)
         self.embedding.weight.requires_grad = update_embedding
