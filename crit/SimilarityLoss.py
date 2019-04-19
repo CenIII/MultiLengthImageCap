@@ -160,7 +160,7 @@ class SimilarityLoss(nn.Module):
         tmp = beta.bmm(beta_prime) # B,M,M
         loss_reg = 0
         for i in range(B):
-            loss_reg += torch.norm(tmp[i]-torch.diag(torch.diag(tmp[i])))
+            loss_reg += torch.norm(tmp[i]-torch.diag(torch.diag(tmp[i])))/(M*(M-1))
         loss_reg = loss_reg/B
         # checkNan(loss_reg)
         # print('loss_reg: '+str(loss_reg.data))
