@@ -322,7 +322,9 @@ class LoaderDec(_BaseDataLoader):
 		for i in range(numImgs):
 			data = batch[i][0]
 			numSps,D,H,W = data['box_feats'].shape
-			box_feats.append(torch.tensor(data['box_feats'][:(numSps-numSps%numBoxes)].view(-1,numBoxes,D,H,W)))
+			# print('data box_feats shape: '+str(data['box_feats'].shape))
+			# print(data['box_feats'][:(numSps-numSps%numBoxes)].shape)
+			box_feats.append(torch.tensor(data['box_feats'][:(numSps-numSps%numBoxes)]).view(-1,numBoxes,D,H,W))
 			box_global_feats += [torch.tensor(data['glob_feat'])]*len(box_feats[-1])
 		box_feats = torch.cat(box_feats,dim=0)
 
