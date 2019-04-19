@@ -161,7 +161,7 @@ class SimilarityLoss(nn.Module):
         for i in range(B):
             idx = lenAry[i]
             tmp = beta[i][:,prev: idx]
-            tmp = tmp.bmm(tmp.t())
+            tmp = tmp.mm(tmp.t())
             loss_reg += torch.norm(tmp-torch.diag(torch.diag(tmp)))/(M*(M-1))
             prev = idx
         loss_reg = loss_reg/B
