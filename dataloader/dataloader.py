@@ -198,7 +198,7 @@ class LoaderDec(_BaseDataLoader):
 		_,_,numiters = self.getBatch(self.pipeLen-1)
 		self.numiters = int(numiters)
 
-	def overlap_area(self,A, B):  # X,Y ,W, H
+	def overlap(self,A, B):  # X,Y ,W, H
 
 		W_cen_dis = np.abs(A[0] - B[0])
 		H__cen_dis = np.abs(A[1] - B[1])
@@ -216,16 +216,16 @@ class LoaderDec(_BaseDataLoader):
 			ratioB = overlapp_area / area_B
 
 			if (ratioA > 0.6 or ratioB > 0.6):
-				return False
+				return True
 
 			else:
-				return True
+				return False
 		else:
-			return True
+			return False
 
 	def indep_box_feats(self,sel_ind,num,box_gt):
 		for i in sel_ind:
-			if self.overlap_area(box_gt[i], box_gt[num]):
+			if self.overlap(box_gt[i], box_gt[num]):
 				return sel_ind
 		sel_ind.append(num)
 		return sel_ind
