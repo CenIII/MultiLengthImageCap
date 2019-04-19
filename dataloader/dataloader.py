@@ -201,14 +201,14 @@ class LoaderDec(_BaseDataLoader):
 	def overlap(self,A, B):  # X,Y ,W, H
 
 		W_cen_dis = np.abs(A[0] - B[0])
-		H__cen_dis = np.abs(A[1] - B[1])
+		H_cen_dis = np.abs(A[1] - B[1])
 		W_dis = np.abs(A[2] + B[2]) / 2
 		H_dis = np.abs(A[3] + B[3]) / 2
 
-		if ((W_cen_dis < W_dis) or (H__cen_dis < H_dis)):
+		if ((W_cen_dis < W_dis) and (H_cen_dis < H_dis)):
 
 			overlap_width = np.abs(W_dis - W_cen_dis)
-			overlap_height = np.abs(H_dis - H__cen_dis)
+			overlap_height = np.abs(H_dis - H_cen_dis)
 			overlapp_area = overlap_height * overlap_width
 			area_A = A[2] * A[3]
 			area_B = B[2] * B[3]
