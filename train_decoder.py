@@ -51,6 +51,29 @@ def reloadModel(model_path, linNet, lstmEnc):
 
 	return linNet, lstmEnc
 
+def reloadDec(model_path, linNet, lstmDec):
+	pt = torch.load(model_path)
+
+	def subload(model, pt_dict):
+		model_dict = model.state_dict()
+		pretrained_dict = {}
+		for k, v in pt_dict.items():
+			if (k in model_dict):
+				pretrained_dict[k] = v
+		# 2. overwrite entries in the existing state dict
+		model_dict.update(pretrained_dict)
+		# 3. load the new state dict
+		model.load_state_dict(model_dict)
+		return model
+
+	linNet = subload(linNet, pt['linNet'])
+	lstmDec = subload(lstmDec, pt['lstmEnc'])
+	pt = None
+	for p in linNet.conv2.parameters():
+		p.requires_grad = False
+
+	return linNet, lstmDec
+
 
 def makeInp(*inps):
 	ret = []
@@ -79,7 +102,7 @@ def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath):
 		models = {}
 		models['linNet'] = linNet.state_dict()
 		models['lstmEnc'] = lstmEnc.state_dict()
-		torch.save(models, os.path.join(savepath, 'lstmEnc.pt'))
+		torch.save(models, os.path.join(savepath, 'lstmDec.pt'))
 
 	def linOut2DecIn(global_hidden, box_feat):	# box_feat [8, 4, 4096, 3, 3]
 		global_hidden = global_hidden.unsqueeze(0)
@@ -123,7 +146,7 @@ def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath):
 			loss = loss1+loss_reg+loss2
 
 
-			loss_itr_list.append(lstr(loss))
+			loss_itr_list.append(loss.data.cpu().numpy())
 
 			lstmEnc.zero_grad()
 			LM.zero_grad()
@@ -157,6 +180,8 @@ def parseArgs():
 						default='./save/default/')
 	parser.add_argument('-b', '--batch_imgs',
 						default=4, type=int)
+	parser.add_argument('-c', '--cont_model_path',
+						default=None)
 	args = parser.parse_args()
 	return args
 
@@ -196,7 +221,8 @@ if __name__ == '__main__':
 		pass
 
 	else:  # train mode
-
+		if args.cont_model_path is not None:
+			linNet,lstmDec = reloadDec(args.cont_model_path,linNet,lstmDec)
 		optimizer = torch.optim.Adam(
 			list(filter(lambda p: p.requires_grad, lstmDec.parameters())) + list(linNet.conv1.parameters()), 0.0001)
 		dataset = LoaderDec()
