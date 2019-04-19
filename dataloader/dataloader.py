@@ -239,7 +239,7 @@ class LoaderDec(_BaseDataLoader):
 		sel_ind = [box_feats_seq[0]]
 
 		for i in box_feats_seq[1:]:
-			sel_ind= self.indep_box_feats(sel_ind, i)
+			sel_ind= self.indep_box_feats(sel_ind, i, box_gt)
 
 		return sel_ind
 
