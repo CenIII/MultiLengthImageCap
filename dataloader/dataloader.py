@@ -216,7 +216,7 @@ class LoaderDec(_BaseDataLoader):
 
 		if len(scores)<5:
 			pdb.set_trace()
-			M,D,H,W = box_feats.size()
+			M,D,H,W = box_feats.shape
 			tmp = np.zeros([5,D,H,W])
 			tmp[:M] = box_feats
 			tmp[M:] = np.tile(box_feats[0],(5-M,1))
