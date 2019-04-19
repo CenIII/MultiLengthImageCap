@@ -57,6 +57,8 @@ def makeInp(*inps):
 	for inp in inps:
 		if isinstance(inp, list):
 			ret.append(makeInp(*inp))
+		elif isinstance(inp, int):
+			ret.append(inp)
 		else:
 			ret.append(inp.to(device))
 	return ret
