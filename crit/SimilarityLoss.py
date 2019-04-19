@@ -156,12 +156,22 @@ class SimilarityLoss(nn.Module):
 
         # reg term
         beta = beta.view(B,M,Tb)
-        beta_prime = beta.permute(0,2,1)
-        tmp = beta.bmm(beta_prime) # B,M,M
         loss_reg = 0
+        prev = 0
         for i in range(B):
-            loss_reg += torch.norm(tmp[i]-torch.diag(torch.diag(tmp[i])))/(M*(M-1))
+            idx = lenAry[i]
+            tmp = beta[i][:,prev: idx]
+            tmp = tmp.bmm(tmp.t())
+            loss_reg += torch.norm(tmp-torch.diag(torch.diag(tmp)))/(M*(M-1))
+            prev = idx
         loss_reg = loss_reg/B
+
+        # beta_prime = beta.permute(0,2,1)
+        # tmp = beta.bmm(beta_prime) # B,M,M
+        # loss_reg = 0
+        # for i in range(B):
+        #     loss_reg += torch.norm(tmp[i]-torch.diag(torch.diag(tmp[i])))/(M*(M-1))
+        # loss_reg = loss_reg/B
         # checkNan(loss_reg)
         # print('loss_reg: '+str(loss_reg.data))
         log_score_mat_1 = self.gamma3 * log_score_mat_1
