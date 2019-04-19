@@ -10,6 +10,8 @@ from utils.math import softmax
 # device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 import numpy as np
 
+import pdb
+
 class _BaseDataLoader(Dataset):
 	"""docstring for BaseDataLoader"""
 	def __init__(self):
@@ -213,6 +215,7 @@ class LoaderDec(_BaseDataLoader):
 		scores = np.squeeze(scores)
 
 		if len(scores)<5:
+			pdb.set_trace()
 			M,D,H,W = box_feats.size()
 			tmp = np.zeros([5,D,H,W])
 			tmp[:M] = box_feats
