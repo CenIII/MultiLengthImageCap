@@ -58,13 +58,13 @@ class LanguageModelLoss(nn.Module):
     #         mask = torch.as_tensor(mask, dtype=dtype, device=device)
     #     return mask
 
-    def forward(self, outputs, lengths=None):  # [8, 15, 10878]
+    def forward(self, outputs, lengths=None, max_len=15):  # [8, 15, 10878]
         loss = 0
 
         out_reshaped = outputs# torch.cat([outputs[i].unsqueeze(1) for i in range(len(outputs))],1)
         N, T, vocab_size  = out_reshaped.shape
         
-        lm_output, _, _ = self.model(out_reshaped, teacher_forcing_ratio=1)
+        lm_output, _, _ = self.model(out_reshaped, teacher_forcing_ratio=1,max_len=max_len)
         lm_output_reshape = torch.cat([lm_output[i].unsqueeze(1) for i in range(len(lm_output))],1)
         out_reshaped = out_reshaped[:,1:,:].contiguous().view(-1, vocab_size)
         lm_output_reshape = lm_output_reshape.contiguous().view(-1, vocab_size)

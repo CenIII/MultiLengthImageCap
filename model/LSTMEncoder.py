@@ -60,7 +60,7 @@ class EncoderRNN(BaseRNN):
         self.rnn = self.rnn_cell(embedding_size, hidden_size, n_layers,
                                  batch_first=True, bidirectional=bidirectional, dropout=dropout_p)
 
-    def forward(self, input_var, use_prob_vector=False, input_lengths=None):
+    def forward(self, input_var, use_prob_vector=False, input_lengths=None,max_len=15):
         """
         Applies an RNN encoder to a batch of input sequences.
 
@@ -89,6 +89,6 @@ class EncoderRNN(BaseRNN):
         output, _ = self.rnn(embedded)
 
         if self.variable_lengths:
-            output, _ = nn.utils.rnn.pad_packed_sequence(output, batch_first=True, total_length=self.max_len)
+            output, _ = nn.utils.rnn.pad_packed_sequence(output, batch_first=True, total_length=max_len)
 
         return output

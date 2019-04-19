@@ -99,23 +99,23 @@ def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath):
 
 			# step 1: load data
 			batchdata = next(ld)
-			box_feats, box_global_feats, numBoxes = makeInp(*batchdata)  # box_feats: (numImage,numBoxes,512,7,7) box_global_feats: list, numImage [(512,34,56)]
+			box_feats, box_global_feats = makeInp(*batchdata)  # box_feats: (numImage,numBoxes,512,7,7) box_global_feats: list, numImage [(512,34,56)]
 			
 			# step 2: data transform by linNet
 			box_feat, global_hidden = linNet(box_feats, box_global_feats)
 			
 			# step 3: decode to captions by lstmDec
 			encoder_hidden, encoder_outputs = linOut2DecIn(global_hidden,box_feat)
-			decoder_outputs, decoder_hidden, ret_dict = lstmDec(encoder_hidden=encoder_hidden, encoder_outputs=encoder_outputs, max_len=int(5*numBoxes)) # box_feat [8, 4, 4096, 3, 3]
+			decoder_outputs, decoder_hidden, ret_dict = lstmDec(encoder_hidden=encoder_hidden, encoder_outputs=encoder_outputs) # box_feat [8, 4, 4096, 3, 3]
 			
 			# step 4: calculate loss
 				# Loss 1: Similarity loss
 			lengths = torch.LongTensor(ret_dict['length']).to(device)
 			decoder_outputs = torch.stack([decoder_outputs[i] for i in range(len(decoder_outputs))], 1) # decoder_outputs [8, 15, 10878]
-			encoder_outputs = lstmEnc(decoder_outputs, use_prob_vector=True, input_lengths=lengths, max_len=int(5*numBoxes))
+			encoder_outputs = lstmEnc(decoder_outputs, use_prob_vector=True, input_lengths=lengths)
 			loss1, loss_reg = crit(box_feat, encoder_outputs, lengths) #box_feat [8, 5, 4096, 3, 3], encoder_outputs [8, 15, 4096]
 				# Loss 2: LM loss
-			loss2 =  LM(decoder_outputs, lengths, max_len=int(5*numBoxes))
+			loss2 =  LM(decoder_outputs, lengths)
 
 
 			loss = loss1+loss_reg+loss2
@@ -133,15 +133,34 @@ def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath):
 
 			qdar.set_postfix(simiLoss=lstr(loss1),regLoss=lstr(loss_reg),lmLoss=lstr(loss2))
 			if i > 0 and i % 1000 == 0:
-				saveStateDict(linNet, lstmDec)
+				saveStateDict(linNet, lstmEnc)
 
 		loss_epoch_mean = np.mean(loss_itr_list)
 		print('epoch ' + str(epoch) + ' mean loss:' + str(np.round(loss_epoch_mean, 5)))
 		# loss_epoch_list.append(loss_epoch_mean)
 		logger.write(str(np.round(loss_epoch_mean, 5)) + '\n')
 		logger.flush()
-		saveStateDict(linNet, lstmDec)
+		saveStateDict(linNet, lstmEnc)
 		epoch += 1
+
+
+def inference(image_path,loader,linNet,lstmDec,save_path,sample_mode=['top',3]):
+
+	def draw(image,box_coords,decoder_outputs):
+		...
+
+
+
+	image, box_coords, box_feat, global_feat = loader.load(image_path)
+	box_feat, global_feat = makeInp(box_feat, global_feat)  # box_feats: (numImage,numBoxes,512,7,7) box_global_feats: list, numImage [(512,34,56)]		
+	# step 2: data transform by linNet
+	box_feat, global_hidden = linNet(box_feat, global_feat)
+	# step 3: decode to captions by lstmDec
+	encoder_hidden, encoder_outputs = linOut2DecIn(global_hidden,box_feat)
+	decoder_outputs, decoder_hidden, ret_dict = lstmDec(encoder_hidden=encoder_hidden, encoder_outputs=encoder_outputs) # box_feat [8, 4, 4096, 3, 3]
+
+	draw(image,box_coords,decoder_outputs)
+
 
 
 def parseArgs():
@@ -172,35 +191,23 @@ if __name__ == '__main__':
 
 	sos_id = VocabData['word_dict']['<START>']
 	eos_id = VocabData['word_dict']['<END>']
-	# load LSTM encoder
 
 	lstmDec = DecoderRNN(vocab_size=len(VocabData['word_dict']),max_len=15,sos_id=sos_id, eos_id=eos_id , embedding_size=300,hidden_size=4096,
 						 embedding_parameter=VocabData['word_embs'], update_embedding=False ,use_attention=True)
 
-	lstmEnc = EncoderRNN(len(VocabData['word_dict']), max_len=15, hidden_size=4096, embedding_size=300,
-						 input_dropout_p=0, dropout_p=0,
-						 n_layers=1, bidirectional=False, rnn_cell='lstm', variable_lengths=False,
-						 embedding_parameter=VocabData['word_embs'], update_embedding=False)
 	# todo: reload lstmEnc
-	linNet,lstmEnc = reloadModel(args.model_path, linNet, lstmEnc)
+	linNet, lstmDec = reloadModel(args.model_path, linNet, lstmDec)
 
-	LM =  LanguageModelLoss(
-		PATH="./data/LMcheckpoint", vocab_size=len(VocabData['word_dict']),max_len=15,sos_id=sos_id, eos_id=eos_id , embedding_size=300,hidden_size=1024, use_prob_vector=True
-	)
-	crit = SimilarityLoss(0.5, 0.5, 1)
+	loader = LoaderTest()
+	# loader = DataLoader(dataset, batch_size=args.batch_imgs, shuffle=False, num_workers=2,
+						# collate_fn=dataset.collate_fn)
 
-
-	if args.evaluate_mode:  # evaluation mode
-		pass
-
-	else:  # train mode
-
-		optimizer = torch.optim.Adam(
-			list(filter(lambda p: p.requires_grad, lstmDec.parameters())) + list(linNet.conv1.parameters()), 0.0001)
-		dataset = LoaderDec()
-		loader = DataLoader(dataset, batch_size=args.batch_imgs, shuffle=False, num_workers=2,
-							collate_fn=dataset.collate_fn)
-		train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, args.save_path)
+	# enter interactive session, require user enter image path, then 'inference' function load the image, output 
+	while True:
+		# get image_path interactively
+		...
+		# do inference, show image, then loop back.
+		inference(image_path,loader,linNet,lstmDec,args.save_path,sample_mode=['top',3])
 
 
 

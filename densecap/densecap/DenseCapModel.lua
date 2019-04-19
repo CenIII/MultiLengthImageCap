@@ -448,3 +448,10 @@ function DenseCapModel:forward_backward(data)
 
   return out
 end
+
+
+function DenseCapModel:forward_demo(data)
+  self:evaluate()
+  local output = self:forward(input)
+  return output
+end
