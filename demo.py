@@ -234,6 +234,8 @@ if __name__ == '__main__':
 	# 	...
 		# do inference, show image, then loop back.
 	image_path = './densecap/data_pipeline/29.jpg'
+	lstmDec = lstmDec.to(device)
+	linNet = linNet.to(device)  # nn.DataParallel(linNet,device_ids=[0, 1]).to(device)
 	inference(image_path,loader,linNet,lstmDec,symbolDec,args.save_path,sample_mode=['top',3])
 
 
