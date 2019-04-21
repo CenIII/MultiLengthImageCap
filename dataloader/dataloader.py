@@ -43,7 +43,6 @@ class _BaseDataLoader(Dataset):
 		# data['boxes_gt'] = [~128]x4
 		# data['box_captions_gt'] = [~128]x15
 		# data['box_feats'] = [~128]x512x7x7
-		# data['box_codes'] = [~128]x4096
 		# data['glob_feat'] = 512x30x45
 		# data['glob_caption_gt'] = 100
 		'''
