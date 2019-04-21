@@ -7,6 +7,7 @@ import pickle
 
 import sys
 
+from model import LanguageModelLoss
 
 def train_LM(lmloader, model, optimizer, criterion, pad_id, max_epoch):
     
@@ -56,6 +57,8 @@ def loadCheckpoint(PATH, model):
     model.eval()
     return model
 
+
+
 def main():
     # load vocab Data here!
 
@@ -86,10 +89,33 @@ def main():
     for word in wordDict:
         rev_vocab[wordDict[word]] = word
     
+    they = torch.zeros(1, vocab_size) + 0.000001
+    are = torch.zeros(1, vocab_size) + 0.000001
+    students = torch.zeros(1, vocab_size) + 0.000001
+    _from = torch.zeros(1, vocab_size) + 0.000001
+    that = torch.zeros(1, vocab_size) + 0.000001
+    school = torch.zeros(1, vocab_size) + 0.000001
+    they_id = wordDict['they']
+    are_id = wordDict['are']
+    students_id = wordDict['students']
+    from_id = wordDict['from']
+    that_id = wordDict['that']
+    school_id = wordDict['school']
+
+    they[0,they_id] = 1 - (vocab_size-1)*0.000001
+    are[0,are_id] = 1 - (vocab_size-1)*0.000001
+    students[0,students_id] = 1 - (vocab_size-1)*0.000001
+    _from[0,from_id]=1 - (vocab_size-1)*0.000001
+    that[0,that_id]=1 - (vocab_size-1)*0.000001
+    school[0,school_id]=1 - (vocab_size-1)*0.000001
+
+    strange_sentence = torch.cat([they, are, are, are, are, are], 0).unsqueeze(0)
+    regular_sentence = torch.cat([they, are, students, _from, that, school], 0).unsqueeze(0)
+
     PATH = 'LMcheckpoint'
 
     
-    model = DecoderRNN(vocab_size, max_len, hidden_size, embedding_size, sos_id, eos_id, embedding=embedding, rnn_cell='lstm')
+    model = DecoderRNN(vocab_size, max_len, hidden_size, embedding_size, sos_id, eos_id, embedding_parameter=embedding, rnn_cell='lstm')
     if recovery=='1':
         model = loadCheckpoint(PATH, model)
     optimizer = optim.Adam(model.parameters(), lr=0.003)
@@ -100,7 +126,13 @@ def main():
     if mode == 'train':
         train_LM(lmloader, model, optimizer, criterion, pad_id, max_epoch)
 
-    sampleSentence(model, testloader, rev_vocab)
+    if mode == 'test':
+        lm_loss = LanguageModelLoss(PATH, vocab_size, max_len, hidden_size, embedding_size, sos_id, eos_id, use_prob_vector=True)
+        loss1 = lm_loss(strange_sentence)
+        loss2 = lm_loss(regular_sentence)
+        print(loss1.item(), loss2.item())
+
+    # sampleSentence(model, testloader, rev_vocab)
 
 
 if __name__ == "__main__":

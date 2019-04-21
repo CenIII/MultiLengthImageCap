@@ -16,7 +16,10 @@ class LanguageModelLoss(nn.Module):
         self.model = self.loadCheckpoint(PATH, model)
 
     def loadCheckpoint(self, model_path, model):
-        pt = torch.load(model_path)
+        if device == torch.device('cpu'):
+            pt = torch.load(model_path, map_location='cpu')
+        else:
+            pt = torch.load(model_path)
 
         def subload(model, pt_dict):
             model_dict = model.state_dict()
@@ -77,7 +80,7 @@ class LanguageModelLoss(nn.Module):
                 mask[i,:lengths[i]] += 1
         
         # mask = self.length_to_mask(lengths,dtype=torch.float)
-        mask = mask[:,1:].contiguous().view(-1, 1)
+            mask = mask[:,1:].contiguous().view(-1, 1)
         loss = self.criterion(out_reshaped,lm_output_reshape, mask)
 
         return loss
