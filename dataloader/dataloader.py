@@ -426,7 +426,7 @@ class LoaderDemo(object):
 
 	def makeInp(self,box_feats,global_feat):
 		box_feats = torch.tensor(box_feats).unsqueeze(0).to(device)
-		global_feat = [torch.tensor(global_feat)].to(device)
+		global_feat = [torch.tensor(global_feat).to(device)]
 		return box_feats, global_feat
 
 if __name__ == '__main__':
