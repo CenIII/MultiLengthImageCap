@@ -65,7 +65,7 @@ class LM_DecoderRNN(BaseRNN):
             sos_id, eos_id, embedding = None,
             n_layers=1, rnn_cell='lstm', bidirectional=False,
             input_dropout_p=0, dropout_p=0, use_attention=False, update_embedding=False, use_prob_vector=False):
-        super(DecoderRNN, self).__init__(vocab_size, max_len, hidden_size,
+        super(LM_DecoderRNN, self).__init__(vocab_size, max_len, hidden_size,
                 input_dropout_p, dropout_p,
                 n_layers, rnn_cell)
 
