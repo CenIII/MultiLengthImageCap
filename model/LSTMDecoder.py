@@ -94,7 +94,8 @@ class DecoderRNN(BaseRNN):
         self.use_prob_vector = use_prob_vector
         if embedding_parameter is not None:
             embedding_parameter = torch.FloatTensor(embedding_parameter).to(device)
-
+            if use_prob_vector:
+                embedding_parameter = embedding_parameter.t()
             self.embedding.weight = nn.Parameter(embedding_parameter)
         self.embedding.weight.requires_grad = update_embedding
 
