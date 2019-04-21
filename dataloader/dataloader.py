@@ -12,6 +12,8 @@ import numpy as np
 from scipy.misc.pilutil import imread, imresize
 import h5py
 
+device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+
 class _BaseDataLoader(Dataset):
 	"""docstring for BaseDataLoader"""
 	def __init__(self):
@@ -423,8 +425,8 @@ class LoaderDemo(object):
 		return box_scores[index], box_coords[index], box_feats[index]
 
 	def makeInp(self,box_feats,global_feat):
-		box_feats = torch.tensor(box_feats).unsqueeze(0)
-		global_feat = [torch.tensor(global_feat)]
+		box_feats = torch.tensor(box_feats).unsqueeze(0).to(device)
+		global_feat = [torch.tensor(global_feat)].to(device)
 		return box_feats, global_feat
 
 if __name__ == '__main__':
