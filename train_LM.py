@@ -20,7 +20,7 @@ def train_LM(lmloader, model, optimizer, criterion, pad_id, max_epoch):
             if torch.cuda.is_available():
                 input_sentences = input_sentences.cuda()
             
-            decoder_output, _, _ = model(input_sentences, teacher_forcing_ratio=1-n/(2*max_epoch))
+            decoder_output, _, _ = model(input_sentences, teacher_forcing_ratio=1-epoch/(2*max_epoch))
             decoder_output_reshaped = torch.cat([decoder_output[i].unsqueeze(1) for i in range(len(decoder_output))],1)
             decoder_output = None
             vocab_size = decoder_output_reshaped.shape[2]
