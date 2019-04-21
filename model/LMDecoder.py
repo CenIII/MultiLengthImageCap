@@ -112,7 +112,8 @@ class LM_DecoderRNN(BaseRNN):
         return predicted_softmax, hidden, attn
 
     def forward(self, inputs=None, encoder_hidden=None, encoder_outputs=None,
-                    function=F.log_softmax, teacher_forcing_ratio=0):
+                    function=F.log_softmax, teacher_forcing_ratio=0, max_len=15):
+        self.max_len = max_len
         ret_dict = dict()
         if self.use_attention:
             ret_dict[LM_DecoderRNN.KEY_ATTN_SCORE] = list()
