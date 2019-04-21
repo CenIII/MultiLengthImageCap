@@ -110,8 +110,8 @@ class LanguageModelLoss(nn.Module):
         mask = mask[:,1:].contiguous().view(-1, 1)
 
         # decode outputs
-        print('lm outputs: '+self.probVec2Symbols(lm_output_reshape))
-        print('dec outputs: '+self.probVec2Symbols(out_reshaped))
+        print('lm outputs: '+str(self.probVec2Symbols(lm_output_reshape)))
+        print('dec outputs: '+str(self.probVec2Symbols(out_reshaped)))
 
         loss = self.criterion(out_reshaped,lm_output_reshape, mask)
 
