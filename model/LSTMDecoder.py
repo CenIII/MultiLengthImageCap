@@ -120,7 +120,7 @@ class DecoderRNN(BaseRNN):
         return predicted_softmax, hidden, attn
 
     def forward(self, inputs=None, encoder_hidden=None, encoder_outputs=None,
-                    function=F.softmax, teacher_forcing_ratio=0, max_len=15):
+                    function=F.softmax, teacher_forcing_ratio=0, max_len=15, semi_sup=False):
         self.max_length = max_len
         ret_dict = dict()
         if self.use_attention:
@@ -152,7 +152,28 @@ class DecoderRNN(BaseRNN):
 
         # Manual unrolling is used to support random teacher forcing.
         # If teacher_forcing_ratio is True or False instead of a probability, the unrolling can be done in graph
-        if use_teacher_forcing:
+        if semi_sup:
+            decoder_input = inputs[:, :-10]
+            decoder_output, decoder_hidden, attn = self.forward_step(decoder_input, decoder_hidden, encoder_outputs,
+                                                                     function=function)
+            for di in range(decoder_output.size(1)):
+                step_output = decoder_output[:, di, :]
+                if attn is not None:
+                    step_attn = attn[:, di, :]
+                else:
+                    step_attn = None
+                decode(di, step_output, step_attn)
+                
+            decoder_input = decoder_output[:, -1].unsqueeze(1)
+            for di in range(max_length):
+                decoder_output, decoder_hidden, step_attn = self.forward_step(decoder_input, decoder_hidden, encoder_outputs,
+                                                                         function=function)
+                step_output = decoder_output.squeeze(1)
+                symbols = decode(di, step_output, step_attn)
+                decoder_input = symbols if not self.use_prob_vector else step_output.unsqueeze(1)
+
+
+        elif use_teacher_forcing:
             decoder_input = inputs[:, :-1]
             decoder_output, decoder_hidden, attn = self.forward_step(decoder_input, decoder_hidden, encoder_outputs,
                                                                      function=function)
