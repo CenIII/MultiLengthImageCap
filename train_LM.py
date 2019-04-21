@@ -1,5 +1,5 @@
 from dataloader import LMDataset
-from model import DecoderRNN
+from model import LM_DecoderRNN
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -9,7 +9,7 @@ import sys
 
 from model import LanguageModelLoss
 
-def train_LM(lmloader, model, optimizer, criterion, pad_id, max_epoch, max_len):
+def train_LM(lmloader, model, optimizer, criterion, pad_id, max_epoch):
     
     for epoch in range(max_epoch):
 
@@ -20,7 +20,7 @@ def train_LM(lmloader, model, optimizer, criterion, pad_id, max_epoch, max_len):
             if torch.cuda.is_available():
                 input_sentences = input_sentences.cuda()
             
-            decoder_output, _, _ = model(input_sentences, teacher_forcing_ratio=1-epoch/(2*max_epoch),max_len=max_len)
+            decoder_output, _, _ = model(input_sentences, teacher_forcing_ratio=1-epoch/(2*max_epoch))
             decoder_output_reshaped = torch.cat([decoder_output[i].unsqueeze(1) for i in range(len(decoder_output))],1)
             decoder_output = None
             vocab_size = decoder_output_reshaped.shape[2]
@@ -115,7 +115,7 @@ def main():
     PATH = 'LMcheckpoint'
 
     
-    model = DecoderRNN(vocab_size, max_len, hidden_size, embedding_size, sos_id, eos_id, embedding_parameter=embedding, rnn_cell='lstm')
+    model = DecoderRNN(vocab_size, max_len, hidden_size, embedding_size, sos_id, eos_id, embedding=embedding, rnn_cell='lstm')
     if recovery=='1':
         model = loadCheckpoint(PATH, model)
     optimizer = optim.Adam(model.parameters(), lr=0.003)
@@ -124,7 +124,7 @@ def main():
         model = model.cuda()
         criterion = criterion.cuda()
     if mode == 'train':
-        train_LM(lmloader, model, optimizer, criterion, pad_id, max_epoch, max_len)
+        train_LM(lmloader, model, optimizer, criterion, pad_id, max_epoch)
 
     if mode == 'test':
         lm_loss = LanguageModelLoss(PATH, vocab_size, max_len, hidden_size, embedding_size, sos_id, eos_id, use_prob_vector=True)
