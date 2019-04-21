@@ -106,8 +106,8 @@ class NetWrapper(nn.Module):
 		box_feat, global_hidden = self.models[0](box_feats, box_global_feats)
 		
 		# step 3: decode to captions by lstmDec
-		encoder_hidden, encoder_outputs = self.linOut2DecIn(global_hidden,box_feat)
-		decoder_outputs, decoder_hidden, ret_dict = self.models[1](encoder_hidden=encoder_hidden, encoder_outputs=encoder_outputs, max_len=int(5*numBoxes)) # box_feat [8, 4, 4096, 3, 3]
+		# encoder_hidden, encoder_outputs = self.linOut2DecIn(global_hidden,box_feat)
+		decoder_outputs, decoder_hidden, ret_dict = self.models[1](encoder_hidden=global_hidden, encoder_outputs=box_feat, max_len=int(5*numBoxes)) # box_feat [8, 4, 4096, 3, 3]
 		
 		# step 4: calculate loss
 			# Loss 1: Similarity loss

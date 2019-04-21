@@ -2,6 +2,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+
+
 class LinearModel(nn.Module):
     def __init__(self, hiddenSize=1024):
         super(LinearModel, self).__init__()
@@ -18,7 +21,13 @@ class LinearModel(nn.Module):
         for i in range(len(global_feat)):
             global_vec.append(self.conv1(global_feat[i].unsqueeze(0)).view(self.hiddenSize,-1).max(dim=1)[0])
         global_vec = torch.stack(global_vec,dim=0)
-        return box_feat, global_vec # box_feat [8,2,hiddensize,3,3], global_vec [8, hidden_size]
+
+        global_hidden = global_vec.unsqueeze(0)
+        encoder_hidden = (global_hidden,torch.zeros_like(global_hidden).to(device))
+        B,M,D,H,W = box_feat.size()
+        encoder_outputs = box_feat.permute(0,1,3,4,2).contiguous().view(B,-1,D)
+
+        return encoder_outputs, encoder_hidden # box_feat [8,2,hiddensize,3,3], global_vec [8, hidden_size]
 
 
 # if __name__ == "__main__":
