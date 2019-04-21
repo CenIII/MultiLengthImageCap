@@ -9,7 +9,7 @@ import sys
 
 from model import LanguageModelLoss
 
-def train_LM(lmloader, model, optimizer, criterion, pad_id, max_epoch):
+def train_LM(lmloader, model, optimizer, criterion, pad_id, max_epoch, max_len):
     
     for epoch in range(max_epoch):
 
@@ -20,7 +20,7 @@ def train_LM(lmloader, model, optimizer, criterion, pad_id, max_epoch):
             if torch.cuda.is_available():
                 input_sentences = input_sentences.cuda()
             
-            decoder_output, _, _ = model(input_sentences, teacher_forcing_ratio=1-epoch/(2*max_epoch))
+            decoder_output, _, _ = model(input_sentences, teacher_forcing_ratio=1-epoch/(2*max_epoch),max_len=max_len)
             decoder_output_reshaped = torch.cat([decoder_output[i].unsqueeze(1) for i in range(len(decoder_output))],1)
             decoder_output = None
             vocab_size = decoder_output_reshaped.shape[2]
@@ -124,7 +124,7 @@ def main():
         model = model.cuda()
         criterion = criterion.cuda()
     if mode == 'train':
-        train_LM(lmloader, model, optimizer, criterion, pad_id, max_epoch)
+        train_LM(lmloader, model, optimizer, criterion, pad_id, max_epoch, max_len)
 
     if mode == 'test':
         lm_loss = LanguageModelLoss(PATH, vocab_size, max_len, hidden_size, embedding_size, sos_id, eos_id, use_prob_vector=True)
