@@ -67,7 +67,7 @@ def reloadDec(model_path, linNet, lstmDec):
 		return model
 
 	linNet = subload(linNet, pt['linNet'])
-	lstmDec = subload(lstmDec, pt['lstmEnc'])
+	lstmDec = subload(lstmDec, pt['lstmDec'])
 	pt = None
 	for p in linNet.conv2.parameters():
 		p.requires_grad = False
@@ -101,7 +101,7 @@ def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath):
 	def saveStateDict(linNet, lstmEnc):
 		models = {}
 		models['linNet'] = linNet.state_dict()
-		models['lstmEnc'] = lstmEnc.state_dict()
+		models['lstmDec'] = lstmEnc.state_dict()
 		torch.save(models, os.path.join(savepath, 'lstmDec.pt'))
 
 	def linOut2DecIn(global_hidden, box_feat):	# box_feat [8, 4, 4096, 3, 3]
