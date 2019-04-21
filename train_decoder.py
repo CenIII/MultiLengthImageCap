@@ -90,10 +90,11 @@ class NetWrapper(nn.Module):
 	"""docstring for NetWrapper"""
 	def __init__(self, linNet, lstmDec, lstmEnc, LM):
 		super(NetWrapper, self).__init__()
-		self.linNet = linNet
-		self.lstmDec = lstmDec
-		self.lstmEnc = lstmEnc
-		self.LM = LM
+		self.models = nn.ModuleList([linNet,lstmDec,lstmEnc,LM])
+		# self.linNet = linNet
+		# self.lstmDec = lstmDec
+		# self.lstmEnc = lstmEnc
+		# self.LM = LM
 	def linOut2DecIn(self, global_hidden, box_feat):	# box_feat [8, 4, 4096, 3, 3]
 		global_hidden = global_hidden.unsqueeze(0)
 		encoder_hidden = (global_hidden,torch.zeros_like(global_hidden).to(device))
@@ -102,20 +103,20 @@ class NetWrapper(nn.Module):
 		return encoder_hidden, encoder_outputs
 	def forward(self, box_feats, box_global_feats, numBoxes):
 		# step 2: data transform by linNet
-		box_feat, global_hidden = self.linNet(box_feats, box_global_feats)
+		box_feat, global_hidden = self.models[0](box_feats, box_global_feats)
 		
 		# step 3: decode to captions by lstmDec
 		encoder_hidden, encoder_outputs = self.linOut2DecIn(global_hidden,box_feat)
-		decoder_outputs, decoder_hidden, ret_dict = self.lstmDec(encoder_hidden=encoder_hidden, encoder_outputs=encoder_outputs, max_len=int(5*numBoxes)) # box_feat [8, 4, 4096, 3, 3]
+		decoder_outputs, decoder_hidden, ret_dict = self.models[1](encoder_hidden=encoder_hidden, encoder_outputs=encoder_outputs, max_len=int(5*numBoxes)) # box_feat [8, 4, 4096, 3, 3]
 		
 		# step 4: calculate loss
 			# Loss 1: Similarity loss
 		lengths = torch.LongTensor(ret_dict['length']).to(device)
 		decoder_outputs = torch.stack([decoder_outputs[i] for i in range(len(decoder_outputs))], 1) # decoder_outputs [8, 15, 10878]
-		encoder_outputs = self.lstmEnc(decoder_outputs, use_prob_vector=True, input_lengths=lengths, max_len=int(5*numBoxes))
+		encoder_outputs = self.models[2](decoder_outputs, use_prob_vector=True, input_lengths=lengths, max_len=int(5*numBoxes))
 		
 			# Loss 2: LM loss
-		loss2 =  self.LM(decoder_outputs, lengths, max_len=int(5*numBoxes))
+		loss2 =  self.models[3](decoder_outputs, lengths, max_len=int(5*numBoxes))
 
 		return box_feat, decoder_outputs, lengths, loss2
 		
