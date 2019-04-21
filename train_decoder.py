@@ -212,7 +212,7 @@ if __name__ == '__main__':
 	linNet,lstmEnc = reloadModel(args.model_path, linNet, lstmEnc)
 
 	LM =  LanguageModelLoss(
-		PATH="./data/LMcheckpoint", vocab_size=len(VocabData['word_dict']),max_len=15,sos_id=sos_id, eos_id=eos_id , embedding_size=300,hidden_size=1024, use_prob_vector=True
+		wordDict=VocabData['word_dict'], PATH="./data/LMcheckpoint", vocab_size=len(VocabData['word_dict']),max_len=15,sos_id=sos_id, eos_id=eos_id , embedding_size=300,hidden_size=1024, use_prob_vector=True
 	)
 	crit = SimilarityLoss(0.5, 0.5, 1)
 
