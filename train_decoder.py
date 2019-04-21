@@ -202,14 +202,14 @@ def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath):
 
 			qdar.set_postfix(simiLoss=lstr(loss1),regLoss=lstr(loss_reg),lmLoss=lstr(loss2))
 			if i > 0 and i % 1000 == 0:
-				saveStateDict(linNet, lstmDec)
+				saveStateDict(net.module.linNet, net.module.lstmDec)
 
 		loss_epoch_mean = np.mean(loss_itr_list)
 		print('epoch ' + str(epoch) + ' mean loss:' + str(np.round(loss_epoch_mean, 5)))
 		# loss_epoch_list.append(loss_epoch_mean)
 		logger.write(str(np.round(loss_epoch_mean, 5)) + '\n')
 		logger.flush()
-		saveStateDict(linNet, lstmDec)
+		saveStateDict(net.module.linNet, net.module.lstmDec)
 		epoch += 1
 
 
