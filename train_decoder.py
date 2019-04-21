@@ -86,6 +86,40 @@ def makeInp(*inps):
 			ret.append(inp.to(device))
 	return ret
 
+class NetWrapper(object):
+	"""docstring for NetWrapper"""
+	def __init__(self, linNet, lstmDec, lstmEnc, LM):
+		super(NetWrapper, self).__init__()
+		self.linNet = linNet
+		self.lstmDec = lstmDec
+		self.lstmEnc = lstmEnc
+		self.LM = LM
+	def linOut2DecIn(self, global_hidden, box_feat):	# box_feat [8, 4, 4096, 3, 3]
+		global_hidden = global_hidden.unsqueeze(0)
+		encoder_hidden = (global_hidden,torch.zeros_like(global_hidden).to(device))
+		B,M,D,H,W = box_feat.size()
+		encoder_outputs = box_feat.permute(0,1,3,4,2).contiguous().view(B,-1,D)
+		return encoder_hidden, encoder_outputs
+	def forward(self, box_feats, box_global_feats, numBoxes):
+		# step 2: data transform by linNet
+		box_feat, global_hidden = self.linNet(box_feats, box_global_feats)
+		
+		# step 3: decode to captions by lstmDec
+		encoder_hidden, encoder_outputs = self.linOut2DecIn(global_hidden,box_feat)
+		decoder_outputs, decoder_hidden, ret_dict = self.lstmDec(encoder_hidden=encoder_hidden, encoder_outputs=encoder_outputs, max_len=int(5*numBoxes)) # box_feat [8, 4, 4096, 3, 3]
+		
+		# step 4: calculate loss
+			# Loss 1: Similarity loss
+		lengths = torch.LongTensor(ret_dict['length']).to(device)
+		decoder_outputs = torch.stack([decoder_outputs[i] for i in range(len(decoder_outputs))], 1) # decoder_outputs [8, 15, 10878]
+		encoder_outputs = self.lstmEnc(decoder_outputs, use_prob_vector=True, input_lengths=lengths, max_len=int(5*numBoxes))
+		
+			# Loss 2: LM loss
+		loss2 =  self.LM(decoder_outputs, lengths, max_len=int(5*numBoxes))
+
+		return box_feat, decoder_outputs, lengths, loss2
+		
+
 def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath):
 	os.makedirs(savepath, exist_ok=True)
 	# if torch.cuda.is_available():
@@ -104,15 +138,19 @@ def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath):
 		models['lstmDec'] = lstmEnc.state_dict()
 		torch.save(models, os.path.join(savepath, 'lstmDec.pt'))
 
-	def linOut2DecIn(global_hidden, box_feat):	# box_feat [8, 4, 4096, 3, 3]
-		global_hidden = global_hidden.unsqueeze(0)
-		encoder_hidden = (global_hidden,torch.zeros_like(global_hidden).to(device))
-		B,M,D,H,W = box_feat.size()
-		encoder_outputs = box_feat.permute(0,1,3,4,2).contiguous().view(B,-1,D)
-		return encoder_hidden, encoder_outputs
+	# def linOut2DecIn(global_hidden, box_feat):	# box_feat [8, 4, 4096, 3, 3]
+	# 	global_hidden = global_hidden.unsqueeze(0)
+	# 	encoder_hidden = (global_hidden,torch.zeros_like(global_hidden).to(device))
+	# 	B,M,D,H,W = box_feat.size()
+	# 	encoder_outputs = box_feat.permute(0,1,3,4,2).contiguous().view(B,-1,D)
+	# 	return encoder_hidden, encoder_outputs
 
 	def lstr(ts,pres=3):
 		return str(np.round(ts.data.cpu().numpy(), 3))
+
+
+	net = nn.DataParallel(NetWrapper(linNet, lstmDec, lstmEnc, LM),device_ids=[0, 1]).to(device)
+
 
 	while True:
 		ld = iter(loader)
@@ -126,21 +164,27 @@ def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath):
 			batchdata = next(ld)
 			box_feats, box_global_feats, numBoxes = makeInp(*batchdata)  # box_feats: (numImage,numBoxes,512,7,7) box_global_feats: list, numImage [(512,34,56)]
 			
-			# step 2: data transform by linNet
-			box_feat, global_hidden = linNet(box_feats, box_global_feats)
+
+			# # step 2: data transform by linNet
+			# box_feat, global_hidden = linNet(box_feats, box_global_feats)
 			
-			# step 3: decode to captions by lstmDec
-			encoder_hidden, encoder_outputs = linOut2DecIn(global_hidden,box_feat)
-			decoder_outputs, decoder_hidden, ret_dict = lstmDec(encoder_hidden=encoder_hidden, encoder_outputs=encoder_outputs, max_len=int(5*numBoxes)) # box_feat [8, 4, 4096, 3, 3]
+			# # step 3: decode to captions by lstmDec
+			# encoder_hidden, encoder_outputs = linOut2DecIn(global_hidden,box_feat)
+			# decoder_outputs, decoder_hidden, ret_dict = lstmDec(encoder_hidden=encoder_hidden, encoder_outputs=encoder_outputs, max_len=int(5*numBoxes)) # box_feat [8, 4, 4096, 3, 3]
 			
-			# step 4: calculate loss
-				# Loss 1: Similarity loss
-			lengths = torch.LongTensor(ret_dict['length']).to(device)
-			decoder_outputs = torch.stack([decoder_outputs[i] for i in range(len(decoder_outputs))], 1) # decoder_outputs [8, 15, 10878]
-			encoder_outputs = lstmEnc(decoder_outputs, use_prob_vector=True, input_lengths=lengths, max_len=int(5*numBoxes))
+			# # step 4: calculate loss
+			# 	# Loss 1: Similarity loss
+			# lengths = torch.LongTensor(ret_dict['length']).to(device)
+			# decoder_outputs = torch.stack([decoder_outputs[i] for i in range(len(decoder_outputs))], 1) # decoder_outputs [8, 15, 10878]
+			# encoder_outputs = lstmEnc(decoder_outputs, use_prob_vector=True, input_lengths=lengths, max_len=int(5*numBoxes))
+			
+			# 	# Loss 2: LM loss
+			# loss2 =  LM(decoder_outputs, lengths, max_len=int(5*numBoxes))
+
+			box_feat, decoder_outputs, lengths, loss2 = net(box_feats, box_global_feats, numBoxes)
+
 			loss1, loss_reg = crit(box_feat, encoder_outputs, lengths) #box_feat [8, 5, 4096, 3, 3], encoder_outputs [8, 15, 4096]
-				# Loss 2: LM loss
-			loss2 =  LM(decoder_outputs, lengths, max_len=int(5*numBoxes))
+			
 
 
 			loss = loss1+loss_reg+loss2
