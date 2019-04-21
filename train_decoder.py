@@ -86,7 +86,7 @@ def makeInp(*inps):
 			ret.append(inp.to(device))
 	return ret
 
-class NetWrapper(object):
+class NetWrapper(nn.Module):
 	"""docstring for NetWrapper"""
 	def __init__(self, linNet, lstmDec, lstmEnc, LM):
 		super(NetWrapper, self).__init__()
