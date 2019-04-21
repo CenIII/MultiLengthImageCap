@@ -91,6 +91,7 @@ class DecoderRNN(BaseRNN):
 
         else:
             self.embedding = nn.Embedding(vocab_size,embedding_size)
+        self.use_prob_vector = use_prob_vector
         if embedding_parameter is not None:
             embedding_parameter = torch.FloatTensor(embedding_parameter).to(device)
 
@@ -169,7 +170,7 @@ class DecoderRNN(BaseRNN):
                                                                          function=function)
                 step_output = decoder_output.squeeze(1)
                 symbols = decode(di, step_output, step_attn)
-                decoder_input = symbols
+                decoder_input = symbols if not self.use_prob_vector else step_output
 
         ret_dict[DecoderRNN.KEY_SEQUENCE] = sequence_symbols
         ret_dict[DecoderRNN.KEY_LENGTH] = lengths.tolist()
@@ -215,7 +216,11 @@ class DecoderRNN(BaseRNN):
         if inputs is None:
             if teacher_forcing_ratio > 0:
                 raise ValueError("Teacher forcing has to be disabled (set 0) when no inputs is provided.")
-            inputs = torch.LongTensor([self.sos_id] * batch_size).view(batch_size, 1)
+            if not self.use_prob_vector:
+                inputs = torch.LongTensor([self.sos_id] * batch_size).view(batch_size, 1)
+            else:
+                inputs = torch.zeros([batch_size, self.output_size],dtype=torch.float).scatter_(1,torch.LongTensor([[self.sos_id]]*batch_size),1.)
+
             if torch.cuda.is_available():
                 inputs = inputs.to(device)
             max_length = self.max_length
