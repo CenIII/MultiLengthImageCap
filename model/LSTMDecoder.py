@@ -220,7 +220,7 @@ class DecoderRNN(BaseRNN):
             if not self.use_prob_vector:
                 inputs = torch.LongTensor([self.sos_id] * batch_size).view(batch_size, 1)
             else:
-                inputs = torch.zeros([batch_size, self.output_size],dtype=torch.float).scatter_(1,torch.LongTensor([[self.sos_id]]*batch_size),1.)
+                inputs = torch.zeros([batch_size, self.output_size],dtype=torch.float).scatter_(1,torch.LongTensor([[self.sos_id]]*batch_size),1.).unsqueeze(1)
 
             if torch.cuda.is_available():
                 inputs = inputs.to(device)
