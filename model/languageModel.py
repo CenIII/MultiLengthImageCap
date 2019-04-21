@@ -87,7 +87,8 @@ class LanguageModelLoss(nn.Module):
         for i in range(len(probvec)):
             symbols = probvec[i].topk(1)[1]
             sequence_symbols.append(symbols)
-        return sequence_symbols
+        wordSeq = self.symdec.decode(sequence_symbols)
+        return wordSeq
 
     def forward(self, outputs, lengths=None, max_len=15):  # [8, 15, 10878]
         loss = 0
