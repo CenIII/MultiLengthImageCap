@@ -112,7 +112,7 @@ class LM_DecoderRNN(BaseRNN):
                     function=F.log_softmax, teacher_forcing_ratio=0):
         ret_dict = dict()
         if self.use_attention:
-            ret_dict[DecoderRNN.KEY_ATTN_SCORE] = list()
+            ret_dict[LM_DecoderRNN.KEY_ATTN_SCORE] = list()
 
         inputs, batch_size, max_length = self._validate_args(inputs, encoder_hidden, encoder_outputs,
                                                              function, teacher_forcing_ratio)
@@ -127,7 +127,7 @@ class LM_DecoderRNN(BaseRNN):
         def decode(step, step_output, step_attn):
             decoder_outputs.append(step_output)
             if self.use_attention:
-                ret_dict[DecoderRNN.KEY_ATTN_SCORE].append(step_attn)
+                ret_dict[LM_DecoderRNN.KEY_ATTN_SCORE].append(step_attn)
             symbols = decoder_outputs[-1].topk(1)[1]
             sequence_symbols.append(symbols)
 
@@ -161,8 +161,8 @@ class LM_DecoderRNN(BaseRNN):
                 symbols = decode(di, step_output, step_attn)
                 decoder_input = symbols
 
-        ret_dict[DecoderRNN.KEY_SEQUENCE] = sequence_symbols
-        ret_dict[DecoderRNN.KEY_LENGTH] = lengths.tolist()
+        ret_dict[LM_DecoderRNN.KEY_SEQUENCE] = sequence_symbols
+        ret_dict[LM_DecoderRNN.KEY_LENGTH] = lengths.tolist()
 
         return decoder_outputs, decoder_hidden, ret_dict
 
