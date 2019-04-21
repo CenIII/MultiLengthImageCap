@@ -11,6 +11,7 @@ from utils.math import softmax
 import numpy as np
 from scipy.misc.pilutil import imread, imresize
 import h5py
+import torch.nn.functional as F
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
