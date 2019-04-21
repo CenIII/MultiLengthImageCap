@@ -5,7 +5,7 @@ import torch.nn.functional as F
 class LinearModel(nn.Module):
     def __init__(self, hiddenSize=1024):
         super(LinearModel, self).__init__()
-        self.conv1 = nn.Conv2d(512, hiddenSize, (10, 9), (4, 6))
+        self.conv1 = nn.Conv2d(512, hiddenSize, 7, stride=2)
         self.conv2 = nn.Conv2d(512, hiddenSize, 5 ,stride=1)
         self.hiddenSize = hiddenSize
 

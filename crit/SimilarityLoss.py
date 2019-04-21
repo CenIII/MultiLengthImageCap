@@ -156,12 +156,22 @@ class SimilarityLoss(nn.Module):
 
         # reg term
         beta = beta.view(B,M,Tb)
-        beta_prime = beta.permute(0,2,1)
-        tmp = beta.bmm(beta_prime) # B,M,M
         loss_reg = 0
+        prev = 0
         for i in range(B):
-            loss_reg += torch.norm(tmp[i]-torch.diag(torch.diag(tmp[i])))
+            idx = lenAry[i]
+            tmp = beta[i][:,prev: idx]
+            tmp = tmp.mm(tmp.t())
+            loss_reg += torch.norm(tmp-torch.diag(torch.diag(tmp)))/M
+            prev = idx
         loss_reg = loss_reg/B
+
+        # beta_prime = beta.permute(0,2,1)
+        # tmp = beta.bmm(beta_prime) # B,M,M
+        # loss_reg = 0
+        # for i in range(B):
+        #     loss_reg += torch.norm(tmp[i]-torch.diag(torch.diag(tmp[i])))/(M*(M-1))
+        # loss_reg = loss_reg/B
         # checkNan(loss_reg)
         # print('loss_reg: '+str(loss_reg.data))
         log_score_mat_1 = self.gamma3 * log_score_mat_1
@@ -177,7 +187,7 @@ class SimilarityLoss(nn.Module):
         loss1 = (pdq + pqd)/B
         # checkNan(loss1)
 
-        return loss1+loss_reg
+        return loss1, loss_reg
 
         # B, T, _ = e.size()
         
@@ -327,13 +337,18 @@ class SimilarityLoss(nn.Module):
         length_info = length_info[inds]
 
         numBlcks = int(B/self.bsize)+1
+        loss1 = 0
+        loss_reg = 0
         for i in range(0,B,self.bsize):
             image_b = image[i:i+self.bsize]
             text_b = torch.cat([text[j][:length_info[j]] for j in range(i,min(i+self.bsize,B))],dim=0).contiguous()
             len_b = [torch.sum(length_info[i:j+1]) for j in range(i,min(i+self.bsize,B))]
-            loss += self.calculate_matching_score(image_b, text_b, len_b, M, H_r, H_w)
-        loss = loss/numBlcks
-        return loss
+            l1,l2 = self.calculate_matching_score(image_b, text_b, len_b, M, H_r, H_w)
+            loss1 += l1
+            loss_reg += l2
+        loss1 = loss1/numBlcks
+        loss_reg = loss_reg/numBlcks
+        return loss1, loss_reg
 
 
 if __name__ == "__main__":

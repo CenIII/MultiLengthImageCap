@@ -198,24 +198,83 @@ class LoaderDec(_BaseDataLoader):
 		_,_,numiters = self.getBatch(self.pipeLen-1)
 		self.numiters = int(numiters)
 
-	def randomSample(self,scores,box_feats):
+	def overlap(self,A, B):  # X,Y ,W, H
+
+		W_cen_dis = np.abs(A[0] - B[0])
+		H_cen_dis = np.abs(A[1] - B[1])
+		W_dis = np.abs(A[2] + B[2]) / 2
+		H_dis = np.abs(A[3] + B[3]) / 2
+
+		if ((W_cen_dis < W_dis) and (H_cen_dis < H_dis)):
+
+			overlap_width = np.abs(W_dis - W_cen_dis)
+			overlap_height = np.abs(H_dis - H_cen_dis)
+			overlapp_area = overlap_height * overlap_width
+			area_A = A[2] * A[3]
+			area_B = B[2] * B[3]
+			ratioA = overlapp_area / area_A
+			ratioB = overlapp_area / area_B
+
+			if (ratioA > 0.6 or ratioB > 0.6):
+				return True
+
+			else:
+				return False
+		else:
+			return False
+
+	def indep_box_feats(self,sel_ind,num,box_gt):
+		for i in sel_ind:
+			if self.overlap(box_gt[i], box_gt[num]):
+				return sel_ind
+		sel_ind.append(num)
+		return sel_ind
+
+	def randomSample(self, box_gt):
 		# diversly distributed sample
 
-		# temp = data['box_scores'][0:data['box_feats'].shape[0]] # get the first ~ 128  boxes scores
-		# temp = temp[filtInds]
-		# temp = temp.reshape(temp.shape[0]*temp.shape[1])
-		# Maxindex = np.argsort(temp)[-samplenum:][::-1]
+		box_feats_seq = list(range(0,len(box_gt)))
+		random.shuffle(box_feats_seq)
+		# box_feats_list = [box_feats[box_feats_seq[0]]]
+		sel_ind = [box_feats_seq[0]]
 
-		# sampledData = data['box_feats'][filtInds][Maxindex]
-		# sampledData = sampledData[np.newaxis,:]
-		# sampledData[0,:,:,:]=pipIndx
-		scores = np.squeeze(scores)
-		scores = scores[:len(box_feats)]
-		prob = softmax(scores)
-		index = np.random.choice(len(box_feats),5, replace= False,p=prob)
-		box_feats = box_feats[index]
+		for i in box_feats_seq[1:]:
+			sel_ind= self.indep_box_feats(sel_ind, i, box_gt)
+
+		return sel_ind
+
+	# def randomSample(self,box_feats,boxes_gt):  # box_feats [3,512,7,7]
+	# 	# diversly distributed sample
+
+	# 	# temp = data['box_scores'][0:data['box_feats'].shape[0]] # get the first ~ 128  boxes scores
+	# 	# temp = temp[filtInds]
+	# 	# temp = temp.reshape(temp.shape[0]*temp.shape[1])
+	# 	# Maxindex = np.argsort(temp)[-samplenum:][::-1]
+
+	# 	# sampledData = data['box_feats'][filtInds][Maxindex]
+	# 	# sampledData = sampledData[np.newaxis,:]
+	# 	# sampledData[0,:,:,:]=pipIndx
 		
-		return scores,box_feats
+	# 	scores = np.squeeze(scores)
+
+	# 	if len(scores)<5:
+	# 		M,D,H,W = box_feats.shape
+	# 		tmp = np.zeros([5,D,H,W])
+	# 		tmp[:M] = box_feats
+	# 		tmp[M:] = np.tile(box_feats[0],(5-M,1))
+	# 		box_feats = tmp
+	# 		tmp = np.zeros(5)
+	# 		tmp[:M] = scores
+	# 		tmp[M:] = scores[0]
+	# 		scores = tmp
+
+	# 	scores = scores[:len(box_feats)]
+	# 	prob = softmax(scores)
+	# 	index = np.random.choice(len(box_feats),5, replace=False,p=prob)
+
+	# 	box_feats = box_feats[index]
+		
+	# 	return scores,box_feats
 
 	def filtReplicate(self, data):
 
@@ -244,10 +303,13 @@ class LoaderDec(_BaseDataLoader):
 		ret['info'] = data['info']
 		ret['box_scores'] = data['box_scores'][filtInds]
 		ret['box_feats'] = data['box_feats'][filtInds]
+		ret['boxes_gt'] = data['boxes_gt'][filtInds]
 		ret['glob_feat'] = data['glob_feat']
 
-		ret['box_scores'],ret['box_feats'] = self.randomSample(ret['box_scores'],ret['box_feats'])
-		
+		sampledInds = self.randomSample(ret['boxes_gt'])
+		ret['box_scores'] = ret['box_scores'][sampledInds]
+		ret['box_feats'] = ret['box_feats'][sampledInds]
+		ret['boxes_gt'] = ret['boxes_gt'][sampledInds]
 
 		return ret, itr, numiters
 
@@ -259,16 +321,18 @@ class LoaderDec(_BaseDataLoader):
 		numImgs = len(batch)
 		for i in range(numImgs):
 			data = batch[i][0]
-			# A =  data['glob_feat'].shape[0]
-			box_feats.append(torch.tensor(data['box_feats'][:numBoxes]))
-			box_global_feats.append(torch.tensor(data['glob_feat']))
-		box_feats = torch.stack(box_feats,dim=0)
+			numSps,D,H,W = data['box_feats'].shape
+			# print('data box_feats shape: '+str(data['box_feats'].shape))
+			# print(data['box_feats'][:(numSps-numSps%numBoxes)].shape)
+			box_feats.append(torch.tensor(data['box_feats'][:(numSps-numSps%numBoxes)]).view(-1,numBoxes,D,H,W))
+			box_global_feats += [torch.tensor(data['glob_feat'])]*len(box_feats[-1])
+		box_feats = torch.cat(box_feats,dim=0)
 
 		# box_global_feats = torch.cat(box_global_feats)
 		# _,B,C = box_global_feats.shape
 		# box_global_feats=box_global_feats.reshape(numImgs,A,B,C )
 
-		return box_feats, box_global_feats
+		return box_feats, box_global_feats, numBoxes
 
 
 	def __len__(self):
