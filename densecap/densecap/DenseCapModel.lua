@@ -260,42 +260,42 @@ function DenseCapModel:updateOutput(input)
   self.output = self.net:forward(input)
   
   -- add new index to self.output: pos_roi_feats, pos_roi_codes
-  local roi_feats = self.nets.localization_layer.output[1]
-  pos_roi_feats = self.nets.posslice_net:forward({roi_feats,self.output[7]})
-  pos_roi_codes = self.nets.posslice_net:forward({self.nets.recog_base:forward(roi_feats),self.output[7]})
-  self.output[8] = pos_roi_feats
-  self.output[9] = pos_roi_codes
+  -- local roi_feats = self.nets.localization_layer.output[1]
+  -- pos_roi_feats = self.nets.posslice_net:forward({roi_feats,self.output[7]})
+  -- pos_roi_codes = self.nets.posslice_net:forward({self.nets.recog_base:forward(roi_feats),self.output[7]})
+  -- self.output[8] = pos_roi_feats
+  -- self.output[9] = pos_roi_codes
 
   -- At test-time, apply NMS to final boxes
   local verbose = false
   if verbose then
-    print(string.format('before final NMS there are %d boxes', self.output[4]:size(1)))
+    print(string.format('before final NMS there are %d boxes', self.output[2]:size(1)))
     print(string.format('Using NMS threshold of %f', self.opt.final_nms_thresh))
   end
   if not self.train and self.opt.final_nms_thresh > 0 then
     -- We need to apply the same NMS mask to the final boxes, their
     -- objectness scores, and the output from the language model
-    local final_boxes_float = self.output[4]:float()
+    local final_boxes_float = self.output[2]:float()
     local class_scores_float = self.output[1]:float()
-    local lm_output_float = self.output[5]:float()
-    local pos_roi_feats = self.output[8]:float()
-    local pos_roi_codes = self.output[9]:float()
+    -- local lm_output_float = self.output[5]:float()
+    local pos_roi_feats = self.output[3]:float()
+    -- local pos_roi_codes = self.output[9]:float()
 
     local boxes_scores = torch.FloatTensor(final_boxes_float:size(1), 5)
     local boxes_x1y1x2y2 = box_utils.xcycwh_to_x1y1x2y2(final_boxes_float)
     boxes_scores[{{}, {1, 4}}]:copy(boxes_x1y1x2y2)
     boxes_scores[{{}, 5}]:copy(class_scores_float[{{}, 1}])
     local idx = box_utils.nms(boxes_scores, self.opt.final_nms_thresh)
-    self.output[4] = final_boxes_float:index(1, idx):typeAs(self.output[4])
+    self.output[2] = final_boxes_float:index(1, idx):typeAs(self.output[2])
     self.output[1] = class_scores_float:index(1, idx):typeAs(self.output[1])
-    self.output[5] = lm_output_float:index(1, idx):typeAs(self.output[5])
-    self.output[8] = pos_roi_feats:index(1, idx):typeAs(self.output[8])
-    self.output[9] = pos_roi_codes:index(1, idx):typeAs(self.output[9])
+    -- self.output[5] = lm_output_float:index(1, idx):typeAs(self.output[5])
+    self.output[3] = pos_roi_feats:index(1, idx):typeAs(self.output[3])
+    -- self.output[9] = pos_roi_codes:index(1, idx):typeAs(self.output[9])
     -- TODO: In the old StnDetectionModel we also applied NMS to the
     -- variables dumped by the LocalizationLayer. Do we want to do that?
 
   end
-  self.output[10] = self.nets.conv_net2.output[1] -- global feature 512x30x45
+  self.output[6] = self.nets.conv_net2.output[1] -- global feature 512x30x45
   -- local outputs = {
   --1   objectness_scores, 256x1
   --2   pos_roi_boxes, 
@@ -452,6 +452,6 @@ end
 
 function DenseCapModel:forward_demo(data)
   self:evaluate()
-  local output = self:forward(input)
+  local output = self:forward(data.image)
   return output
 end

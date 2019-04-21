@@ -9,6 +9,8 @@ import torch
 from utils.math import softmax
 # device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 import numpy as np
+from scipy.misc.pilutil import imread, imresize
+import h5py
 
 class _BaseDataLoader(Dataset):
 	"""docstring for BaseDataLoader"""
@@ -344,7 +346,86 @@ class LoaderDec(_BaseDataLoader):
 		return self.getBatch(idx%self.pipeLen)
 
 
+class LoaderDemo(object):
+	"""docstring for LoaderDemo"""
+	def __init__(self):
+		super(LoaderDemo, self).__init__()
+		self.dataPipePath = './densecap/data_pipeline/'
 
+	def preprocessImage(self,image_path):
+		img = imread(image_path)
+		# handle grayscale
+		if img.ndim == 2:
+			img = img[:, :, None][:, :, [0, 0, 0]]
+		H0, W0 = img.shape[0], img.shape[1]
+		img = imresize(img, float(720) / max(H0, W0))
+		img2ret = img.copy()
+		H, W = img.shape[0], img.shape[1]
+		# swap rgb to bgr. Is this the best way?
+		r = img[:,:,0].copy()
+		img[:,:,0] = img[:,:,2]
+		img[:,:,2] = r
+		img = np.expand_dims(img.transpose(2, 0, 1), axis=0)
+
+		# todo: save a file that lua can read.
+		filename = image_path.split('/')[-1].split('.')[0]
+
+		# save to h5file
+		f = h5py.File(os.path.join(self.dataPipePath, filename+'.h5'), 'w')
+
+		imdb = f.create_dataset('image', img.shape, dtype=np.uint8)
+		imdb[0] = img[0]
+		f.close()
+
+		# np.save(os.path.join(self.dataPipePath, filename+'.npy'),img)
+		return img2ret
+
+	def loadImage(self, image_path):
+		# load and preprocess image, save to npy
+		image = self.preprocessImage(image_path)
+		# todo: emmit lua sub process
+		
+		# wait lua to generate corresponding data file, and read
+
+		data_file = self.dataPipePath+'data_demo_*'
+	
+		while True:
+			filename = glob.glob(data_file)
+			if len(filename)>=1:
+				if not os.path.isfile(self.dataPipePath+'writing_block_'+filename[0].split('_')[-1]):
+					# lua writing file finished.
+					break
+		assert(len(filename)==1)
+		filename = filename[0]
+
+		# json load data_$pipIndex_*
+		with open(filename,'rb') as f:
+			reader = torchfile.T7Reader(f, utf8_decode_strings=True)
+			data = reader.read_obj()
+
+		box_scores = np.squeeze(data['box_scores'])
+		box_coords = data['boxes_pred']
+		box_feats = data['box_feats']#np.expand_dims(,axis=0)
+		global_feat = data['glob_feat']
+		return image, box_scores, box_coords, box_feats, global_feat
+
+	def sampleBoxes(self, box_scores, box_coords, box_feats, mode=['top',3]):
+		# todo: top and random
+		# scores = np.squeeze(box_scores)
+		posInds = np.where(box_scores>0)[0]
+		box_scores = box_scores[posInds]
+		box_coords = box_coords[posInds]
+		box_feats = box_feats[posInds]
+		# scores = scores[:len(box_feats)]
+		prob = softmax(box_scores)
+		index = np.random.choice(len(box_feats),min(3,len(box_feats)), replace=False,p=prob)
+
+		return box_scores[index], box_coords[index], box_feats[index]
+
+	def makeInp(self,box_feats,global_feat):
+		box_feats = torch.tensor(box_feats).unsqueeze(0)
+		global_feat = [torch.tensor(global_feat)]
+		return box_feats, global_feat
 
 if __name__ == '__main__':
 	loader = LoaderDec()

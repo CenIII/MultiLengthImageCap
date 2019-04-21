@@ -16,6 +16,8 @@ require 'densecap.DataLoader'
 require 'densecap.DenseCapModel'
 require 'densecap.optim_updates'
 
+require 'hdf5'
+
 local json = require 'cjson'
 local utils = require 'densecap.utils'
 local opts = require 'train_opts'
@@ -63,16 +65,34 @@ local all_losses = {}
 local results_history = {}
 local iter = 0
 
+local function loadImage(image_path)
+  local vgg_mean = torch.FloatTensor{103.939, 116.779, 123.68} -- BGR order
+  vgg_mean = vgg_mean:view(1,3,1,1)
+
+  local h5_file = hdf5.open(image_path, 'r')
+  -- local img = npy4th.loadnpy(image_path)--self.h5_file:read('/images'):partial({ix,ix},{1,self.num_channels},
+                            --{1,self.max_image_size},{1,self.max_image_size})
+  local img = h5_file:read('/image'):all()--:partial({1,1},{1,3},
+                            --{1,self.max_image_size},{1,self.max_image_size})
+
+  -- crop image to its original width/height, get rid of padding, and dummy first dim
+  -- img = img[{ 1, {}, {1,self.image_heights[ix]}, {1,self.image_widths[ix]} }]
+  img = img:float() -- convert to float
+  -- img = img:view(1, img:size(1), img:size(2), img:size(3)) -- batch the image
+  img:add(-1, vgg_mean:expandAs(img)) -- subtract vgg mean
+  return img
+end
 
 
-local function extractFeats()
-  model:training()
+local function extractFeats(image_path)
+  model:evaluate()
 
   -- Fetch data using the loader
   local timer = torch.Timer()
-  local info = {}
+  -- local info = {}
   local data = {}
-  data.image, data.gt_boxes, data.gt_labels, info.im_info, data.region_proposals, info.fullcap = loader:getBatch()
+  -- data.image, data.gt_boxes, data.gt_labels, info.im_info, data.region_proposals, info.fullcap = loader:getBatch()
+  data.image = loadImage(image_path)
   for k, v in pairs(data) do
     data[k] = v:type(dtype)
   end
@@ -83,12 +103,12 @@ local function extractFeats()
   model.timing = opt.timing
   model.cnn_backward = false
   -- local losses, stats = model:forward_backward(data)
-  local outputs_all = model:forward_backward(data)
+  local outputs_all = model:forward_demo(data)
 
-  return outputs_all, info --losses, stats
+  return outputs_all--, info --losses, stats
 end
 
-local function pack_outputs( outputs, info )
+local function pack_outputs( outputs )
   --1 `   objectness_scores, 256x1
   --2 `  final_boxes,  [~128]x4
   --3 `  pos_roi_feats [~128]x512x7x7
@@ -97,72 +117,40 @@ local function pack_outputs( outputs, info )
   --6 ` global_feat   512x30x45
   
   local pack = {}
-  pack['info'] = info['im_info'][1]
-  print(info['im_info'])
-  pack['box_scores'] = outputs[1]--:totable() --to array
-  pack['boxes_pred'] = outputs[2]--:totable()
-  pack['box_feats'] = outputs[3]--:totable()
-  pack['boxes_gt'] = outputs[4]--:totable()
-  pack['box_captions_gt'] = outputs[5]--:totable()
-  
-  -- pack['box_codes'] = outputs[9]--:totable()
-  pack['glob_feat'] = outputs[6]--:totable() --:type('torch.FloatTensor')
-  if info['fullcap']~= nil then
-    pack['glob_caption_gt'] = info['fullcap']--:totable()
-  end
+  pack['box_scores'] = outputs[1]
+  pack['boxes_pred'] = outputs[2]
+  pack['box_feats'] = outputs[3]
+  pack['glob_feat'] = outputs[6]
   return pack
 end
-
-local function check_pick_confirm(idx)
-  -- body
-  local fr = io.open('./data_pipeline/pick_confirm_'..tostring(idx), "r")
-  if fr~=nil then 
-    os.remove('./data_pipeline/pick_confirm_'..tostring(idx))
-    io.close(fr) 
-    return true 
-  else 
-    return false 
+local function split(inputstr, sep)
+  if sep == nil then
+          sep = "%s"
   end
+  local t={}
+  for str in string.gmatch(inputstr, "([^"..sep.."]+)") do
+          table.insert(t, str)
+  end
+  return t
 end
-
-local function saveJson(outputs, pipeLen, odd)
-  -- body
-  -- check "confirm" file
-  local idx = 0
-  local inc = 1
-  -- if odd>0 then idx = odd end
-  while true do
-    if check_pick_confirm(idx) then
-      break
-    end
-    idx = (idx+inc)%pipeLen
-  end
-  
-  -- local enc = json.encode(outputs)
-  local iter = outputs['info']['split_bounds'][1]
-  local true_imid = outputs['info']['split_bounds'][2]
-  local numiters = outputs['info']['split_bounds'][3]
-  local fblk = io.open('./data_pipeline/writing_block_'..tostring(idx),"w")
+local function saveJson(outputs, image_path)
+  local sptb = split(image_path,'/')
+  local imname = split(sptb[#sptb],'.')[1]
+  print(imname)
+  local fblk = io.open('./data_pipeline/writing_block_'..imname,"w")
   fblk:close()
-  torch.save('./data_pipeline/data_'..tostring(idx)..'_'..tostring(true_imid)..'_'..tostring(numiters), outputs)
-  -- local f = io.open('./data_pipeline/data_'..tostring(idx)..'_'..tostring(iter)..'_'..tostring(numiters),"w")
-  -- f:write(enc)
-  -- f:close()
-  os.remove('./data_pipeline/writing_block_'..tostring(idx))
+  torch.save('./data_pipeline/data_demo_'..imname, outputs)
+  os.remove('./data_pipeline/writing_block_'..imname)
 
 end
 -------------------------------------------------------------------------------
 -- Main loop
 -------------------------------------------------------------------------------
-local pipeLen = opt.pipe_len
-local counter = 0
-while true do  
-  print(counter)
-  local outputs, info = extractFeats()
-  -- print('success!')
-  out_packed = pack_outputs(outputs, info)
-  -- save to json file
-  saveJson(out_packed, pipeLen, opt.odd)
-  counter = counter + 1
 
-end
+-- while true do  
+local outputs = extractFeats(opt.image_path)
+local out_packed = pack_outputs(outputs)
+-- save to json file
+saveJson(out_packed,opt.image_path)
+
+-- end

@@ -98,6 +98,7 @@ function M.parse(arg)
     'evaluate on first iteration? 1 = do, 0 = dont.')
   cmd:option('-pipe_len', 60, 'pipeline length. (how many tmp data you wanna keep in ./data_pipeline dir)')
   cmd:option('-odd',0,'data index even or odd.')
+  cmd:option('-image_path','data_pipeline/image.jpg','image path for demo.')
   cmd:text()
   local opt = cmd:parse(arg or {})
   return opt

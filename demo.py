@@ -4,7 +4,7 @@ import tqdm
 import numpy as np
 from model.LSTMEncoder import EncoderRNN
 from model.LSTMDecoder import DecoderRNN
-from dataloader.dataloader import LoaderDec
+from dataloader.dataloader import LoaderDemo
 from model.LinearModel import LinearModel
 from crit.SimilarityLoss import SimilarityLoss
 from model.languageModel  import LanguageModelLoss
@@ -52,14 +52,7 @@ def reloadModel(model_path, linNet, lstmEnc):
 	return linNet, lstmEnc
 
 
-def makeInp(*inps):
-	ret = []
-	for inp in inps:
-		if isinstance(inp, list):
-			ret.append(makeInp(*inp))
-		else:
-			ret.append(inp.to(device))
-	return ret
+
 
 def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath):
 	os.makedirs(savepath, exist_ok=True)
@@ -144,22 +137,32 @@ def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath):
 		epoch += 1
 
 
-def inference(image_path,loader,linNet,lstmDec,save_path,sample_mode=['top',3]):
+def inference(image_path,loader,linNet,lstmDec,symbolDec,save_path,sample_mode=['top',3]):
 
-	def draw(image,box_coords,decoder_outputs):
-		...
+	# def draw(image,box_coords,decoder_outputs):
+	# 	...
 
+	def linOut2DecIn(global_hidden, box_feat):	# box_feat [8, 4, 4096, 3, 3]
+		global_hidden = global_hidden.unsqueeze(0)
+		encoder_hidden = (global_hidden,torch.zeros_like(global_hidden).to(device))
+		B,M,D,H,W = box_feat.size()
+		encoder_outputs = box_feat.permute(0,1,3,4,2).contiguous().view(B,-1,D)
+		return encoder_hidden, encoder_outputs
 
-
-	image, box_coords, box_feat, global_feat = loader.load(image_path)
-	box_feat, global_feat = makeInp(box_feat, global_feat)  # box_feats: (numImage,numBoxes,512,7,7) box_global_feats: list, numImage [(512,34,56)]		
+	image, box_scores, box_coords, box_feats, global_feat = loader.loadImage(image_path)
+	box_scores, box_coords, box_feats = loader.sampleBoxes(box_scores, box_coords, box_feats)
+	box_feats, global_feat = loader.makeInp(box_feats, global_feat)  # box_feats: (numImage,numBoxes,512,7,7) box_global_feats: list, numImage [(512,34,56)]		
 	# step 2: data transform by linNet
-	box_feat, global_hidden = linNet(box_feat, global_feat)
+	box_feats, global_hidden = linNet(box_feats, global_feat)
 	# step 3: decode to captions by lstmDec
-	encoder_hidden, encoder_outputs = linOut2DecIn(global_hidden,box_feat)
+	encoder_hidden, encoder_outputs = linOut2DecIn(global_hidden,box_feats)
 	decoder_outputs, decoder_hidden, ret_dict = lstmDec(encoder_hidden=encoder_hidden, encoder_outputs=encoder_outputs) # box_feat [8, 4, 4096, 3, 3]
 
-	draw(image,box_coords,decoder_outputs)
+	# todo: decode index to symbols
+	word_seq = symbolDec.decode(ret_dict['sequence'])
+	print(word_seq)
+	# todo: draw(image,box_coords,decoder_outputs)
+
 
 
 
@@ -177,6 +180,27 @@ def parseArgs():
 	args = parser.parse_args()
 	return args
 
+class SymbolDecoder(object):
+	"""docstring for SymbolDecoder"""
+	def __init__(self,word_dict):
+		super(SymbolDecoder, self).__init__()
+		self.word_dict = word_dict
+		self.ind2word = self.makeInd2Word()
+	
+	def makeInd2Word(self):
+		ind2word = {}
+		for k,v in self.word_dict.items():
+			ind2word[v]=k
+		return ind2word
+	
+	def decode(self,ind_seq):
+		ret = []
+		if isinstance(ind_seq,list):
+			for seq in ind_seq:
+				ret.append(self.decode(seq))
+			return ret
+		else:
+			return self.ind2word[int(ind_seq)]
 
 if __name__ == '__main__':
 
@@ -198,16 +222,19 @@ if __name__ == '__main__':
 	# todo: reload lstmEnc
 	linNet, lstmDec = reloadModel(args.model_path, linNet, lstmDec)
 
-	loader = LoaderTest()
+	loader = LoaderDemo()
 	# loader = DataLoader(dataset, batch_size=args.batch_imgs, shuffle=False, num_workers=2,
 						# collate_fn=dataset.collate_fn)
 
+	symbolDec = SymbolDecoder(VocabData['word_dict'])
+
 	# enter interactive session, require user enter image path, then 'inference' function load the image, output 
-	while True:
-		# get image_path interactively
-		...
+	# while True:
+	# 	# get image_path interactively
+	# 	...
 		# do inference, show image, then loop back.
-		inference(image_path,loader,linNet,lstmDec,args.save_path,sample_mode=['top',3])
+	image_path = './densecap/data_pipeline/29.jpg'
+	inference(image_path,loader,linNet,lstmDec,symbolDec,args.save_path,sample_mode=['top',3])
 
 
 

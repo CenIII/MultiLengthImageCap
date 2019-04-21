@@ -13,7 +13,7 @@ function M._buildRecognitionNet(nets)
   local roi_codes = nets.recog_base(roi_feats)
   local objectness_scores = nets.objectness_branch(roi_codes)
 
-  -- local pos_roi_feats = nn.PosSlicer(){roi_feats, gt_labels}
+  local pos_roi_feats = nn.PosSlicer(){roi_feats, gt_labels}
 
   local pos_roi_codes = nn.PosSlicer(){roi_codes, gt_labels}
   local pos_roi_boxes = nn.PosSlicer(){roi_boxes, gt_boxes}
@@ -34,10 +34,11 @@ function M._buildRecognitionNet(nets)
   local inputs = {roi_feats, roi_boxes, gt_boxes, gt_labels}
   local outputs = {
     objectness_scores,
-    pos_roi_boxes, final_box_trans, final_boxes,
-    roi_codes,
-    gt_boxes, gt_labels
-    -- pos_roi_feats,
+    -- pos_roi_boxes, final_box_trans, 
+    final_boxes,
+    -- roi_codes,
+    pos_roi_feats,
+    gt_boxes, gt_labels,
     -- pos_roi_codes
   }
   local mod = nn.gModule(inputs, outputs)
