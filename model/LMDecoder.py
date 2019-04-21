@@ -86,7 +86,7 @@ class LM_DecoderRNN(BaseRNN):
         else:
             self.embedding = nn.Embedding(self.output_size, embedding_size)
         if embedding is not None:
-            embedding_parameter = torch.FloatTensor(embedding_parameter).to(device)
+            embedding = torch.FloatTensor(embedding).to(device)
             self.embedding.weight = nn.Parameter(embedding)
 
         self.embedding.weight.requires_grad = update_embedding
