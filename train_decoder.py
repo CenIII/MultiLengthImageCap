@@ -180,7 +180,7 @@ def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath):
 			loss.backward()
 			optimizer.step()
 
-			qdar.set_postfix(simiLoss=lstr(loss1),regLoss=lstr(loss_reg),lmLoss=lstr(loss2))
+			qdar.set_postfix(tau=str(tau),simiLoss=lstr(loss1),regLoss=lstr(loss_reg),lmLoss=lstr(loss2))
 			if i > 0 and i % 1000 == 0:
 				saveStateDict(linNet, lstmDec)
 			itercnt += 1
