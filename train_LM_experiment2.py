@@ -56,10 +56,7 @@ def sampleSentence(model, lmloader, rev_vocab):
         print(' '.join(sentence))
 
 def loadCheckpoint(PATH, model):
-    if torch.cuda.is_available():
-        model.load_state_dict(torch.load(PATH))
-    else:
-        model.load_state_dict(torch.load(PATH,map_location='cpu'))
+    model.load_state_dict(torch.load(PATH))
     model.eval()
     return model
 
@@ -112,7 +109,7 @@ def main():
     max_len = 100
     hidden_size = 1024
     embedding_size = 300
-    max_epoch = 40
+    max_epoch = 30
     sos_id = lmdata.sos_id
     eos_id = lmdata.eos_id
     pad_id = lmdata.pad_id
@@ -145,10 +142,10 @@ def main():
     strange_sentence = torch.cat([they, are, are, are, are, are], 0).unsqueeze(0)
     regular_sentence = torch.cat([they, are, students, _from, that, school], 0).unsqueeze(0)
 
-    PATH = 'LMcheckpoint_tf_probvector'
+    PATH = 'LMcheckpoint_experiment2'
 
     
-    model = LM_DecoderRNN(vocab_size, max_len, hidden_size, embedding_size, sos_id, eos_id, embedding=embedding, rnn_cell='lstm')
+    model = LM_DecoderRNN(vocab_size, max_len, hidden_size, embedding_size, sos_id, eos_id, embedding=embedding, rnn_cell='lstm', use_prob_vector=True)
     if recovery=='1':
         model = loadCheckpoint(PATH, model)
     optimizer = optim.Adam(model.parameters(), lr=0.003)
@@ -165,7 +162,7 @@ def main():
         loss2 = lm_loss(regular_sentence)
         print(loss1.item(), loss2.item())
 
-    sampleSentence(model, testloader, rev_vocab)
+    # sampleSentence(model, testloader, rev_vocab)
 
 
 if __name__ == "__main__":
