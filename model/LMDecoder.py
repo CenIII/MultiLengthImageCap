@@ -82,15 +82,19 @@ class LM_DecoderRNN(BaseRNN):
 
         self.init_input = None
 
-        if use_prob_vector:
-            self.embedding = nn.Linear(vocab_size, embedding_size, bias=False)
-        else:
-            self.embedding = nn.Embedding(vocab_size, embedding_size)
+        self.embedding = nn.Embedding(vocab_size, embedding_size)
+
+        self.sub_embedding = nn.Linear(vocab_size, embedding_size, bias=False)
         if embedding is not None:
             embedding = torch.FloatTensor(embedding).to(device)
             self.embedding.weight = nn.Parameter(embedding)
+            self.sub_embedding.weight = nn.Parameter(embedding)
+
+        
 
         self.embedding.weight.requires_grad = update_embedding
+        self.sub_embedding.weight.requires_grad = update_embedding
+
         
         if use_attention:
             self.attention = Attention(self.hidden_size)
@@ -98,9 +102,13 @@ class LM_DecoderRNN(BaseRNN):
         self.out = nn.Linear(self.hidden_size, self.output_size)
 
     def forward_step(self, input_var, hidden, encoder_outputs, function):
+        
         batch_size = input_var.size(0)
         output_size = input_var.size(1)
-        embedded = self.embedding(input_var)
+        if len(input_var.shape)==2:
+            embedded = self.embedding(input_var)
+        else:
+            embedded = self.sub_embedding(input_var)
         embedded = self.input_dropout(embedded)
 
         output, hidden = self.rnn(embedded, hidden)
@@ -113,7 +121,7 @@ class LM_DecoderRNN(BaseRNN):
         return predicted_softmax, hidden, attn
 
     def forward(self, inputs=None, encoder_hidden=None, encoder_outputs=None,
-                    function=F.log_softmax, teacher_forcing_ratio=0, max_len=15):
+                    function=F.softmax, teacher_forcing_ratio=0, max_len=15):
         self.max_len = max_len
         ret_dict = dict()
         if self.use_attention:
@@ -164,7 +172,7 @@ class LM_DecoderRNN(BaseRNN):
                                                                          function=function)
                 step_output = decoder_output.squeeze(1)
                 symbols = decode(di, step_output, step_attn)
-                decoder_input = symbols
+                decoder_input = symbols if self.use_prob_vector else step_output.unsqueeze(1)
 
         ret_dict[LM_DecoderRNN.KEY_SEQUENCE] = sequence_symbols
         ret_dict[LM_DecoderRNN.KEY_LENGTH] = lengths.tolist()

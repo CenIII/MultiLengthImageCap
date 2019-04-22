@@ -23,7 +23,7 @@ def train_LM(lmloader, model, optimizer, criterion, pad_id, max_epoch, max_len):
             if torch.cuda.is_available():
                 input_sentences = input_sentences.cuda()
             
-            decoder_output, _, _ = model(input_sentences, teacher_forcing_ratio=1-epoch/max_epoch, max_len=max_len)
+            decoder_output, _, _ = model(input_sentences, teacher_forcing_ratio=1-epoch/(2*max_epoch), max_len=max_len)
             decoder_output_reshaped = torch.cat([decoder_output[i].unsqueeze(1) for i in range(len(decoder_output))],1)
             decoder_output = None
             vocab_size = decoder_output_reshaped.shape[2]
@@ -109,7 +109,7 @@ def main():
     max_len = 100
     hidden_size = 1024
     embedding_size = 300
-    max_epoch = 40
+    max_epoch = 30
     sos_id = lmdata.sos_id
     eos_id = lmdata.eos_id
     pad_id = lmdata.pad_id
@@ -145,7 +145,7 @@ def main():
     PATH = 'LMcheckpoint'
 
     
-    model = DecoderRNN(vocab_size, max_len, hidden_size, embedding_size, sos_id, eos_id, embedding_parameter=embedding, rnn_cell='lstm')
+    model = LM_DecoderRNN(vocab_size, max_len, hidden_size, embedding_size, sos_id, eos_id, embedding=embedding, rnn_cell='lstm', use_prob_vector=True)
     if recovery=='1':
         model = loadCheckpoint(PATH, model)
     optimizer = optim.Adam(model.parameters(), lr=0.003)
@@ -162,7 +162,7 @@ def main():
         loss2 = lm_loss(regular_sentence)
         print(loss1.item(), loss2.item())
 
-    sampleSentence(model, testloader, rev_vocab)
+    # sampleSentence(model, testloader, rev_vocab)
 
 
 if __name__ == "__main__":
