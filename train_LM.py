@@ -1,5 +1,5 @@
 from dataloader import LMDataset
-from model import LM_DecoderRNN
+from model import DecoderRNN
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -115,7 +115,7 @@ def main():
     PATH = 'LMcheckpoint'
 
     
-    model = LM_DecoderRNN(vocab_size, max_len, hidden_size, embedding_size, sos_id, eos_id, embedding=embedding, rnn_cell='lstm')
+    model = DecoderRNN(vocab_size, max_len, hidden_size, embedding_size, sos_id, eos_id, embedding=embedding, rnn_cell='lstm')
     if recovery=='1':
         model = loadCheckpoint(PATH, model)
     optimizer = optim.Adam(model.parameters(), lr=0.003)
