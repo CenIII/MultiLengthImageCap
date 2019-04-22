@@ -163,13 +163,6 @@ def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath):
 			encoder_outputs = lstmEnc(decoder_outputs, use_prob_vector=True, input_lengths=lengths, max_len=int(5*numBoxes))
 			loss1, loss_reg = crit(box_feat, encoder_outputs, lengths) #box_feat [8, 5, 4096, 3, 3], encoder_outputs [8, 15, 4096]
 				# Loss 2: LM loss
-			if i%5==0 and i>0:
-				bsize,lens,vocab_size = decoder_outputs.shape
-				outputDisplay = decoder_outputs.contiguous().view(-1, vocab_size)
-				outputDisplay = [outputDisplay[i*bsize:i*bsize+lens] for i in range(bsize)]
-				logger.write(str(outputDisplay)+'\n')
-				logger.flush()
-				# print('dec outputs: '+str(LM.probVec2Symbols(outputDisplay)))
 			# loss2 =  LM(decoder_outputs, lengths, max_len=int(5*numBoxes),verbose=(i%5==0 and i>0))
 
 
@@ -189,6 +182,11 @@ def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath):
 			qdar.set_postfix(tau=str(tau),simiLoss=lstr(loss1))#lmLoss=lstr(loss2))
 			if i > 0 and i % 1000 == 0:
 				saveStateDict(linNet, lstmDec)
+				bsize,lens,vocab_size = decoder_outputs.shape
+				outputDisplay = decoder_outputs.contiguous().view(-1, vocab_size)
+				outputDisplay = [outputDisplay[i*bsize:i*bsize+lens] for i in range(bsize)]
+				logger.write(str(outputDisplay)+'\n')
+				logger.flush()
 			itercnt += 1
 
 		loss_epoch_mean = np.mean(loss_itr_list)
