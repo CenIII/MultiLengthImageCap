@@ -55,21 +55,21 @@ def sample_gumbel(shape, eps=1e-20):
     return -torch.log(-torch.log(U + eps) + eps)
 
 
-def gumbel_softmax_sample(logits, temperature):
+def gumbel_softmax_sample(logits, temperature, dim):
     y = logits + sample_gumbel(logits.size())
-    return F.softmax(y / temperature, dim=-1)
+    return F.softmax(y / temperature, dim=dim)
 
 
-def gumbel_softmax(logits, temperature, hard=False):
+def gumbel_softmax(logits, temperature, dim=-1, hard=False):
     """
     ST-gumple-softmax
     input: [*, n_class]
     return: flatten --> [*, n_class] an one-hot vector
     """
-    y = gumbel_softmax_sample(logits, temperature)
+    y = gumbel_softmax_sample(logits, temperature, dim)
     
     if not hard:
-        return y.view(-1, latent_dim * categorical_dim)
+        return y#.view(-1, latent_dim * categorical_dim)
 
     shape = y.size()
     _, ind = y.max(dim=-1)
@@ -78,4 +78,4 @@ def gumbel_softmax(logits, temperature, hard=False):
     y_hard = y_hard.view(*shape)
     # Set gradients w.r.t. y_hard gradients w.r.t. y
     y_hard = (y_hard - y).detach() + y
-    return y_hard.view(-1, latent_dim * categorical_dim)
+    return y_hard#.view(-1, latent_dim * categorical_dim)
