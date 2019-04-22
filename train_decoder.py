@@ -99,9 +99,9 @@ def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath):
 	epoch = 0
 	logger = open(os.path.join(savepath, 'loss_history'), 'w')
 
-	temp_max = 1
+	temp_max = 0.8
 	temp_min = 0.05
-	ANNEAL_RATE = 0.0003
+	ANNEAL_RATE = 0.0006
 
 	def saveStateDict(linNet, lstmEnc):
 		models = {}
@@ -128,7 +128,6 @@ def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath):
 		if itercnt % 20 == 0:
 			temp = np.maximum(temp_max * np.exp(-ANNEAL_RATE * itercnt), temp_min)
 		return temp
-
 
 	itercnt = 0
 	tau = temp_max
@@ -164,6 +163,8 @@ def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath):
 			encoder_outputs = lstmEnc(decoder_outputs, use_prob_vector=True, input_lengths=lengths, max_len=int(5*numBoxes))
 			loss1, loss_reg = crit(box_feat, encoder_outputs, lengths) #box_feat [8, 5, 4096, 3, 3], encoder_outputs [8, 15, 4096]
 				# Loss 2: LM loss
+			if i%5==0 and i>0:
+				print('dec outputs: '+str(LM.probVec2Symbols(out_reshaped)))
 			# loss2 =  LM(decoder_outputs, lengths, max_len=int(5*numBoxes),verbose=(i%5==0 and i>0))
 
 
@@ -180,7 +181,7 @@ def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath):
 			loss.backward()
 			optimizer.step()
 
-			qdar.set_postfix(tau=str(tau),simiLoss=loss1,regLoss=loss_reg)#lmLoss=lstr(loss2))
+			qdar.set_postfix(tau=str(tau),simiLoss=lstr(loss1),regLoss=lstr(loss_reg))#lmLoss=lstr(loss2))
 			if i > 0 and i % 1000 == 0:
 				saveStateDict(linNet, lstmDec)
 			itercnt += 1
