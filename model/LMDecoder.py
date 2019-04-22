@@ -89,7 +89,7 @@ class LM_DecoderRNN(BaseRNN):
         if embedding is not None:
             embedding = torch.FloatTensor(embedding).to(device)
             self.embedding.weight = nn.Parameter(embedding)
-            self.sub_embedding.weight = nn.Parameter(embedding)
+            self.sub_embedding.weight = nn.Parameter(embedding.T)
 
         
 
