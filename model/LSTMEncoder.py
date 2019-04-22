@@ -79,8 +79,8 @@ class EncoderRNN(BaseRNN):
         else:
             embedded = self.embedding(input_var)
 
-        _, indices = torch.sort(input_lengths, descending=True, out=None) #sort for pack_padded
-        print(indices)
+        # _, indices = torch.sort(input_lengths, descending=True, out=None) #sort for pack_padded
+        # print(indices)
         # embedded = embedded[indices,:,:]
 
         if self.variable_lengths:
