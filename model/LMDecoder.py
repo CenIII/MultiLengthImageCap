@@ -173,7 +173,7 @@ class LM_DecoderRNN(BaseRNN):
                                                                          function=function)
                 step_output = decoder_output.squeeze(1)
                 symbols = decode(di, step_output, step_attn)
-                decoder_input = symbols if self.use_prob_vector else step_output.unsqueeze(1)
+                decoder_input = symbols if not self.use_prob_vector else step_output.unsqueeze(1)
 
         ret_dict[LM_DecoderRNN.KEY_SEQUENCE] = sequence_symbols
         ret_dict[LM_DecoderRNN.KEY_LENGTH] = lengths.tolist()
