@@ -56,7 +56,10 @@ def sampleSentence(model, lmloader, rev_vocab):
         print(' '.join(sentence))
 
 def loadCheckpoint(PATH, model):
-    model.load_state_dict(torch.load(PATH))
+    if torch.cuda.is_available():
+        model.load_state_dict(torch.load(PATH))
+    else:
+        model.load_state_dict(torch.load(PATH,map_location='cpu'))
     model.eval()
     return model
 
@@ -119,12 +122,12 @@ def main():
     for word in wordDict:
         rev_vocab[wordDict[word]] = word
     
-    they = torch.zeros(1, vocab_size) + 0.000001
-    are = torch.zeros(1, vocab_size) + 0.000001
-    students = torch.zeros(1, vocab_size) + 0.000001
-    _from = torch.zeros(1, vocab_size) + 0.000001
-    that = torch.zeros(1, vocab_size) + 0.000001
-    school = torch.zeros(1, vocab_size) + 0.000001
+    they = torch.zeros(1, vocab_size)
+    are = torch.zeros(1, vocab_size)
+    students = torch.zeros(1, vocab_size)
+    _from = torch.zeros(1, vocab_size)
+    that = torch.zeros(1, vocab_size)
+    school = torch.zeros(1, vocab_size)
     they_id = wordDict['they']
     are_id = wordDict['are']
     students_id = wordDict['students']
@@ -132,17 +135,17 @@ def main():
     that_id = wordDict['that']
     school_id = wordDict['school']
 
-    they[0,they_id] = 1 - (vocab_size-1)*0.000001
-    are[0,are_id] = 1 - (vocab_size-1)*0.000001
-    students[0,students_id] = 1 - (vocab_size-1)*0.000001
-    _from[0,from_id]=1 - (vocab_size-1)*0.000001
-    that[0,that_id]=1 - (vocab_size-1)*0.000001
-    school[0,school_id]=1 - (vocab_size-1)*0.000001
+    they[0,they_id] = 1
+    are[0,are_id] = 1
+    students[0,students_id]=1
+    _from[0,from_id]=1
+    that[0,that_id]=1
+    school[0,school_id]=1 
 
     strange_sentence = torch.cat([they, are, are, are, are, are], 0).unsqueeze(0)
     regular_sentence = torch.cat([they, are, students, _from, that, school], 0).unsqueeze(0)
 
-    PATH = 'LMcheckpoint'
+    PATH = 'LMcheckpoint_tf_probvector'
 
     
     model = LM_DecoderRNN(vocab_size, max_len, hidden_size, embedding_size, sos_id, eos_id, embedding=embedding, rnn_cell='lstm')
@@ -162,7 +165,7 @@ def main():
         loss2 = lm_loss(regular_sentence)
         print(loss1.item(), loss2.item())
 
-    # sampleSentence(model, testloader, rev_vocab)
+    sampleSentence(model, testloader, rev_vocab)
 
 
 if __name__ == "__main__":

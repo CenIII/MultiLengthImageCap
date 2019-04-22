@@ -44,7 +44,7 @@ class LanguageModelLoss(nn.Module):
 
     def criterion(self, decoder_out, lm_out, mask=None):
         N = decoder_out.shape[0]
-        _loss = torch.mul(torch.log(decoder_out), lm_out)
+        _loss = torch.mul(torch.log(lm_out), decoder_out)
         if mask is not None:
             _loss = torch.mul(_loss, mask)
         return -torch.sum(_loss)/N
