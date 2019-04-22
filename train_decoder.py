@@ -170,7 +170,7 @@ def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath):
 			# loss2 =  LM(decoder_outputs, lengths, max_len=int(5*numBoxes),verbose=(i%5==0 and i>0))
 
 
-			loss = loss1+loss_reg#+loss2
+			loss = loss1+10*loss_reg#+loss2
 
 
 			loss_itr_list.append(loss.data.cpu().numpy())
