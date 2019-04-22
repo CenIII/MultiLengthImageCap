@@ -106,7 +106,7 @@ class LM_DecoderRNN(BaseRNN):
         
         batch_size = input_var.size(0)
         output_size = input_var.size(1)
-        if len(input_var.shape)==2:
+        if input_var.shape[1]==1:
             embedded = self.embedding(input_var)
         else:
             embedded = self.sub_embedding(input_var)
@@ -173,7 +173,7 @@ class LM_DecoderRNN(BaseRNN):
                                                                          function=function)
                 step_output = decoder_output.squeeze(1)
                 symbols = decode(di, step_output, step_attn)
-                decoder_input = symbols if not self.use_prob_vector else step_output.unsqueeze(1)
+                decoder_input = symbols if not self.use_prob_vector else step_output
 
         ret_dict[LM_DecoderRNN.KEY_SEQUENCE] = sequence_symbols
         ret_dict[LM_DecoderRNN.KEY_LENGTH] = lengths.tolist()
