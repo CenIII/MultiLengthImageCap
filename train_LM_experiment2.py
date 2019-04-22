@@ -142,7 +142,7 @@ def main():
     strange_sentence = torch.cat([they, are, are, are, are, are], 0).unsqueeze(0)
     regular_sentence = torch.cat([they, are, students, _from, that, school], 0).unsqueeze(0)
 
-    PATH = 'LMcheckpoint'
+    PATH = 'LMcheckpoint_experiment2'
 
     
     model = LM_DecoderRNN(vocab_size, max_len, hidden_size, embedding_size, sos_id, eos_id, embedding=embedding, rnn_cell='lstm', use_prob_vector=True)
