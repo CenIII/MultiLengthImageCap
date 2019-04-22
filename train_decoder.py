@@ -100,7 +100,7 @@ def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath):
 	logger = open(os.path.join(savepath, 'loss_history'), 'w')
 
 	temp_max = 0.8
-	temp_min = 0.05
+	temp_min = 0.1
 	ANNEAL_RATE = 0.0006
 
 	def saveStateDict(linNet, lstmEnc):
@@ -125,7 +125,7 @@ def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath):
 		return wrapper
 	
 	def setTAU(itercnt,temp):
-		if itercnt % 20 == 0:
+		if itercnt % 100 == 0:
 			temp = np.maximum(temp_max * np.exp(-ANNEAL_RATE * itercnt), temp_min)
 		return temp
 
@@ -164,13 +164,16 @@ def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath):
 			loss1, loss_reg = crit(box_feat, encoder_outputs, lengths) #box_feat [8, 5, 4096, 3, 3], encoder_outputs [8, 15, 4096]
 				# Loss 2: LM loss
 			if i%5==0 and i>0:
-				vocab_size = decoder_outputs.shape[-1]
+				bsize,lens,vocab_size = decoder_outputs.shape
 				outputDisplay = decoder_outputs.contiguous().view(-1, vocab_size)
-				print('dec outputs: '+str(LM.probVec2Symbols(outputDisplay)))
+				outputDisplay = [outputDisplay[i*bsize:i*bsize+lens] for i in range(bsize)]
+				logger.write(str(outputDisplay)+'\n')
+				logger.flush()
+				# print('dec outputs: '+str(LM.probVec2Symbols(outputDisplay)))
 			# loss2 =  LM(decoder_outputs, lengths, max_len=int(5*numBoxes),verbose=(i%5==0 and i>0))
 
 
-			loss = loss1+10.*loss_reg#+loss2
+			loss = loss1#+10.*loss_reg#+loss2
 
 
 			loss_itr_list.append(loss.data.cpu().numpy())
@@ -183,7 +186,7 @@ def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath):
 			loss.backward()
 			optimizer.step()
 
-			qdar.set_postfix(tau=str(tau),simiLoss=lstr(loss1),regLoss=lstr(10.*loss_reg))#lmLoss=lstr(loss2))
+			qdar.set_postfix(tau=str(tau),simiLoss=lstr(loss1))#lmLoss=lstr(loss2))
 			if i > 0 and i % 1000 == 0:
 				saveStateDict(linNet, lstmDec)
 			itercnt += 1
