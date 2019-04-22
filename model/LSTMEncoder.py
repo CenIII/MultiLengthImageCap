@@ -95,5 +95,6 @@ class EncoderRNN(BaseRNN):
             output_sort_back = torch.zeros_like(output) #sort back to match labels
             for i in range(output.shape[0]):
                 output_sort_back[indices[i]] = output[i]
+            output = output_sort_back
 
-        return output_sort_back
+        return output
