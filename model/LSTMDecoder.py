@@ -87,7 +87,7 @@ class DecoderRNN(BaseRNN):
         self.init_input = None
 
         if use_prob_vector:
-            self.embedding = nn.Linear(vocab_size,embedding_size)
+            self.embedding = nn.Linear(vocab_size,embedding_size,bias=False)
 
         else:
             self.embedding = nn.Embedding(vocab_size,embedding_size)
@@ -163,7 +163,7 @@ class DecoderRNN(BaseRNN):
                 else:
                     step_attn = None
                 decode(di, step_output, step_attn)
-                
+
             decoder_input = decoder_output[:, -1].unsqueeze(1)
             for di in range(max_length):
                 decoder_output, decoder_hidden, step_attn = self.forward_step(decoder_input, decoder_hidden, encoder_outputs,

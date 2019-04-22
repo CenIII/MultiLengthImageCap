@@ -242,7 +242,7 @@ function DataLoader:getBatch(opt)
   local w,h = self.image_widths[ix], self.image_heights[ix]
   local ow,oh = self.original_widths[ix], self.original_heights[ix]
   local info_table = { {filename = filename, 
-                        split_bounds = {ri, ix, #split_ix},
+                        split_bounds = {ri, ix, max_index},
                         width = w, height = h, ori_width = ow, ori_height = oh} }
 
   -- read regions if applicable

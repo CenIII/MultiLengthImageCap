@@ -14,6 +14,7 @@ import sys
 import argparse
 import os
 from torch.utils.data import DataLoader
+from utils.math import gumbel_softmax #(logits, temperature, hard=False):
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
@@ -98,6 +99,10 @@ def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath):
 	epoch = 0
 	logger = open(os.path.join(savepath, 'loss_history'), 'w')
 
+	temp_max = 1
+	temp_min = 0.02
+	ANNEAL_RATE = 0.003
+
 	def saveStateDict(linNet, lstmEnc):
 		models = {}
 		models['linNet'] = linNet.state_dict()
@@ -114,6 +119,18 @@ def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath):
 	def lstr(ts,pres=3):
 		return str(np.round(ts.data.cpu().numpy(), 3))
 
+	def GSwTemp(temperature):
+		def wrapper(p):
+			return gumbel_softmax(p,temperature)
+		return wrapper
+	
+	def setTAU(itercnt):
+		if itercnt % 20 == 0:
+            temp = np.maximum(temp_max * np.exp(-ANNEAL_RATE * itercnt), temp_min)
+		return temp
+
+
+	itercnt = 0
 	while True:
 		ld = iter(loader)
 		numiters = len(ld)
@@ -121,6 +138,8 @@ def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath):
 		loss_itr_list = []
 
 		for i in qdar:
+			# step 0: set tau temperature. 
+			tau = setTAU(itercnt)
 
 			# step 1: load data
 			batchdata = next(ld)
@@ -131,7 +150,11 @@ def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath):
 			
 			# step 3: decode to captions by lstmDec
 			encoder_hidden, encoder_outputs = linOut2DecIn(global_hidden,box_feat)
-			decoder_outputs, decoder_hidden, ret_dict = lstmDec(encoder_hidden=encoder_hidden, encoder_outputs=encoder_outputs, max_len=int(5*numBoxes)) # box_feat [8, 4, 4096, 3, 3]
+			decoder_outputs, decoder_hidden, ret_dict = lstmDec(encoder_hidden=encoder_hidden, 
+																encoder_outputs=encoder_outputs, 
+																max_len=int(5*numBoxes),
+																function=GSwTemp(tau),
+																) # box_feat [8, 4, 4096, 3, 3]
 			
 			# step 4: calculate loss
 				# Loss 1: Similarity loss
@@ -159,6 +182,7 @@ def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath):
 			qdar.set_postfix(simiLoss=lstr(loss1),regLoss=lstr(loss_reg),lmLoss=lstr(loss2))
 			if i > 0 and i % 1000 == 0:
 				saveStateDict(linNet, lstmDec)
+			itercnt += 1
 
 		loss_epoch_mean = np.mean(loss_itr_list)
 		print('epoch ' + str(epoch) + ' mean loss:' + str(np.round(loss_epoch_mean, 5)))

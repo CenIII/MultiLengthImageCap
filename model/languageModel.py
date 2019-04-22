@@ -65,7 +65,7 @@ class LanguageModelLoss(nn.Module):
 
     def criterion(self, decoder_out, lm_out, mask=None):
         N = decoder_out.shape[0]
-        _loss = torch.mul(torch.log(decoder_out), lm_out)
+        _loss = torch.mul(torch.log(lm_out), decoder_out)
         if mask is not None:
             _loss = torch.mul(_loss, mask)
         return -torch.sum(_loss)/N
@@ -96,7 +96,7 @@ class LanguageModelLoss(nn.Module):
         out_reshaped = outputs# torch.cat([outputs[i].unsqueeze(1) for i in range(len(outputs))],1)
         N, T, vocab_size  = out_reshaped.shape
         
-        lm_output, _, _ = self.model(out_reshaped, teacher_forcing_ratio=1,max_len=max_len,semi_sup=True)
+        lm_output, _, _ = self.model(out_reshaped, teacher_forcing_ratio=1,max_len=max_len)
         lm_output_reshape = torch.cat([lm_output[i].unsqueeze(1) for i in range(len(lm_output))],1)
         out_reshaped = out_reshaped[:,1:,:].contiguous().view(-1, vocab_size)
         lm_output_reshape = lm_output_reshape.contiguous().view(-1, vocab_size)

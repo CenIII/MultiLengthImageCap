@@ -1,4 +1,8 @@
 import numpy as np
+import torch
+import torch.nn.functional as F
+
+device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
 def softmax(X, theta = 1.0, axis = None):
     """
@@ -42,3 +46,36 @@ def softmax(X, theta = 1.0, axis = None):
     if len(X.shape) == 1: p = p.flatten()
 
     return p
+
+
+
+        
+def sample_gumbel(shape, eps=1e-20):
+    U = torch.rand(shape).to(device)
+    return -torch.log(-torch.log(U + eps) + eps)
+
+
+def gumbel_softmax_sample(logits, temperature):
+    y = logits + sample_gumbel(logits.size())
+    return F.softmax(y / temperature, dim=-1)
+
+
+def gumbel_softmax(logits, temperature, hard=False):
+    """
+    ST-gumple-softmax
+    input: [*, n_class]
+    return: flatten --> [*, n_class] an one-hot vector
+    """
+    y = gumbel_softmax_sample(logits, temperature)
+    
+    if not hard:
+        return y.view(-1, latent_dim * categorical_dim)
+
+    shape = y.size()
+    _, ind = y.max(dim=-1)
+    y_hard = torch.zeros_like(y).view(-1, shape[-1]).to(device)
+    y_hard.scatter_(1, ind.view(-1, 1), 1)
+    y_hard = y_hard.view(*shape)
+    # Set gradients w.r.t. y_hard gradients w.r.t. y
+    y_hard = (y_hard - y).detach() + y
+    return y_hard.view(-1, latent_dim * categorical_dim)
