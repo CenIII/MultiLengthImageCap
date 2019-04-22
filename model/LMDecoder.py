@@ -85,7 +85,7 @@ class LM_DecoderRNN(BaseRNN):
         if use_prob_vector:
             self.embedding = nn.Linear(vocab_size, embedding_size, bias=False)
         else:
-            self.embedding = nn.Embedding(self.output_size, embedding_size)
+            self.embedding = nn.Embedding(vocab_size, embedding_size)
         if embedding is not None:
             embedding = torch.FloatTensor(embedding).to(device)
             self.embedding.weight = nn.Parameter(embedding)
