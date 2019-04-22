@@ -126,7 +126,7 @@ def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath):
 	
 	def setTAU(itercnt):
 		if itercnt % 20 == 0:
-            temp = np.maximum(temp_max * np.exp(-ANNEAL_RATE * itercnt), temp_min)
+			temp = np.maximum(temp_max * np.exp(-ANNEAL_RATE * itercnt), temp_min)
 		return temp
 
 
