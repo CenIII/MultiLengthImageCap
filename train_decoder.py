@@ -161,13 +161,13 @@ def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath):
 				# Loss 1: Similarity loss
 			lengths = torch.LongTensor(ret_dict['length']).to(device)
 			decoder_outputs = torch.stack([decoder_outputs[i] for i in range(len(decoder_outputs))], 1) # decoder_outputs [8, 15, 10878]
-			# encoder_outputs = lstmEnc(decoder_outputs, use_prob_vector=True, input_lengths=lengths, max_len=int(5*numBoxes))
-			# loss1, loss_reg = crit(box_feat, encoder_outputs, lengths) #box_feat [8, 5, 4096, 3, 3], encoder_outputs [8, 15, 4096]
+			encoder_outputs = lstmEnc(decoder_outputs, use_prob_vector=True, input_lengths=lengths, max_len=int(5*numBoxes))
+			loss1, loss_reg = crit(box_feat, encoder_outputs, lengths) #box_feat [8, 5, 4096, 3, 3], encoder_outputs [8, 15, 4096]
 				# Loss 2: LM loss
-			loss2 =  LM(decoder_outputs, lengths, max_len=int(5*numBoxes),verbose=(i%5==0 and i>0))
+			# loss2 =  LM(decoder_outputs, lengths, max_len=int(5*numBoxes),verbose=(i%5==0 and i>0))
 
 
-			loss = loss2#1+loss_reg+loss2
+			loss = loss1+loss_reg#+loss2
 
 
 			loss_itr_list.append(loss.data.cpu().numpy())
@@ -180,7 +180,7 @@ def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath):
 			loss.backward()
 			optimizer.step()
 
-			qdar.set_postfix(tau=str(tau),lmLoss=lstr(loss2))
+			qdar.set_postfix(tau=str(tau),simiLoss=loss1,regLoss=loss_reg)#lmLoss=lstr(loss2))
 			if i > 0 and i % 1000 == 0:
 				saveStateDict(linNet, lstmDec)
 			itercnt += 1
