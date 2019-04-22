@@ -164,7 +164,9 @@ def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath):
 			loss1, loss_reg = crit(box_feat, encoder_outputs, lengths) #box_feat [8, 5, 4096, 3, 3], encoder_outputs [8, 15, 4096]
 				# Loss 2: LM loss
 			if i%5==0 and i>0:
-				print('dec outputs: '+str(LM.probVec2Symbols(decoder_outputs)))
+				vocab_size = decoder_outputs.shape[-1]
+				outputDisplay = decoder_outputs.contiguous().view(-1, vocab_size)
+				print('dec outputs: '+str(LM.probVec2Symbols(outputDisplay)))
 			# loss2 =  LM(decoder_outputs, lengths, max_len=int(5*numBoxes),verbose=(i%5==0 and i>0))
 
 
