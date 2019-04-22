@@ -124,13 +124,14 @@ def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath):
 			return gumbel_softmax(p,temperature,dim=dim)
 		return wrapper
 	
-	def setTAU(itercnt):
+	def setTAU(itercnt,temp):
 		if itercnt % 20 == 0:
 			temp = np.maximum(temp_max * np.exp(-ANNEAL_RATE * itercnt), temp_min)
 		return temp
 
 
 	itercnt = 0
+	tau = temp_max
 	while True:
 		ld = iter(loader)
 		numiters = len(ld)
@@ -139,7 +140,7 @@ def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath):
 
 		for i in qdar:
 			# step 0: set tau temperature. 
-			tau = setTAU(itercnt)
+			tau = setTAU(itercnt,tau)
 
 			# step 1: load data
 			batchdata = next(ld)
