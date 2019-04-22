@@ -249,7 +249,7 @@ if __name__ == '__main__':
 		if args.cont_model_path is not None:
 			linNet,lstmDec = reloadDec(args.cont_model_path,linNet,lstmDec)
 		optimizer = torch.optim.Adam(
-			list(filter(lambda p: p.requires_grad, lstmDec.parameters())) + list(linNet.conv1.parameters()), 0.0001)
+			list(filter(lambda p: p.requires_grad, lstmDec.parameters())) + list(linNet.conv1.parameters()), 0.001)
 		dataset = LoaderDec()
 		loader = DataLoader(dataset, batch_size=args.batch_imgs, shuffle=False, num_workers=2,
 							collate_fn=dataset.collate_fn)
