@@ -6,6 +6,8 @@ import torch.optim as optim
 import pickle
 
 import sys
+import json
+import string
 
 from model import LanguageModelLoss
 
@@ -57,16 +59,43 @@ def loadCheckpoint(PATH, model):
     model.eval()
     return model
 
+def loadData(PATH):
+    with open(PATH, 'r') as f:
+        data = json.load(f)
 
+    sentences = []
+    for d in data:
+        s = d['paragraph'].strip().split('.')[:-1]
+        for sentence in s:
+            sentences.append(words_preprocess(sentence))
+    return sentences
+
+def words_preprocess(phrase):
+  """ preprocess a sentence: lowercase, clean up weird chars, remove punctuation """
+  replacements = {
+    '½': 'half',
+    '—' : '-',
+    '™': '',
+    '¢': 'cent',
+    'ç': 'c',
+    'û': 'u',
+    'é': 'e',
+    '°': ' degree',
+    'è': 'e',
+    '…': '',
+  }
+  for k, v in replacements.items():
+    phrase = phrase.replace(k, v)
+  return str(phrase).lower().translate(str.maketrans('','',string.punctuation)).split()
 
 def main():
     # load vocab Data here!
 
     with open('VocabData.pkl','rb') as f:
         VocabData = pickle.load(f)
-    with open('FullImageCaps.pkl','rb') as f:
-        FullImageCaps = pickle.load(f)
-    
+    # with open('FullImageCaps.pkl','rb') as f:
+    #     FullImageCaps = pickle.load(f)
+    FullImageCaps = loadData("full_image_descriptions.json")
     
     recovery = sys.argv[2]
     mode = sys.argv[1]
