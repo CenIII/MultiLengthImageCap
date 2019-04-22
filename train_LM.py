@@ -1,5 +1,6 @@
 from dataloader import LMDataset
 from model import DecoderRNN
+from model import LM_DecoderRNN
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -28,7 +29,7 @@ def train_LM(lmloader, model, optimizer, criterion, pad_id, max_epoch, max_len):
             vocab_size = decoder_output_reshaped.shape[2]
             decoder_output_reshaped = decoder_output_reshaped.view(-1, vocab_size)
             input_sentences = input_sentences[:,1:].contiguous().view(-1)
-            loss = criterion(torch.log(decoder_output_reshaped), input_sentences)
+            loss = criterion(decoder_output_reshaped, input_sentences)
             loss.backward()
             optimizer.step()
             if n%10 == 0:
@@ -144,7 +145,7 @@ def main():
     PATH = 'LMcheckpoint'
 
     
-    model = DecoderRNN(vocab_size, max_len, hidden_size, embedding_size, sos_id, eos_id, embedding_parameter=embedding, rnn_cell='lstm')
+    model = LM_DecoderRNN(vocab_size, max_len, hidden_size, embedding_size, sos_id, eos_id, embedding=embedding, rnn_cell='lstm')
     if recovery=='1':
         model = loadCheckpoint(PATH, model)
     optimizer = optim.Adam(model.parameters(), lr=0.003)
