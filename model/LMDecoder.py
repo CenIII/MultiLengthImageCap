@@ -67,8 +67,8 @@ class LM_DecoderRNN(BaseRNN):
             n_layers=1, rnn_cell='lstm', bidirectional=False,
             input_dropout_p=0, dropout_p=0, use_attention=False, update_embedding=False, use_prob_vector=False, force_max_len=False):
         super(LM_DecoderRNN, self).__init__(vocab_size, max_len, hidden_size,
-                input_dropout_p, dropout_p,
-                n_layers, rnn_cell)
+                                            input_dropout_p, dropout_p,
+                                            n_layers, rnn_cell)
 
         self.bidirectional_encoder = bidirectional
         self.rnn = self.rnn_cell(embedding_size, hidden_size, n_layers, batch_first=True, dropout=dropout_p)
