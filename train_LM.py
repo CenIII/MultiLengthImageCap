@@ -26,7 +26,7 @@ def train_LM(lmloader, model, optimizer, criterion, pad_id, max_epoch, max_len):
             vocab_size = decoder_output_reshaped.shape[2]
             decoder_output_reshaped = decoder_output_reshaped.view(-1, vocab_size)
             input_sentences = input_sentences[:,1:].contiguous().view(-1)
-            loss = criterion(decoder_output_reshaped, input_sentences)
+            loss = criterion(torch.log(decoder_output_reshaped), input_sentences)
             loss.backward()
             optimizer.step()
             if n%10 == 0:
@@ -119,7 +119,7 @@ def main():
     if recovery=='1':
         model = loadCheckpoint(PATH, model)
     optimizer = optim.Adam(model.parameters(), lr=0.003)
-    criterion = nn.CrossEntropyLoss(ignore_index=pad_id)
+    criterion = nn.NLLLoss(ignore_index=pad_id)
     if torch.cuda.is_available():
         model = model.cuda()
         criterion = criterion.cuda()
