@@ -101,7 +101,7 @@ def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath):
 
 	temp_max = 1
 	temp_min = 0.02
-	ANNEAL_RATE = 0.003
+	ANNEAL_RATE = 0.02
 
 	def saveStateDict(linNet, lstmEnc):
 		models = {}
@@ -125,7 +125,7 @@ def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath):
 		return wrapper
 	
 	def setTAU(itercnt,temp):
-		if itercnt % 20 == 0:
+		if itercnt % 10 == 0:
 			temp = np.maximum(temp_max * np.exp(-ANNEAL_RATE * itercnt), temp_min)
 		return temp
 
