@@ -95,7 +95,7 @@ class LanguageModelLoss(nn.Module):
 
         out_reshaped = outputs# torch.cat([outputs[i].unsqueeze(1) for i in range(len(outputs))],1)
         N, T, vocab_size  = out_reshaped.shape
-        out_reshaped = out_reshaped.topk(1)[1]
+        out_reshaped = out_reshaped.topk(1)[1].squeeze()
         lm_output, _, _ = self.model(out_reshaped, teacher_forcing_ratio=1,max_len=max_len)
         lm_output_reshape = torch.cat([lm_output[i].unsqueeze(1) for i in range(len(lm_output))],1)
         out_reshaped = out_reshaped[:,1:,:].contiguous().view(-1, vocab_size)
