@@ -79,6 +79,7 @@ class LM_DecoderRNN(BaseRNN):
         self.eos_id = eos_id
         self.sos_id = sos_id
         self.force_max_len = force_max_len
+        self.use_prob_vector = use_prob_vector
 
         self.init_input = None
 
