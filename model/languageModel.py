@@ -90,7 +90,7 @@ class LanguageModelLoss(nn.Module):
         wordSeq = self.symdec.decode(sequence_symbols)
         return wordSeq
 
-    def forward(self, outputs, lengths=None, max_len=15):  # [8, 15, 10878]
+    def forward(self, outputs, lengths=None, max_len=15, verbose=False):  # [8, 15, 10878]
         loss = 0
 
         out_reshaped = outputs# torch.cat([outputs[i].unsqueeze(1) for i in range(len(outputs))],1)
@@ -111,8 +111,9 @@ class LanguageModelLoss(nn.Module):
         mask = mask[:,1:].contiguous().view(-1, 1)
 
         # decode outputs
-        print('lm outputs: '+str(self.probVec2Symbols(lm_output_reshape)))
-        print('dec outputs: '+str(self.probVec2Symbols(out_reshaped)))
+        if verbose:
+            print('lm outputs: '+str(self.probVec2Symbols(lm_output_reshape)))
+            print('dec outputs: '+str(self.probVec2Symbols(out_reshaped)))
 
         loss = self.criterion(out_reshaped,lm_output_reshape, mask)
 

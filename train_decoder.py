@@ -164,7 +164,7 @@ def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath):
 			encoder_outputs = lstmEnc(decoder_outputs, use_prob_vector=True, input_lengths=lengths, max_len=int(5*numBoxes))
 			loss1, loss_reg = crit(box_feat, encoder_outputs, lengths) #box_feat [8, 5, 4096, 3, 3], encoder_outputs [8, 15, 4096]
 				# Loss 2: LM loss
-			loss2 =  LM(decoder_outputs, lengths, max_len=int(5*numBoxes))
+			loss2 =  LM(decoder_outputs, lengths, max_len=int(5*numBoxes),verbose=(i%5==0 and i>0))
 
 
 			loss = loss1+loss_reg+loss2
@@ -190,7 +190,7 @@ def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath):
 		# loss_epoch_list.append(loss_epoch_mean)
 		logger.write(str(np.round(loss_epoch_mean, 5)) + '\n')
 		logger.flush()
-		saveStateDict(linNet, lstmDec)
+		# saveStateDict(linNet, lstmDec)
 		epoch += 1
 
 
@@ -249,7 +249,7 @@ if __name__ == '__main__':
 		if args.cont_model_path is not None:
 			linNet,lstmDec = reloadDec(args.cont_model_path,linNet,lstmDec)
 		optimizer = torch.optim.Adam(
-			list(filter(lambda p: p.requires_grad, lstmDec.parameters())) + list(linNet.conv1.parameters()), 0.001)
+			list(filter(lambda p: p.requires_grad, lstmDec.parameters())) + list(linNet.conv1.parameters()), 0.0001)
 		dataset = LoaderDec()
 		loader = DataLoader(dataset, batch_size=args.batch_imgs, shuffle=False, num_workers=2,
 							collate_fn=dataset.collate_fn)
