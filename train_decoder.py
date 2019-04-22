@@ -120,8 +120,8 @@ def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath):
 		return str(np.round(ts.data.cpu().numpy(), 3))
 
 	def GSwTemp(temperature):
-		def wrapper(p):
-			return gumbel_softmax(p,temperature)
+		def wrapper(p,dim=-1):
+			return gumbel_softmax(p,temperature,dim=dim)
 		return wrapper
 	
 	def setTAU(itercnt):
