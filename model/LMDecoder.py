@@ -65,7 +65,7 @@ class LM_DecoderRNN(BaseRNN):
     def __init__(self, vocab_size, max_len, hidden_size, embedding_size,
             sos_id, eos_id, embedding = None,
             n_layers=1, rnn_cell='lstm', bidirectional=False,
-            input_dropout_p=0, dropout_p=0, use_attention=False, update_embedding=False, use_prob_vector=False):
+            input_dropout_p=0, dropout_p=0, use_attention=False, update_embedding=False, use_prob_vector=False, force_max_len=False):
         super(LM_DecoderRNN, self).__init__(vocab_size, max_len, hidden_size,
                 input_dropout_p, dropout_p,
                 n_layers, rnn_cell)
@@ -78,6 +78,7 @@ class LM_DecoderRNN(BaseRNN):
         self.use_attention = use_attention
         self.eos_id = eos_id
         self.sos_id = sos_id
+        self.force_max_len = force_max_len
 
         self.init_input = None
 
@@ -136,7 +137,7 @@ class LM_DecoderRNN(BaseRNN):
             sequence_symbols.append(symbols)
 
             eos_batches = symbols.data.eq(self.eos_id)
-            if eos_batches.dim() > 0:
+            if (eos_batches.dim() > 0) and (not self.force_max_len):
                 eos_batches = eos_batches.cpu().view(-1).numpy()
                 update_idx = ((lengths > step) & eos_batches) != 0
                 lengths[update_idx] = len(sequence_symbols)
