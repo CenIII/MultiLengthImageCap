@@ -345,7 +345,7 @@ class SimilarityLoss(nn.Module):
             image_b = image[i:i+self.bsize]
             text_b = torch.cat([text[j][:length_info[j]] for j in range(i,min(i+self.bsize,B))],dim=0).contiguous()
             len_b = [torch.sum(length_info[i:j+1]) for j in range(i,min(i+self.bsize,B))]
-            loss1 = self.calculate_matching_score(image_b, text_b, len_b, M, H_r, H_w)
+            loss1 += self.calculate_matching_score(image_b, text_b, len_b, M, H_r, H_w)
             # loss1 += l1
             # loss_reg += l2
         loss1 = loss1/numBlcks
