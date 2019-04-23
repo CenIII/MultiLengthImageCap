@@ -101,7 +101,7 @@ def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath, start
 
 	temp_max = 0.8
 	temp_min = 0.1
-	ANNEAL_RATE = 0.00005
+	ANNEAL_RATE = 0.00008
 
 	def saveStateDict(linNet, lstmEnc):
 		models = {}
@@ -146,10 +146,10 @@ def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath, start
 			box_feats, box_global_feats, numBoxes = makeInp(*batchdata)  # box_feats: (numImage,numBoxes,512,7,7) box_global_feats: list, numImage [(512,34,56)]
 			
 			# step 2: data transform by linNet
-			box_feat, global_hidden = linNet(box_feats, box_global_feats)
+			box_feat, box_feat_dec, global_hidden = linNet(box_feats, box_global_feats)
 			
 			# step 3: decode to captions by lstmDec
-			encoder_hidden, encoder_outputs = linOut2DecIn(global_hidden,box_feat)
+			encoder_hidden, encoder_outputs = linOut2DecIn(global_hidden,box_feat_dec)
 			decoder_outputs, decoder_hidden, ret_dict = lstmDec(encoder_hidden=encoder_hidden, 
 																encoder_outputs=encoder_outputs, 
 																max_len=int(5*numBoxes),
@@ -227,7 +227,7 @@ if __name__ == '__main__':
 		VocabData = pickle.load(f)
 
 	# load linear model, transform feature tensor to semantic space
-	linNet = LinearModel(hiddenSize=4096)
+	linNet = LinearModel(encHiddenSize=4096, decHiddenSize=1024)
 
 	sos_id = VocabData['word_dict']['<START>']
 	eos_id = VocabData['word_dict']['<END>']
