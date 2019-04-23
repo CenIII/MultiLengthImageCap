@@ -89,11 +89,11 @@ def makeInp(*inps):
 
 def evaluate(loader, lstmDec, linNet, lstmEnc, LM, crit):
 	# if torch.cuda.is_available():
-	lstmDec = lstmDec.to(device)
-	linNet = linNet.to(device)  # nn.DataParallel(linNet,device_ids=[0, 1]).to(device)
-	lstmEnc = lstmEnc.to(device)  # nn.DataParallel(lstmEnc,device_ids=[0, 1]).to(device)
-	LM = LM.to(device)
-	crit = crit.to(device)
+	lstmDec = lstmDec.to(device).eval()
+	linNet = linNet.to(device).eval()  # nn.DataParallel(linNet,device_ids=[0, 1]).to(device)
+	lstmEnc = lstmEnc.to(device).eval()  # nn.DataParallel(lstmEnc,device_ids=[0, 1]).to(device)
+	LM = LM.to(device).eval()
+	crit = crit.to(device).eval()
 
 	ld = iter(loader)
 	numiters = len(ld)
