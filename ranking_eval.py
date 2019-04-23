@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import tqdm
 import numpy as np
+import seaborn as sns
 from model.LSTMEncoder import EncoderRNN
 from dataloader.dataloader import LoaderEnc
 from model.LinearModel import LinearModel
@@ -158,6 +159,7 @@ def eval(loader,linNet,lstmEnc,crit):
 	# 	capLens = capLens.to(device)
 	Similarity_matrix = torch.zeros(1000, 1000)
 	sm_lst = []
+	sns.set()
 	for i in range(10):
 		mat_lst = []
 		for j in range(10):
@@ -168,12 +170,14 @@ def eval(loader,linNet,lstmEnc,crit):
 			out2 = lstmEnc(box_caption,input_lengths=capLen)
 			s_matrix = crit.generate_similarity_matrix(out1, out2, capLens)
 			s_matrix = s_matrix.cpu().detach().numpy()
-			# Similarity_matrix[i * 100 : (i + 1) * 100, j * 100 : (j + 1) * 100] = s_matrix.clone()
 			mat_lst.append(s_matrix)
 		temp_mat = np.concatenate(mat_lst, axis=1)
 		# temp_mat = torch.cat(mat_lst, dim=1)
 		sm_lst.append(temp_mat)
 	Similarity_matrix = np.concatenate(sm_lst, axis=0)
+	# draw heatmap for similarity loss
+	graph = sns.heatmap(Similarity_matrix)
+	graph.savefig("heatmap.png")
 	Similarity_matrix = torch.from_numpy(Similarity_matrix)
 	# Similarity_matrix = torch.cat(sm_lst, dim=0)
 
