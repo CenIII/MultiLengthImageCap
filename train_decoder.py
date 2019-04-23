@@ -158,7 +158,7 @@ def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath):
 
 	def saveStateDict(linNet, lstmEnc):
 		models = {}
-		models['linNet'] = linNet.state_dict()
+		models['linNet'] = linNet.state_dict() # why save linNet as well
 		models['lstmDec'] = lstmEnc.state_dict()
 		torch.save(models, os.path.join(savepath, 'lstmDec.pt'))
 
@@ -239,7 +239,7 @@ def parseArgs():
 	parser.add_argument('-b', '--batch_imgs',
 						default=4, type=int)
 	parser.add_argument('-c', '--cont_model_path',
-						default='./save/default/')
+						default='./save/default/lstmDec.pt')
 	args = parser.parse_args()
 	return args
 
