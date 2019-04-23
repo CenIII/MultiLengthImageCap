@@ -113,10 +113,10 @@ def main():
         VocabData = pickle.load(f)
     with open('FullImageCaps.pkl','rb') as f:
         FullImageCaps = pickle.load(f)
-    FullImageCaps_sub = loadData("full_image_descriptions.json")
+    # FullImageCaps_sub = loadData("full_image_descriptions.json")
     coco = loadCoco('captions_train2017.json')
 
-    data = FullImageCaps + FullImageCaps_sub + coco
+    data = FullImageCaps + coco
 
     recovery = sys.argv[2]
     mode = sys.argv[1]
@@ -168,7 +168,7 @@ def main():
     model = DecoderRNN(vocab_size, max_len, hidden_size, embedding_size, sos_id, eos_id, embedding_parameter=embedding, rnn_cell='lstm')
     if recovery=='1':
         model = loadCheckpoint(PATH, model)
-    optimizer = optim.Adam(model.parameters(), lr=0.003)
+    optimizer = optim.Adam(model.parameters(), lr=0.0002)
     criterion = nn.NLLLoss(ignore_index=pad_id)
     if torch.cuda.is_available():
         model = model.cuda()
