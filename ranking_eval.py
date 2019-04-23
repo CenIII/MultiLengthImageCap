@@ -179,13 +179,13 @@ def eval(loader,linNet,lstmEnc,crit):
 	Similarity_matrix = np.concatenate(sm_lst, axis=0)
 	matrix_lst = []
 	# shuffle multiple similarity_matrix and compute the average value
-	for i in range(10):
-		arr = np.arange(1000)
-		np.random.shuffle(arr)
-		Similarity_matrix[[i for i in range(1000)]] = Similarity_matrix[list(arr)]
-		Similarity_matrix[:, [i for i in range(1000)]] = Similarity_matrix[:, list(arr)]
-		matrix_lst.append(Similarity_matrix)
-	Similarity_matrix = np.mean(matrix_lst, axis=0)
+	# for i in range(10):
+	# 	arr = np.arange(1000)
+	# 	np.random.shuffle(arr)
+	# 	Similarity_matrix = Similarity_matrix[list(arr)][:,list(arr)]
+	# 	# Similarity_matrix[:, [i for i in range(1000)]] = Similarity_matrix[:, list(arr)]
+	# 	matrix_lst.append(Similarity_matrix)
+	# Similarity_matrix = np.mean(matrix_lst, axis=0)
 	# draw heatmap for similarity loss
 	graph = sns.heatmap(Similarity_matrix)
 	plt.savefig("heatmap.png")
