@@ -104,7 +104,7 @@ class DecoderRNN(BaseRNN):
 
         self.out = nn.Linear(self.hidden_size, self.output_size)
 
-    def forward_step(self, input_var, hidden, encoder_outputs, function):
+    def forward_step(self, input_var, hidden, encoder_outputs, function, prev_maxes=None):
         batch_size = input_var.size(0)
         output_size = input_var.size(1)
         embedded = self.embedding(input_var)
@@ -116,7 +116,15 @@ class DecoderRNN(BaseRNN):
         if self.use_attention:
             output, attn = self.attention(output, encoder_outputs)
 
-        predicted_softmax = function(self.out(output.contiguous().view(-1, self.hidden_size)), dim=1).view(batch_size, output_size, -1)
+        logits = self.out(output.contiguous().view(-1, self.hidden_size))
+        if output_size == 1 and (prev_maxes is not None):
+
+            for i in range(len(prev_maxes)):
+
+                logits.scatter_(1,prev_maxes[i],1e-18)
+            
+
+        predicted_softmax = function(logits, dim=1).view(batch_size, output_size, -1)
         return predicted_softmax, hidden, attn
 
     def forward(self, inputs=None, encoder_hidden=None, encoder_outputs=None,
@@ -140,8 +148,6 @@ class DecoderRNN(BaseRNN):
             decoder_outputs.append(step_output)
             if self.use_attention:
                 ret_dict[DecoderRNN.KEY_ATTN_SCORE].append(step_attn)
-            for i in range(len(sequence_symbols)):
-                step_output.scatter_(1,sequence_symbols[i],0.)
             symbols = step_output.topk(1)[1]#decoder_outputs[-1].topk(1)[1]
             sequence_symbols.append(symbols)
 
@@ -191,7 +197,7 @@ class DecoderRNN(BaseRNN):
             decoder_input = inputs[:, 0].unsqueeze(1)
             for di in range(max_length):
                 decoder_output, decoder_hidden, step_attn = self.forward_step(decoder_input, decoder_hidden, encoder_outputs,
-                                                                         function=function)
+                                                                         function=function, prev_maxes=sequence_symbols)
                 step_output = decoder_output.squeeze(1)
                 symbols = decode(di, step_output, step_attn)
                 decoder_input = symbols if not self.use_prob_vector else step_output.unsqueeze(1)
