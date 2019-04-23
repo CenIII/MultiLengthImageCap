@@ -3,6 +3,7 @@ import torch.nn as nn
 import tqdm
 import numpy as np
 import seaborn as sns
+import matplotlib.pyplot as plt
 from model.LSTMEncoder import EncoderRNN
 from dataloader.dataloader import LoaderEnc
 from model.LinearModel import LinearModel
@@ -177,7 +178,7 @@ def eval(loader,linNet,lstmEnc,crit):
 	Similarity_matrix = np.concatenate(sm_lst, axis=0)
 	# draw heatmap for similarity loss
 	graph = sns.heatmap(Similarity_matrix)
-	graph.savefig("heatmap.png")
+	plt.savefig("heatmap.png")
 	Similarity_matrix = torch.from_numpy(Similarity_matrix)
 	# Similarity_matrix = torch.cat(sm_lst, dim=0)
 
