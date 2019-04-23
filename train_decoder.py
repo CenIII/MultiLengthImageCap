@@ -86,6 +86,64 @@ def makeInp(*inps):
 			ret.append(inp.to(device))
 	return ret
 
+
+def evaluate(loader, lstmDec, linNet, lstmEnc, LM, crit):
+	# if torch.cuda.is_available():
+	lstmDec = lstmDec.to(device)
+	linNet = linNet.to(device)  # nn.DataParallel(linNet,device_ids=[0, 1]).to(device)
+	lstmEnc = lstmEnc.to(device)  # nn.DataParallel(lstmEnc,device_ids=[0, 1]).to(device)
+	LM = LM.to(device)
+	crit = crit.to(device)
+
+	ld = iter(loader)
+	numiters = len(ld)
+	qdar = tqdm.tqdm(range(numiters), total=numiters, ascii=True)
+	loss_itr_list = []
+	
+	with torch.no_grad(): # evaluate mode
+		
+		for i in qdar:
+
+			# step 1: load data
+			batchdata = next(ld)
+			box_feats, box_global_feats, numBoxes = makeInp(*batchdata)  # box_feats: (numImage,numBoxes,512,7,7) box_global_feats: list, numImage [(512,34,56)]
+			
+			# step 2: data transform by linNet
+			box_feat, global_hidden = linNet(box_feats, box_global_feats)
+			
+			# step 3: decode to captions by lstmDec
+			encoder_hidden, encoder_outputs = linOut2DecIn(global_hidden,box_feat)
+			decoder_outputs, decoder_hidden, ret_dict = lstmDec(encoder_hidden=encoder_hidden, encoder_outputs=encoder_outputs, max_len=int(5*numBoxes)) # box_feat [8, 4, 4096, 3, 3]
+			
+			# step 4: calculate loss
+				# Loss 1: Similarity loss
+			lengths = torch.LongTensor(ret_dict['length']).to(device)
+			decoder_outputs = torch.stack([decoder_outputs[i] for i in range(len(decoder_outputs))], 1) # decoder_outputs [8, 15, 10878]
+			encoder_outputs = lstmEnc(decoder_outputs, use_prob_vector=True, input_lengths=lengths, max_len=int(5*numBoxes))
+			loss1, loss_reg = crit(box_feat, encoder_outputs, lengths) #box_feat [8, 5, 4096, 3, 3], encoder_outputs [8, 15, 4096]
+				# Loss 2: LM loss
+			loss2 =  LM(decoder_outputs, lengths, max_len=int(5*numBoxes))
+
+
+			loss = loss1+loss_reg+loss2
+
+
+			loss_itr_list.append(loss.data.cpu().numpy())
+
+			lstmEnc.zero_grad()
+			LM.zero_grad()
+			optimizer.zero_grad()
+
+
+			loss.backward()
+			optimizer.step()
+
+
+
+
+
+
+
 def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath):
 	os.makedirs(savepath, exist_ok=True)
 	# if torch.cuda.is_available():
@@ -157,7 +215,7 @@ def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath):
 			optimizer.step()
 
 			qdar.set_postfix(simiLoss=lstr(loss1),regLoss=lstr(loss_reg),lmLoss=lstr(loss2))
-			if i > 0 and i % 50 == 0: #save model
+			if i > 0 and i % 50 == 0: #save model quickly
 				saveStateDict(linNet, lstmDec)
 
 		loss_epoch_mean = np.mean(loss_itr_list)
@@ -218,10 +276,13 @@ if __name__ == '__main__':
 
 
 	if args.evaluate_mode:  # evaluation mode
-		if args.cont_model_path is not None:
-			linNet,lstmDec = reloadDec(args.cont_model_path,linNet,lstmDec)
-		else:
-			linNet,lstmDec = reloadDec(args.cont_model_path,linNet,lstmDec)
+		if args.cont_model_path == None:
+			assert(0)
+		linNet,lstmDec = reloadDec(args.cont_model_path,linNet,lstmDec)
+		dataset = LoaderDec()
+		loader = DataLoader(dataset, batch_size=args.batch_imgs, shuffle=False, num_workers=2,
+							collate_fn=dataset.collate_fn)
+		evaluate(loader, lstmDec, linNet, lstmEnc, LM, crit)
 
 	else:  # train mode
 		if args.cont_model_path is not None:
