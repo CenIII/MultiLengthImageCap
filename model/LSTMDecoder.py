@@ -87,7 +87,7 @@ class DecoderRNN(BaseRNN):
         self.init_input = None
 
         if use_prob_vector:
-            self.embedding = nn.Linear(vocab_size,embedding_size, bias=False))
+            self.embedding = nn.Linear(vocab_size,embedding_size, bias=False)
 
         else:
             self.embedding = nn.Embedding(vocab_size,embedding_size)
