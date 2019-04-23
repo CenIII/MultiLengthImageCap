@@ -109,7 +109,7 @@ class SimilarityLoss(nn.Module):
         score_temp = []
         prev = 0
         for idx in lenAry:
-            score_temp.append((torch.sum(exp_mat[:, prev: idx], dim=1)/(idx-prev)).unsqueeze(1))
+            score_temp.append((torch.sum(exp_mat[:, prev: idx], dim=1)).unsqueeze(1))
             prev = idx
         score_mat = torch.cat(score_temp, dim=1)
         log_score_mat_1 = torch.log(torch.pow(score_mat, 1 / self.gamma2)+1e-10) # B x B 
@@ -117,46 +117,46 @@ class SimilarityLoss(nn.Module):
         # checkNan(log_score_mat_1)
 
         # step 1: reshape s  (B x M x H_r x W_r) x Tb -> B x M x (H x W) x Tb
-        s_nt_2 = F.softmax(s.view(B,-1,Tb),dim=1)
-        s_nt_2 = s_nt_2.view(B, M , -1, Tb) # B x M x (H x W) x Tb
+        # s_nt_2 = F.softmax(s.view(B,-1,Tb),dim=1)
+        # s_nt_2 = s_nt_2.view(B, M , -1, Tb) # B x M x (H x W) x Tb
         
-        # step 2: generate s_d as denominator B x M x B
-        s_exp = torch.exp(s_nt_2)
-        sd = torch.sum(s_exp, dim=2)
-        sd_tmp = []
-        prev = 0
-        for idx in lenAry:
-            sd_tmp.append(torch.sum(sd[:,:,prev:idx],dim=2).unsqueeze(2).repeat(1,1,idx-prev))
-            prev = idx
-        sd = torch.cat(sd_tmp,dim=2) # B x M x Tb
+        # # step 2: generate s_d as denominator B x M x B
+        # s_exp = torch.exp(s_nt_2)
+        # sd = torch.sum(s_exp, dim=2)
+        # sd_tmp = []
+        # prev = 0
+        # for idx in lenAry:
+        #     sd_tmp.append(torch.sum(sd[:,:,prev:idx],dim=2).unsqueeze(2).repeat(1,1,idx-prev))
+        #     prev = idx
+        # sd = torch.cat(sd_tmp,dim=2) # B x M x Tb
 
-        # step 3: compute beta B x M x Tb
-        sd_rep = sd.unsqueeze(2).repeat(1,1,(H_r*H_w),1) # B x M x (H x W) x Tb
-        beta = torch.sum(s_exp/sd_rep,dim=2) # B x M x Tb 
+        # # step 3: compute beta B x M x Tb
+        # sd_rep = sd.unsqueeze(2).repeat(1,1,(H_r*H_w),1) # B x M x (H x W) x Tb
+        # beta = torch.sum(s_exp/sd_rep,dim=2) # B x M x Tb 
 
-        # step 4: compute em_prime B x M x B x D
-        beta = beta.view(-1, Tb)
-        em_temp = []
-        prev = 0
-        for idx in lenAry:
-            em_temp.append(beta[:, prev: idx].mm(e[prev: idx, :]))
-            prev = idx
-        em_prime = torch.stack(em_temp, dim=1).view(B, -1, B, D)  # B x M x B x D
+        # # step 4: compute em_prime B x M x B x D
+        # beta = beta.view(-1, Tb)
+        # em_temp = []
+        # prev = 0
+        # for idx in lenAry:
+        #     em_temp.append(beta[:, prev: idx].mm(e[prev: idx, :]))
+        #     prev = idx
+        # em_prime = torch.stack(em_temp, dim=1).view(B, -1, B, D)  # B x M x B x D
 
 
-        # step 5: compute score B x B
+        # # step 5: compute score B x B
 
-        em_prime_rep = em_prime.unsqueeze(2).repeat(1, 1, H_r * H_w, 1, 1)
-        em_temp = F.normalize(em_prime_rep.view(-1, B, D),dim=2)
-        v_temp = F.normalize(v.view(-1, D, 1),dim=1)
-        logit_mat_2 = torch.sum(em_temp.bmm(v_temp).squeeze().view(B, M, H_r * H_w, B), dim=2) / (H_r * H_w) # B x M x B
-        score_mat_2 = torch.pow(torch.sum(torch.exp(logit_mat_2), dim=1)/M, 1 / self.gamma2)
-        log_score_mat_2 = torch.log(score_mat_2+1e-10)
-        # checkNan(log_score_mat_2)
+        # em_prime_rep = em_prime.unsqueeze(2).repeat(1, 1, H_r * H_w, 1, 1)
+        # em_temp = F.normalize(em_prime_rep.view(-1, B, D),dim=2)
+        # v_temp = F.normalize(v.view(-1, D, 1),dim=1)
+        # logit_mat_2 = torch.sum(em_temp.bmm(v_temp).squeeze().view(B, M, H_r * H_w, B), dim=2) / (H_r * H_w) # B x M x B
+        # score_mat_2 = torch.pow(torch.sum(torch.exp(logit_mat_2), dim=1)/M, 1 / self.gamma2)
+        # log_score_mat_2 = torch.log(score_mat_2+1e-10)
+        # # checkNan(log_score_mat_2)
 
-        # reg term
-        beta = beta.view(B,M,Tb)
-        loss_reg = 0
+        # # reg term
+        # beta = beta.view(B,M,Tb)
+        # loss_reg = 0
         # prev = 0
         # for i in range(B):
         #     idx = lenAry[i]
@@ -175,8 +175,8 @@ class SimilarityLoss(nn.Module):
         # checkNan(loss_reg)
         # print('loss_reg: '+str(loss_reg.data))
         log_score_mat_1 = self.gamma3 * log_score_mat_1
-        log_score_mat_2 = self.gamma3 * log_score_mat_2
-        log_score_mat = log_score_mat_1 + log_score_mat_2
+        # log_score_mat_2 = self.gamma3 * log_score_mat_2
+        log_score_mat = log_score_mat_1 # + log_score_mat_2
         exp_score_mat = torch.exp(log_score_mat)
         if check_score_mat:
             return exp_score_mat
