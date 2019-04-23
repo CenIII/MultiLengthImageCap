@@ -74,15 +74,15 @@ class EncoderRNN(BaseRNN):
         Returns: output, hidden
             - **output** (batch, seq_len, hidden_size): variable containing the encoded features of the input sequence
         """
+        
         if use_prob_vector:
             embedded = self.linear(input_var)
         else:
             embedded = self.embedding(input_var)
 
-        input_lengths, indices = torch.sort(input_lengths, descending=True, out=None) #sort for pack_padded
-        embedded = embedded[indices,:,:]
-
         if self.variable_lengths:
+            input_lengths, indices = torch.sort(input_lengths, descending=True, out=None) #sort for pack_padded
+            embedded = embedded[indices,:,:]
             embedded = nn.utils.rnn.pack_padded_sequence(embedded, input_lengths, batch_first=True)
 
         self.rnn.flatten_parameters()
@@ -90,5 +90,10 @@ class EncoderRNN(BaseRNN):
 
         if self.variable_lengths:
             output, _ = nn.utils.rnn.pad_packed_sequence(output, batch_first=True, total_length=max_len)
+
+            output_sort_back = torch.zeros_like(output) #sort back to match labels
+            for i in range(output.shape[0]):
+                output_sort_back[indices[i]] = output[i]
+            output = output_sort_back
 
         return output
