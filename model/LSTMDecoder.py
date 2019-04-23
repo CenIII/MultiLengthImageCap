@@ -102,7 +102,7 @@ class DecoderRNN(BaseRNN):
         if use_attention:
             self.attention = Attention(self.hidden_size)
 
-        self.out = nn.Linear(self.hidden_size, self.output_size
+        self.out = nn.Linear(self.hidden_size, self.output_size)
 
     def forward_step(self, input_var, hidden, encoder_outputs, function):
         batch_size = input_var.size(0)
