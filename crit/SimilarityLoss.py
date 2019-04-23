@@ -341,7 +341,7 @@ class SimilarityLoss(nn.Module):
         loss_reg = 0
         for i in range(0,B,self.bsize):
             if i+self.bsize>B:
-                i -= ((i+self.bsize)-B)
+                i = max(0,B-self.bsize)
             image_b = image[i:i+self.bsize]
             text_b = torch.cat([text[j][:length_info[j]] for j in range(i,min(i+self.bsize,B))],dim=0).contiguous()
             len_b = [torch.sum(length_info[i:j+1]) for j in range(i,min(i+self.bsize,B))]
