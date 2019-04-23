@@ -379,16 +379,17 @@ class LoaderDemo(object):
 		f.close()
 
 		# np.save(os.path.join(self.dataPipePath, filename+'.npy'),img)
-		return img2ret
+		return img2ret, filename
 
 	def loadImage(self, image_path):
 		# load and preprocess image, save to npy
-		image = self.preprocessImage(image_path)
+		image, imgName = self.preprocessImage(image_path)
+		# todo: place a prep_ready_imgName file. 
 		# todo: emmit lua sub process
 		
 		# wait lua to generate corresponding data file, and read
 
-		data_file = self.dataPipePath+'data_demo_*'
+		data_file = self.dataPipePath+'data_demo_'+str(imgName)
 		print('prep done.')	
 		while True:
 			filename = glob.glob(data_file)

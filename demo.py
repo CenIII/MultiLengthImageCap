@@ -153,9 +153,9 @@ def inference(image_path,loader,linNet,lstmDec,symbolDec,save_path,sample_mode=[
 	box_scores, box_coords, box_feats = loader.sampleBoxes(box_scores, box_coords, box_feats)
 	box_feats, global_feat = loader.makeInp(box_feats, global_feat)  # box_feats: (numImage,numBoxes,512,7,7) box_global_feats: list, numImage [(512,34,56)]		
 	# step 2: data transform by linNet
-	box_feats, global_hidden = linNet(box_feats, global_feat)
+	box_feats, box_feat_dec, global_hidden = linNet(box_feats, global_feat)
 	# step 3: decode to captions by lstmDec
-	encoder_hidden, encoder_outputs = linOut2DecIn(global_hidden,box_feats)
+	encoder_hidden, encoder_outputs = linOut2DecIn(global_hidden,box_feat_dec)
 	decoder_outputs, decoder_hidden, ret_dict = lstmDec(encoder_hidden=encoder_hidden, encoder_outputs=encoder_outputs) # box_feat [8, 4, 4096, 3, 3]
 
 	# todo: decode index to symbols
@@ -220,12 +220,12 @@ if __name__ == '__main__':
 		VocabData = pickle.load(f)
 
 	# load linear model, transform feature tensor to semantic space
-	linNet = LinearModel(hiddenSize=4096)
+	linNet = LinearModel(encHiddenSize=4096, decHiddenSize=1024)
 
 	sos_id = VocabData['word_dict']['<START>']
 	eos_id = VocabData['word_dict']['<END>']
 
-	lstmDec = DecoderRNN(vocab_size=len(VocabData['word_dict']),max_len=15,sos_id=sos_id, eos_id=eos_id , embedding_size=300,hidden_size=4096,
+	lstmDec = DecoderRNN(vocab_size=len(VocabData['word_dict']),max_len=15,sos_id=sos_id, eos_id=eos_id , embedding_size=300,hidden_size=1024,
 						 embedding_parameter=VocabData['word_embs'], update_embedding=False ,use_attention=True)
 
 	# todo: reload lstmEnc
