@@ -187,6 +187,8 @@ def eval(loader,linNet,lstmEnc,crit):
 	# 	matrix_lst.append(Similarity_matrix)
 	# Similarity_matrix = np.mean(matrix_lst, axis=0)
 	# draw heatmap for similarity loss
+	with open("similarity_mat.txt", "w") as f_out:
+		np.save(f_out, Similarity_matrix)
 	graph = sns.heatmap(Similarity_matrix)
 	plt.savefig("heatmap.png")
 	Similarity_matrix = torch.from_numpy(Similarity_matrix)
