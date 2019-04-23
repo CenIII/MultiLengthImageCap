@@ -129,7 +129,7 @@ def main():
     max_len = 100
     hidden_size = 1024
     embedding_size = 300
-    max_epoch = 40
+    max_epoch = 10
     sos_id = lmdata.sos_id
     eos_id = lmdata.eos_id
     pad_id = lmdata.pad_id
