@@ -156,7 +156,7 @@ class SimilarityLoss(nn.Module):
 
         # # reg term
         # beta = beta.view(B,M,Tb)
-        # loss_reg = 0
+        loss_reg = 0
         # prev = 0
         # for i in range(B):
         #     idx = lenAry[i]
