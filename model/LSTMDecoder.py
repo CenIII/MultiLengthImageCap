@@ -87,7 +87,7 @@ class DecoderRNN(BaseRNN):
         self.init_input = None
 
         if use_prob_vector:
-            self.embedding = nn.Linear(vocab_size,embedding_size)
+            self.embedding = nn.Linear(vocab_size,embedding_size, bias=False))
 
         else:
             self.embedding = nn.Embedding(vocab_size,embedding_size)
@@ -102,7 +102,7 @@ class DecoderRNN(BaseRNN):
         if use_attention:
             self.attention = Attention(self.hidden_size)
 
-        self.out = nn.Linear(self.hidden_size, self.output_size, bias=False)
+        self.out = nn.Linear(self.hidden_size, self.output_size
 
     def forward_step(self, input_var, hidden, encoder_outputs, function):
         batch_size = input_var.size(0)
