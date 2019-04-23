@@ -22,7 +22,7 @@ class LinearModel(nn.Module):
 
         box_feat_dec = self.conv1(box_feat).view(B,M,self.decHiddenSize,3,3)
         box_feat = box_feat.view(B,M,self.encHiddenSize,3,3)
-        global_vec = box_feat_dec.permute(0,2,1,3,4).view(B,self.decHiddenSize,-1).max(dim=2)[0]
+        global_vec = box_feat_dec.permute(0,2,1,3,4).contiguous().view(B,self.decHiddenSize,-1).max(dim=2)[0]
         return box_feat, box_feat_dec, global_vec # box_feat [8,2,hiddensize,3,3], global_vec [8, hidden_size]
 
 
