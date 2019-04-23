@@ -100,6 +100,16 @@ def evaluate(loader, lstmDec, linNet, lstmEnc, LM, crit):
 	qdar = tqdm.tqdm(range(numiters), total=numiters, ascii=True)
 	loss_itr_list = []
 	
+	def linOut2DecIn(global_hidden, box_feat):	# box_feat [8, 4, 4096, 3, 3]
+		global_hidden = global_hidden.unsqueeze(0)
+		encoder_hidden = (global_hidden,torch.zeros_like(global_hidden).to(device))
+		B,M,D,H,W = box_feat.size()
+		encoder_outputs = box_feat.permute(0,1,3,4,2).contiguous().view(B,-1,D)
+		return encoder_hidden, encoder_outputs
+
+	def lstr(ts,pres=3):
+		return str(np.round(ts.data.cpu().numpy(), 3))
+	
 	with torch.no_grad(): # evaluate mode
 		
 		for i in qdar:
@@ -158,7 +168,7 @@ def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath):
 
 	def saveStateDict(linNet, lstmEnc):
 		models = {}
-		models['linNet'] = linNet.state_dict() # why save linNet as well
+		models['linNet'] = linNet.state_dict() # why save linNet as well	
 		models['lstmDec'] = lstmEnc.state_dict()
 		torch.save(models, os.path.join(savepath, 'lstmDec.pt'))
 
