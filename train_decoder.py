@@ -157,7 +157,7 @@ def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath):
 			optimizer.step()
 
 			qdar.set_postfix(simiLoss=lstr(loss1),regLoss=lstr(loss_reg),lmLoss=lstr(loss2))
-			if i > 0 and i % 1000 == 0:
+			if i > 0 and i % 50 == 0: #save model
 				saveStateDict(linNet, lstmDec)
 
 		loss_epoch_mean = np.mean(loss_itr_list)
@@ -181,7 +181,7 @@ def parseArgs():
 	parser.add_argument('-b', '--batch_imgs',
 						default=4, type=int)
 	parser.add_argument('-c', '--cont_model_path',
-						default=None)
+						default='./save/default/')
 	args = parser.parse_args()
 	return args
 
@@ -218,7 +218,10 @@ if __name__ == '__main__':
 
 
 	if args.evaluate_mode:  # evaluation mode
-		pass
+		if args.cont_model_path is not None:
+			linNet,lstmDec = reloadDec(args.cont_model_path,linNet,lstmDec)
+		else:
+			linNet,lstmDec = reloadDec(args.cont_model_path,linNet,lstmDec)
 
 	else:  # train mode
 		if args.cont_model_path is not None:
