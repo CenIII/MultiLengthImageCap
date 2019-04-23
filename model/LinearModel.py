@@ -10,9 +10,9 @@ class LinearModel(nn.Module):
         self.hiddenSize = hiddenSize
 
     def forward(self, box_feat): # box_feat [8, 2, 512, 7, 7], globel_feat list of [512, 26, 45]
-        B,M = box_feat.size()[:2]
-        box_feat = box_feat.view(-1,512,7,7)
-        box_feat = self.conv2(box_feat).view(B,M,self.hiddenSize,3,3)
+            # B,M = box_feat.size()[:2]
+        # box_feat = box_feat.view(-1,512,7,7)
+        box_feat = self.conv2(box_feat)
         return box_feat # box_feat [8,2,hiddensize,3,3], global_vec [8, hidden_size]
 
 
