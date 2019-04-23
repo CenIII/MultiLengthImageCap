@@ -1,5 +1,7 @@
 .idea
 .DS
+*.json
+LMcheckpoint*
 
 /data
 *.swp

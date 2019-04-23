@@ -49,14 +49,14 @@ def sampleSentence(model, lmloader, rev_vocab):
         if torch.cuda.is_available():
             sample_input = sample_input.cuda()
         with torch.no_grad():
-            _,_, out = model(sample_input,teacher_forcing_ratio=1)
+            _,_, out = model(sample_input,teacher_forcing_ratio=0)
         sentence = []
         for word in out['sequence']:
             sentence.append(rev_vocab[word.item()])
         print(' '.join(sentence))
 
 def loadCheckpoint(PATH, model):
-    model.load_state_dict(torch.load(PATH))
+    model.load_state_dict(torch.load(PATH, map_location='cpu'))
     model.eval()
     return model
 
@@ -142,7 +142,7 @@ def main():
     strange_sentence = torch.cat([they, are, are, are, are, are], 0).unsqueeze(0)
     regular_sentence = torch.cat([they, are, students, _from, that, school], 0).unsqueeze(0)
 
-    PATH = 'LMcheckpoint_experiment2'
+    PATH = 'LMcheckpoint_tf_probvector'
 
     
     model = LM_DecoderRNN(vocab_size, max_len, hidden_size, embedding_size, sos_id, eos_id, embedding=embedding, rnn_cell='lstm', use_prob_vector=True)
@@ -162,7 +162,7 @@ def main():
         loss2 = lm_loss(regular_sentence)
         print(loss1.item(), loss2.item())
 
-    # sampleSentence(model, testloader, rev_vocab)
+    sampleSentence(model, testloader, rev_vocab)
 
 
 if __name__ == "__main__":
