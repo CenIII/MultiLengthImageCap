@@ -13,12 +13,7 @@ class LinearModel(nn.Module):
         B,M = box_feat.size()[:2]
         box_feat = box_feat.view(-1,512,7,7)
         box_feat = self.conv2(box_feat).view(B,M,self.hiddenSize,3,3)
-
-        global_vec = []
-        for i in range(len(global_feat)):
-            global_vec.append(self.conv1(global_feat[i].unsqueeze(0)).view(self.hiddenSize,-1).max(dim=1)[0])
-        global_vec = torch.stack(global_vec,dim=0)
-        return box_feat, global_vec # box_feat [8,2,hiddensize,3,3], global_vec [8, hidden_size]
+        return box_feat # box_feat [8,2,hiddensize,3,3], global_vec [8, hidden_size]
 
 
 # if __name__ == "__main__":
