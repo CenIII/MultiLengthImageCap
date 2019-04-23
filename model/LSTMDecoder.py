@@ -140,7 +140,9 @@ class DecoderRNN(BaseRNN):
             decoder_outputs.append(step_output)
             if self.use_attention:
                 ret_dict[DecoderRNN.KEY_ATTN_SCORE].append(step_attn)
-            symbols = decoder_outputs[-1].topk(1)[1]
+            for i in range(len(sequence_symbols)):
+                step_output.scatter_(1,sequence_symbols[i],0.)
+            symbols = step_output.topk(1)[1]#decoder_outputs[-1].topk(1)[1]
             sequence_symbols.append(symbols)
 
             eos_batches = symbols.data.eq(self.eos_id)

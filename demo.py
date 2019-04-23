@@ -36,7 +36,7 @@ def reloadModel(model_path, linNet, lstmEnc):
 		pretrained_dict = {}
 		for k, v in pt_dict.items():
 			if (k in model_dict):
-				pretrained_dict[k] = v if ('linear.weight' not in k) else v.transpose(1,0)
+				pretrained_dict[k] = v if ('embedding.weight' not in k) else v.transpose(1,0)
 		# 2. overwrite entries in the existing state dict
 		model_dict.update(pretrained_dict)
 		# 3. load the new state dict
@@ -44,7 +44,7 @@ def reloadModel(model_path, linNet, lstmEnc):
 		return model
 
 	linNet = subload(linNet, pt['linNet'])
-	lstmEnc = subload(lstmEnc, pt['lstmEnc'])
+	lstmEnc = subload(lstmEnc, pt['lstmDec'])
 	pt = None
 	for p in linNet.conv2.parameters():
 		p.requires_grad = False
@@ -159,7 +159,16 @@ def inference(image_path,loader,linNet,lstmDec,symbolDec,save_path,sample_mode=[
 	decoder_outputs, decoder_hidden, ret_dict = lstmDec(encoder_hidden=encoder_hidden, encoder_outputs=encoder_outputs) # box_feat [8, 4, 4096, 3, 3]
 
 	# todo: decode index to symbols
-	word_seq = symbolDec.decode(ret_dict['sequence'])
+	#symseq = []
+	#for probarr in decoder_outputs:
+	#	probarr = probarr.squeeze()
+	#	for ind in symseq:
+	#		probarr[ind] = 0
+	#	sym = torch.argmax(probarr)
+	#	symseq.append(sym)
+
+	# todo: decode index to symbols
+	word_seq = symbolDec.decode(ret_dict['sequence'])#symseq)
 	print(word_seq)
 	# todo: draw(image,box_coords,decoder_outputs)
 
@@ -233,7 +242,7 @@ if __name__ == '__main__':
 	# 	# get image_path interactively
 	# 	...
 		# do inference, show image, then loop back.
-	image_path = './densecap/data_pipeline/29.jpg'
+	image_path = 'densecap/data/visual-genome/images/270.jpg'#'./densecap/data_pipeline/29.jpg'
 	lstmDec = lstmDec.to(device)
 	linNet = linNet.to(device)  # nn.DataParallel(linNet,device_ids=[0, 1]).to(device)
 	inference(image_path,loader,linNet,lstmDec,symbolDec,args.save_path,sample_mode=['top',3])

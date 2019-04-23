@@ -389,7 +389,7 @@ class LoaderDemo(object):
 		# wait lua to generate corresponding data file, and read
 
 		data_file = self.dataPipePath+'data_demo_*'
-	
+		print('prep done.')	
 		while True:
 			filename = glob.glob(data_file)
 			if len(filename)>=1:
