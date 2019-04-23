@@ -87,7 +87,7 @@ def makeInp(*inps):
 			ret.append(inp.to(device))
 	return ret
 
-def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath):
+def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath, startIter):
 	os.makedirs(savepath, exist_ok=True)
 	# if torch.cuda.is_available():
 	lstmDec = lstmDec.to(device)
@@ -129,7 +129,7 @@ def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath):
 			temp = np.maximum(temp_max * np.exp(-ANNEAL_RATE * itercnt), temp_min)
 		return temp
 
-	itercnt = 0
+	itercnt = startIter
 	tau = temp_max
 	while True:
 		ld = iter(loader)
@@ -185,7 +185,7 @@ def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath):
 				bsize,lens,vocab_size = decoder_outputs.shape
 				outputDisplay = decoder_outputs.contiguous().view(-1, vocab_size)
 				wordsSeq = LM.probVec2Symbols(outputDisplay)
-				wordsSeq = [wordsSeq[i*bsize:i*bsize+lens] for i in range(bsize)]
+				wordsSeq = [wordsSeq[j*lens:j*lens+lens] for j in range(bsize)]
 				logger.write('iter: '+str(i)+'\n'+str(wordsSeq)+'\n')
 				logger.flush()
 			itercnt += 1
@@ -212,6 +212,8 @@ def parseArgs():
 						default=4, type=int)
 	parser.add_argument('-c', '--cont_model_path',
 						default=None)
+	parser.add_argument('-i', '--iter',
+						default=0, type=int)
 	args = parser.parse_args()
 	return args
 
@@ -258,7 +260,7 @@ if __name__ == '__main__':
 		dataset = LoaderDec()
 		loader = DataLoader(dataset, batch_size=args.batch_imgs, shuffle=False, num_workers=2,
 							collate_fn=dataset.collate_fn)
-		train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, args.save_path)
+		train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, args.save_path, args.iter)
 
 
 
