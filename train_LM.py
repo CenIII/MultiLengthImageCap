@@ -117,7 +117,7 @@ def main():
     coco = loadCoco('captions_train2017.json')
 
     data = FullImageCaps + coco
-
+    print(len(data)/128)
     recovery = sys.argv[2]
     mode = sys.argv[1]
 
