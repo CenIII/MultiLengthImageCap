@@ -145,7 +145,7 @@ def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath, start
 			bestvseq.append(probVec)
 
 		bestvseq = bestvseq[::-1]
-		bestvseq = torch.stack(bestvseq,dim=1)  # B,S,V
+		bestvseq = torch.stack(bestvseq,dim=2).squeeze()  # B,S,V
 		
 		return bestvseq
 
