@@ -135,13 +135,13 @@ def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath, start
 		batchSize = bs['topkInds'][0].shape[1]
 		pkInds = torch.zeros(batchSize,dtype=torch.int64).to(device)
 		bestvseq = []
-		for i in reversed(range(SeqLen)):
+		for i in reversed(range(1,SeqLen)):
 			# select out prev topkinds
 			pkInds_ex = pkInds.unsqueeze(0).unsqueeze(2).repeat(1,1,2)  
-			pkInds = bs['topkInds'][i].gather(0,pkInds_ex)
+			pkInds = bs['topkInds'][i].gather(0,pkInds_ex)[0,:,0]
 			# select out and append cur prob vectors
 			gathInds = pkInds[None,:,None,None].repeat(1,1,1,10878)
-			probVec = bs['probVec'].gather(0,gathInds)
+			probVec = bs['probVec'][i].gather(0,gathInds)
 			bestvseq.append(probVec)
 
 		bestvseq = bestvseq[::-1]
