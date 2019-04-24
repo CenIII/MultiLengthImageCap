@@ -146,7 +146,9 @@ class DecoderRNN(BaseRNN):
         lengths = np.array([max_length] * batch_size)
         beamStatesLM = {}
         beamStatesLM['probVec'] = [[]] # sentence len list
-        beamStatesLM['hiddens'] = [[decoder_hidden]]
+        beamStatesLM['hiddens'] = [torch.stack([decoder_hidden[0]],dim=0)] # seq len, topk, batch
+        beamStatesLM['cells'] = [torch.stack([decoder_hidden[1]],dim=0)] # seq len, topk, batch
+
         def decode(step, step_output, step_attn):
             decoder_outputs.append(step_output)
             if self.use_attention:
@@ -177,28 +179,36 @@ class DecoderRNN(BaseRNN):
                     step_attn = None
                 decode(di, step_output, step_attn)
         elif self.beamSearchMode:
+            decoder_input = inputs[:, 0].unsqueeze(1)
+
             for di in range(max_length):
                 bmHiddens = beamStatesLM['hiddens'][di]
+                bmCells = beamStatesLM['cells'][di]
                 bmTopkInds = beamStates['topkInds'][di]
                 bmScores = beamStates['newScores'][di]
                 bmProbVec_nxt = []
                 bmHiddens_nxt = []
+                bmCells_nxt = []
                 bmTopkInds_nxt = []
                 bmScores_nxt = []
 
                 for k in range(len(bmHiddens)): # iterate over topk. for the 0 step, topk has 1 element. 
-                    decoder_output, decoder_hidden, step_attn = self.forward_step(bmTopkInds[k], bmHiddens.gather([bmTopkInds[k][:,0]]), encoder_outputs,
-                                                                         function=function, prev_maxes=None)
+                    hidGathInds = bmTopkInds[k][:,0].unsqueeze(0).repeat(1,1024).view(1,batch_size,-1)
+                    decoder_output, decoder_hidden, step_attn = self.forward_step(bmTopkInds[k][:,1].unsqueeze(1), (bmHiddens[:,0].gather(0,hidGathInds),bmCells[:,0].gather(0,hidGathInds)), encoder_outputs,function=function, prev_maxes=None)
                     bmProbVec_nxt.append(decoder_output)
-                    bmHiddens_nxt.append(decoder_hidden)
+                    bmHiddens_nxt.append(decoder_hidden[0])
+                    bmCells_nxt.append(decoder_hidden[1])
 
-                bmProbVec_nxt = torch.stack(bmProbVec_nxt,dim=0) #[K,B,V]
-                bmHiddens_nxt = torch.stack(bmHiddens_nxt,dim=0) #[K,B,H]
+                bmProbVec_nxt = torch.stack(bmProbVec_nxt,dim=0) #[K,B,1,V]
+                bmHiddens_nxt = torch.stack(bmHiddens_nxt,dim=0) #[K,1,B,H]
+                bmCells_nxt = torch.stack(bmCells_nxt,dim=0) #[K,1,B,H]
                 # extract topk from bmProbVec_nxt list
-                candScores = bmProbVec_nxt*bmScores # [K,B,V]
+                candScores = -torch.log(bmProbVec_nxt+1e-18)*(bmScores.unsqueeze(-1).unsqueeze(-1)) # [K,B,V]
                 bmTopkInds_nxt, bmScores_nxt = getTopkIndsnScores(candScores)  # [K,B,2], [K,B]
                 beamStatesLM['probVec'].append(bmProbVec_nxt)
                 beamStatesLM['hiddens'].append(bmHiddens_nxt)
+                beamStatesLM['cells'].append(bmCells_nxt)
+
                 
 
 
