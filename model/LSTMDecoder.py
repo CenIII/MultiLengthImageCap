@@ -147,7 +147,7 @@ class DecoderRNN(BaseRNN):
         beamStates['hiddens'] = [torch.stack([decoder_hidden[0]],dim=0)] # seq len, topk, batch
         beamStates['cells'] = [torch.stack([decoder_hidden[1]],dim=0)] # seq len, topk, batch
         beamStates['topkInds'] = [torch.LongTensor([[[0, self.sos_id]]*batch_size]).to(device)]
-        beamStates['newScores'] = [torch.tensor([[1]*batch_size]).to(device)] # find minimum -log score  [K,B]
+        beamStates['newScores'] = [torch.tensor([[1]*batch_size],dtype=torch.float).to(device)] # find minimum -log score  [K,B]
 
         def decode(step, step_output, step_attn):
             decoder_outputs.append(step_output)
