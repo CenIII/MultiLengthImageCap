@@ -144,8 +144,8 @@ class DecoderRNN(BaseRNN):
 
         beamStates = {}
         beamStates['probVec'] = [[]] # sentence len list
-        beamStates['hiddens'] = [torch.tensor([decoder_hidden[0]])] # seq len, topk, batch
-        beamStates['cells'] = [torch.tensor([decoder_hidden[1]])] # seq len, topk, batch
+        beamStates['hiddens'] = [torch.stack([decoder_hidden[0]],dim=0)] # seq len, topk, batch
+        beamStates['cells'] = [torch.stack([decoder_hidden[1]],dim=0)] # seq len, topk, batch
         beamStates['topkInds'] = [torch.LongTensor([[[0, self.sos_id]]*batch_size])]
         beamStates['newScores'] = [[[1]*batch_size]] # find minimum -log score
 
