@@ -60,7 +60,7 @@ def reloadDec(model_path, linNet, lstmDec):
 		pretrained_dict = {}
 		for k, v in pt_dict.items():
 			if (k in model_dict):
-				pretrained_dict[k] = v
+				pretrained_dict[k] = v if ('embedding.weight' not in k) else v.transpose(1,0)
 		# 2. overwrite entries in the existing state dict
 		model_dict.update(pretrained_dict)
 		# 3. load the new state dict
