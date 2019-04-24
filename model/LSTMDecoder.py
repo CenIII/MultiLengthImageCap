@@ -144,8 +144,9 @@ class DecoderRNN(BaseRNN):
 
         beamStates = {}
         beamStates['probVec'] = [[]] # sentence len list
-        beamStates['hiddens'] = [[decoder_hidden]] # seq len, topk, batch
-        beamStates['topkInds'] = [[[0, self.sos_id]*batch_size]]
+        beamStates['hiddens'] = [torch.tensor([decoder_hidden[0]])] # seq len, topk, batch
+        beamStates['cells'] = [torch.tensor([decoder_hidden[1]])] # seq len, topk, batch
+        beamStates['topkInds'] = [torch.LongTensor([[[0, self.sos_id]]*batch_size])]
         beamStates['newScores'] = [[[1]*batch_size]] # find minimum -log score
 
         def decode(step, step_output, step_attn):
@@ -182,6 +183,7 @@ class DecoderRNN(BaseRNN):
 
             for di in range(max_length):
                 bmHiddens = beamStates['hiddens'][di]
+                bmCells = beamStates['cells'][di]
                 bmTopkInds = beamStates['topkInds'][di]
                 bmScores = beamStates['newScores'][di]
                 bmProbVec_nxt = []
@@ -190,8 +192,7 @@ class DecoderRNN(BaseRNN):
                 bmScores_nxt = []
 
                 for k in range(len(bmHiddens)): # iterate over topk. for the 0 step, topk has 1 element. 
-                    decoder_output, decoder_hidden, step_attn = self.forward_step(bmTopkInds[k], bmHiddens.gather([bmTopkInds[k][:,0]]), encoder_outputs,
-                                                                         function=function, prev_maxes=None)
+                    decoder_output, decoder_hidden, step_attn = self.forward_step(bmTopkInds[k][:,1], (bmHiddens.gather([bmTopkInds[k][:,0]]),bmCells.gather([bmTopkInds[k][:,0]])), encoder_outputs,function=function, prev_maxes=None)
                     bmProbVec_nxt.append(decoder_output)
                     bmHiddens_nxt.append(decoder_hidden)
 
