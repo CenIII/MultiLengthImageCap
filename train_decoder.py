@@ -128,6 +128,11 @@ def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath, start
 		if itercnt % 100 == 0:
 			temp = np.maximum(temp_max * np.exp(-ANNEAL_RATE * itercnt), temp_min)
 		return temp
+	def getBestProbVecSeq(beamStates):
+		# todo: ...
+		bestvseq = []
+		return bestvseq
+
 
 	itercnt = startIter
 	tau = temp_max
@@ -158,12 +163,17 @@ def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath, start
 			
 			# step 4: calculate loss
 				# Loss 1: Similarity loss
+
 			lengths = torch.LongTensor(ret_dict['length']).to(device)
 			decoder_outputs = torch.stack([decoder_outputs[i] for i in range(len(decoder_outputs))], 1) # decoder_outputs [8, 15, 10878]
+			
+			# todo: get the most prob sequence of prob vec into lstmEnc
+			lstmEnc_inputs = getBestProbVecSeq(ret_dict['beamStates'])
 			encoder_outputs = lstmEnc(decoder_outputs, use_prob_vector=True, input_lengths=lengths, max_len=int(5*numBoxes))
 			loss1, loss_reg = crit(box_feat, encoder_outputs, lengths) #box_feat [8, 5, 4096, 3, 3], encoder_outputs [8, 15, 4096]
 				# Loss 2: LM loss
-			# loss2 =  LM(decoder_outputs, lengths, max_len=int(5*numBoxes),verbose=(i%5==0 and i>0))
+			# todo: get ...
+			loss2 =  LM(decoder_outputs, lengths, beamStates=ret_dict['beamStates'], max_len=int(5*numBoxes),verbose=(i%5==0 and i>0))
 
 
 			loss = loss1#+10.*loss_reg#+loss2
@@ -234,7 +244,7 @@ if __name__ == '__main__':
 	# load LSTM encoder
 
 	lstmDec = DecoderRNN(vocab_size=len(VocabData['word_dict']),max_len=15,sos_id=sos_id, eos_id=eos_id , embedding_size=300,hidden_size=1024,
-						 embedding_parameter=VocabData['word_embs'], update_embedding=False ,use_attention=True,use_prob_vector=True)
+						 embedding_parameter=VocabData['word_embs'], update_embedding=False ,use_attention=True,beamSearchMode=True)
 
 	lstmEnc = EncoderRNN(len(VocabData['word_dict']), max_len=15, hidden_size=4096, embedding_size=300,
 						 input_dropout_p=0, dropout_p=0,

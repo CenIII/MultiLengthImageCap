@@ -73,6 +73,7 @@ class DecoderRNN(BaseRNN):
         super(DecoderRNN, self).__init__(vocab_size, max_len, hidden_size,
                                          input_dropout_p, dropout_p,
                                          n_layers, rnn_cell)
+
         self.beamSearchMode = beamSearchMode
         self.bidirectional_encoder = bidirectional
         self.rnn = self.rnn_cell(embedding_size, hidden_size, n_layers, batch_first=True, dropout=dropout_p)
@@ -117,15 +118,17 @@ class DecoderRNN(BaseRNN):
             output, attn = self.attention(output, encoder_outputs)
 
         logits = self.out(output.contiguous().view(-1, self.hidden_size))
-        # if output_size == 1 and (prev_maxes is not None):
-        #     for i in range(len(prev_maxes)):
-        #         logits.scatter_(1,prev_maxes[i],1e-18)
+        if output_size == 1 and (prev_maxes is not None):
+
+            for i in range(len(prev_maxes)):
+
+                logits.scatter_(1,prev_maxes[i],1e-18)
             
 
         predicted_softmax = function(logits, dim=1).view(batch_size, output_size, -1)
         return predicted_softmax, hidden, attn
 
-    def forward(self, inputs=None, encoder_hidden=None, encoder_outputs=None,
+    def forward(self, inputs=None, beamStates=None, encoder_hidden=None, encoder_outputs=None,
                     function=F.softmax, teacher_forcing_ratio=0, max_len=15, semi_sup=False):
         self.max_length = max_len
         ret_dict = dict()
@@ -141,13 +144,9 @@ class DecoderRNN(BaseRNN):
         decoder_outputs = []
         sequence_symbols = []
         lengths = np.array([max_length] * batch_size)
-
-        beamStates = {}
-        beamStates['probVec'] = [[]] # sentence len list
-        beamStates['hiddens'] = [[decoder_hidden]] # seq len, topk, batch
-        beamStates['topkInds'] = [[[0, self.sos_id]*batch_size]]
-        beamStates['newScores'] = [[[1]*batch_size]] # find minimum -log score
-
+        beamStatesLM = {}
+        beamStatesLM['probVec'] = [[]] # sentence len list
+        beamStatesLM['hiddens'] = [[decoder_hidden]]
         def decode(step, step_output, step_attn):
             decoder_outputs.append(step_output)
             if self.use_attention:
@@ -178,10 +177,8 @@ class DecoderRNN(BaseRNN):
                     step_attn = None
                 decode(di, step_output, step_attn)
         elif self.beamSearchMode:
-            decoder_input = inputs[:, 0].unsqueeze(1)
-
             for di in range(max_length):
-                bmHiddens = beamStates['hiddens'][di]
+                bmHiddens = beamStatesLM['hiddens'][di]
                 bmTopkInds = beamStates['topkInds'][di]
                 bmScores = beamStates['newScores'][di]
                 bmProbVec_nxt = []
@@ -200,24 +197,26 @@ class DecoderRNN(BaseRNN):
                 # extract topk from bmProbVec_nxt list
                 candScores = bmProbVec_nxt*bmScores # [K,B,V]
                 bmTopkInds_nxt, bmScores_nxt = getTopkIndsnScores(candScores)  # [K,B,2], [K,B]
-                beamStates['probVec'].append(bmProbVec_nxt)
-                beamStates['hiddens'].append(bmHiddens_nxt)
-                beamStates['topkInds'].append(bmTopkInds_nxt)
-                beamStates['newScores'].append(bmScores_nxt)
-
-        else: 
-            pass
+                beamStatesLM['probVec'].append(bmProbVec_nxt)
+                beamStatesLM['hiddens'].append(bmHiddens_nxt)
+                
 
 
-                # decoder_output, decoder_hidden, step_attn = self.forward_step(decoder_input, decoder_hidden, encoder_outputs,
-                                                                         # function=function, prev_maxes=sequence_symbols)
-                # step_output = decoder_output.squeeze(1)
-                # symbols = decode(di, step_output, step_attn)
-                # decoder_input = symbols if not self.use_prob_vector else step_output.unsqueeze(1)
+
+
+
+
+        else:
+            decoder_input = inputs[:, 0].unsqueeze(1)
+            for di in range(max_length):
+                decoder_output, decoder_hidden, step_attn = self.forward_step(decoder_input, decoder_hidden, encoder_outputs,
+                                                                         function=function, prev_maxes=sequence_symbols)
+                step_output = decoder_output.squeeze(1)
+                symbols = decode(di, step_output, step_attn)
+                decoder_input = symbols if not self.use_prob_vector else step_output.unsqueeze(1)
 
         ret_dict[DecoderRNN.KEY_SEQUENCE] = sequence_symbols
         ret_dict[DecoderRNN.KEY_LENGTH] = lengths.tolist()
-        ret_dict['beamStates'] = beamStates
 
         return decoder_outputs, decoder_hidden, ret_dict
 
