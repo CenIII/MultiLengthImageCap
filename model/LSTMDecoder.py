@@ -203,7 +203,7 @@ class DecoderRNN(BaseRNN):
                 bmTopkInds_nxt = []
                 bmScores_nxt = []
 
-                for k in range(len(bmHiddens)): # iterate over topk. for the 0 step, topk has 1 element. 
+                for k in range(len(bmScores)): # iterate over topk. for the 0 step, topk has 1 element. 
                     hidGathInds = bmTopkInds[k][:,0].unsqueeze(0).repeat(1,1024).view(1,batch_size,-1)
                     decoder_output, decoder_hidden, step_attn = self.forward_step(bmTopkInds[k][:,1].unsqueeze(1), (bmHiddens[:,0].gather(0,hidGathInds),bmCells[:,0].gather(0,hidGathInds)), encoder_outputs,function=function, prev_maxes=None)
                     bmProbVec_nxt.append(decoder_output)
