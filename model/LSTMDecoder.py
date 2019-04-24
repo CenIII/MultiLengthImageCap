@@ -199,13 +199,15 @@ class DecoderRNN(BaseRNN):
                     bmHiddens_nxt.append(decoder_hidden[0])
                     bmCells_nxt.append(decoder_hidden[1])
 
-                bmProbVec_nxt = torch.stack(bmProbVec_nxt,dim=0) #[K,1,B,V]
+                bmProbVec_nxt = torch.stack(bmProbVec_nxt,dim=0) #[K,B,1,V]
                 bmHiddens_nxt = torch.stack(bmHiddens_nxt,dim=0) #[K,1,B,H]
+                bmCells_nxt = torch.stack(bmCells_nxt,dim=0) #[K,1,B,H]
                 # extract topk from bmProbVec_nxt list
-                candScores = bmProbVec_nxt*bmScores # [K,B,V]
+                candScores = -torch.log(bmProbVec_nxt+1e-18)*bmScores # [K,B,V]
                 bmTopkInds_nxt, bmScores_nxt = getTopkIndsnScores(candScores)  # [K,B,2], [K,B]
                 beamStates['probVec'].append(bmProbVec_nxt)
                 beamStates['hiddens'].append(bmHiddens_nxt)
+                beamStates['cells'].append(bmCells_nxt)
                 beamStates['topkInds'].append(bmTopkInds_nxt)
                 beamStates['newScores'].append(bmScores_nxt)
 
