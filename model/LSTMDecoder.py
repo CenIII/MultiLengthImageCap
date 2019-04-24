@@ -146,7 +146,7 @@ class DecoderRNN(BaseRNN):
         beamStates['probVec'] = [[]] # sentence len list
         beamStates['hiddens'] = [torch.stack([decoder_hidden[0]],dim=0)] # seq len, topk, batch
         beamStates['cells'] = [torch.stack([decoder_hidden[1]],dim=0)] # seq len, topk, batch
-        beamStates['topkInds'] = [torch.LongTensor([[[0, self.sos_id]]*batch_size])]
+        beamStates['topkInds'] = [torch.LongTensor([[[0, self.sos_id]]*batch_size]).to(device)]
         beamStates['newScores'] = [[[1]*batch_size]] # find minimum -log score
 
         def decode(step, step_output, step_attn):
@@ -188,16 +188,19 @@ class DecoderRNN(BaseRNN):
                 bmScores = beamStates['newScores'][di]
                 bmProbVec_nxt = []
                 bmHiddens_nxt = []
+                bmCells_nxt = []
                 bmTopkInds_nxt = []
                 bmScores_nxt = []
 
                 for k in range(len(bmHiddens)): # iterate over topk. for the 0 step, topk has 1 element. 
-                    decoder_output, decoder_hidden, step_attn = self.forward_step(bmTopkInds[k][:,1], (bmHiddens.gather([bmTopkInds[k][:,0]]),bmCells.gather([bmTopkInds[k][:,0]])), encoder_outputs,function=function, prev_maxes=None)
+                    hidGathInds = bmTopkInds[k][:,0].unsqueeze(0).repeat(1,1024).view(1,batch_size,-1)
+                    decoder_output, decoder_hidden, step_attn = self.forward_step(bmTopkInds[k][:,1], (bmHiddens[:,0].gather(0,hidGathInds),bmCells[:,0].gather(0,hidGathInds)), encoder_outputs,function=function, prev_maxes=None)
                     bmProbVec_nxt.append(decoder_output)
-                    bmHiddens_nxt.append(decoder_hidden)
+                    bmHiddens_nxt.append(decoder_hidden[0])
+                    bmCells_nxt.append(decoder_hidden[1])
 
-                bmProbVec_nxt = torch.stack(bmProbVec_nxt,dim=0) #[K,B,V]
-                bmHiddens_nxt = torch.stack(bmHiddens_nxt,dim=0) #[K,B,H]
+                bmProbVec_nxt = torch.stack(bmProbVec_nxt,dim=0) #[K,1,B,V]
+                bmHiddens_nxt = torch.stack(bmHiddens_nxt,dim=0) #[K,1,B,H]
                 # extract topk from bmProbVec_nxt list
                 candScores = bmProbVec_nxt*bmScores # [K,B,V]
                 bmTopkInds_nxt, bmScores_nxt = getTopkIndsnScores(candScores)  # [K,B,2], [K,B]
