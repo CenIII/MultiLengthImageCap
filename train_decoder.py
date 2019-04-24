@@ -132,7 +132,7 @@ def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath, start
 		# todo: ...
 		# ['probVec', 'hiddens', 'cells', 'topkInds', 'newScores']
 		SeqLen = len(bs['newScores'])
-		pkInds = torch.zeros(14).to(device)
+		pkInds = torch.zeros(14,dtype=torch.int).to(device)
 		bestvseq = []
 		for i in reversed(range(SeqLen)):
 			# select out prev topkinds
