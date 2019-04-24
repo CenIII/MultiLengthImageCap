@@ -128,9 +128,24 @@ def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath, start
 		if itercnt % 100 == 0:
 			temp = np.maximum(temp_max * np.exp(-ANNEAL_RATE * itercnt), temp_min)
 		return temp
-	def getBestProbVecSeq(beamStates):
+	def getBestProbVecSeq(bs):
 		# todo: ...
+		# ['probVec', 'hiddens', 'cells', 'topkInds', 'newScores']
+		SeqLen = len(bs['newScores'])
+		pkInds = torch.zeros(14).to(device)
 		bestvseq = []
+		for i in reversed(range(SeqLen)):
+			# select out prev topkinds
+			pkInds_ex = pkInds.unsqueeze(0).unsqueeze(2).repeat(1,1,2)  
+			pkInds = bs['topkInds'][i].gather(0,pkInds_ex)
+			# select out and append cur prob vectors
+			gathInds = pkInds[None,:,None,None].repeat(1,1,1,10878)
+			probVec = bs['probVec'].gather(0,gathInds)
+			bestvseq.append(probVec)
+
+		bestvseq = bestvseq[::-1]
+		bestvseq = torch.stack(bestvseq,dim=1)  # B,S,V
+		
 		return bestvseq
 
 
