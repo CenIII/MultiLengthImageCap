@@ -318,6 +318,7 @@ class LoaderDec(_BaseDataLoader):
 
 
 	def collate_fn(self,batch): #loader,numImgs=8
+		print("collate_fn called")
 		numBoxes = 1#int(np.random.choice(4, 1)+2)
 		box_feats = []
 		box_global_feats=[]
