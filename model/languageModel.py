@@ -16,7 +16,10 @@ class LanguageModelLoss(nn.Module):
         self.model = self.loadCheckpoint(PATH, model)
 
     def loadCheckpoint(self, model_path, model):
-        pt = torch.load(model_path)
+        if device == torch.device('cpu'):
+            pt = torch.load(model_path, map_location='cpu')
+        else:
+            pt = torch.load(model_path)
 
         def subload(model, pt_dict):
             model_dict = model.state_dict()
@@ -41,7 +44,7 @@ class LanguageModelLoss(nn.Module):
 
     def criterion(self, decoder_out, lm_out, mask=None):
         N = decoder_out.shape[0]
-        _loss = torch.mul(torch.log(decoder_out), lm_out)
+        _loss = torch.mul(torch.log(lm_out), decoder_out)
         if mask is not None:
             _loss = torch.mul(_loss, mask)
         return -torch.sum(_loss)/N
@@ -66,6 +69,7 @@ class LanguageModelLoss(nn.Module):
         
         lm_output, _, _ = self.model(out_reshaped, teacher_forcing_ratio=1,max_len=max_len)
         lm_output_reshape = torch.cat([lm_output[i].unsqueeze(1) for i in range(len(lm_output))],1)
+            
         out_reshaped = out_reshaped[:,1:,:].contiguous().view(-1, vocab_size)
         lm_output_reshape = lm_output_reshape.contiguous().view(-1, vocab_size)
         
@@ -76,7 +80,7 @@ class LanguageModelLoss(nn.Module):
                 mask[i,:lengths[i]] += 1
         
         # mask = self.length_to_mask(lengths,dtype=torch.float)
-        mask = mask[:,1:].contiguous().view(-1, 1)
+            mask = mask[:,1:].contiguous().view(-1, 1)
         loss = self.criterion(out_reshaped,lm_output_reshape, mask)
 
         return loss

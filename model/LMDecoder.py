@@ -17,10 +17,9 @@ else:
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
-class DecoderRNN(BaseRNN):
+class LM_DecoderRNN(BaseRNN):
     r"""
     Provides functionality for decoding in a seq2seq framework, with an option for attention.
-
     Args:
         vocab_size (int): size of the vocabulary
         max_len (int): a maximum allowed length for the sequence to be processed
@@ -33,12 +32,10 @@ class DecoderRNN(BaseRNN):
         input_dropout_p (float, optional): dropout probability for the input sequence (default: 0)
         dropout_p (float, optional): dropout probability for the output sequence (default: 0)
         use_attention(bool, optional): flag indication whether to use attention mechanism or not (default: false)
-
     Attributes:
         KEY_ATTN_SCORE (str): key used to indicate attention weights in `ret_dict`
         KEY_LENGTH (str): key used to indicate a list representing lengths of output sequences in `ret_dict`
         KEY_SEQUENCE (str): key used to indicate a list of sequences in `ret_dict`
-
     Inputs: inputs, encoder_hidden, encoder_outputs, function, teacher_forcing_ratio
         - **inputs** (batch, seq_len, input_size): list of sequences, whose length is the batch size and within which
           each sequence is a list of token IDs.  It is used for teacher forcing when provided. (default `None`)
@@ -51,7 +48,6 @@ class DecoderRNN(BaseRNN):
         - **teacher_forcing_ratio** (float): The probability that teacher forcing will be used. A random number is
           drawn uniformly from 0-1 for every decoding token, and if the sample is smaller than the given value,
           teacher forcing would be used (default is 0).
-
     Outputs: decoder_outputs, decoder_hidden, ret_dict
         - **decoder_outputs** (seq_len, batch, vocab_size): list of tensors with size (batch_size, vocab_size) containing
           the outputs of the decoding function.
@@ -67,12 +63,12 @@ class DecoderRNN(BaseRNN):
     KEY_SEQUENCE = 'sequence'
 
     def __init__(self, vocab_size, max_len, hidden_size, embedding_size,
-                 sos_id, eos_id, embedding_parameter=None,
-                 n_layers=1, rnn_cell='lstm', bidirectional=False,
-                 input_dropout_p=0, dropout_p=0, use_attention=False, update_embedding=False, use_prob_vector=False, force_max_len=False):
-        super(DecoderRNN, self).__init__(vocab_size, max_len, hidden_size,
-                                         input_dropout_p, dropout_p,
-                                         n_layers, rnn_cell)
+            sos_id, eos_id, embedding = None,
+            n_layers=1, rnn_cell='lstm', bidirectional=False,
+            input_dropout_p=0, dropout_p=0, use_attention=False, update_embedding=False, use_prob_vector=False, force_max_len=False):
+        super(LM_DecoderRNN, self).__init__(vocab_size, max_len, hidden_size,
+                                            input_dropout_p, dropout_p,
+                                            n_layers, rnn_cell)
 
         self.bidirectional_encoder = bidirectional
         self.rnn = self.rnn_cell(embedding_size, hidden_size, n_layers, batch_first=True, dropout=dropout_p)
@@ -87,28 +83,33 @@ class DecoderRNN(BaseRNN):
 
         self.init_input = None
 
-        if use_prob_vector:
-            self.embedding = nn.Linear(vocab_size,embedding_size, bias=False)
+        self.embedding = nn.Embedding(vocab_size, embedding_size)
 
-        else:
-            self.embedding = nn.Embedding(vocab_size,embedding_size)
-        self.use_prob_vector = use_prob_vector
-        if embedding_parameter is not None:
-            embedding_parameter = torch.FloatTensor(embedding_parameter).to(device)
-            if use_prob_vector:
-                embedding_parameter = embedding_parameter.t()
-            self.embedding.weight = nn.Parameter(embedding_parameter)
+        self.sub_embedding = nn.Linear(vocab_size, embedding_size, bias=False)
+        if embedding is not None:
+            embedding = torch.FloatTensor(embedding).to(device)
+            self.embedding.weight = nn.Parameter(embedding)
+            self.sub_embedding.weight = nn.Parameter(torch.transpose(embedding,0,1))
+
+        
+
         self.embedding.weight.requires_grad = update_embedding
+        self.sub_embedding.weight.requires_grad = update_embedding
 
+        
         if use_attention:
             self.attention = Attention(self.hidden_size)
 
         self.out = nn.Linear(self.hidden_size, self.output_size)
 
     def forward_step(self, input_var, hidden, encoder_outputs, function):
+        
         batch_size = input_var.size(0)
         output_size = input_var.size(1)
-        embedded = self.embedding(input_var)
+        if len(input_var.shape)==2:
+            embedded = self.embedding(input_var)
+        else:
+            embedded = self.sub_embedding(input_var)
         embedded = self.input_dropout(embedded)
 
         output, hidden = self.rnn(embedded, hidden)
@@ -121,11 +122,11 @@ class DecoderRNN(BaseRNN):
         return predicted_softmax, hidden, attn
 
     def forward(self, inputs=None, encoder_hidden=None, encoder_outputs=None,
-                    function=F.softmax, teacher_forcing_ratio=0, max_len=15):
-        self.max_length = max_len
+                    function=F.log_softmax, teacher_forcing_ratio=0, max_len=15):
+        self.max_len = max_len
         ret_dict = dict()
         if self.use_attention:
-            ret_dict[DecoderRNN.KEY_ATTN_SCORE] = list()
+            ret_dict[LM_DecoderRNN.KEY_ATTN_SCORE] = list()
 
         inputs, batch_size, max_length = self._validate_args(inputs, encoder_hidden, encoder_outputs,
                                                              function, teacher_forcing_ratio)
@@ -140,13 +141,13 @@ class DecoderRNN(BaseRNN):
         def decode(step, step_output, step_attn):
             decoder_outputs.append(step_output)
             if self.use_attention:
-                ret_dict[DecoderRNN.KEY_ATTN_SCORE].append(step_attn)
-            symbols = decoder_outputs[-1].topk(2)[1][0][1].unsqueeze(0).unsqueeze(0)
+                ret_dict[LM_DecoderRNN.KEY_ATTN_SCORE].append(step_attn)
+            symbols = decoder_outputs[-1].topk(1)[1]
             sequence_symbols.append(symbols)
 
             eos_batches = symbols.data.eq(self.eos_id)
             if (eos_batches.dim() > 0) and (not self.force_max_len):
-                eos_batches = eos_batches.cpu().view(-1).numpy()       
+                eos_batches = eos_batches.cpu().view(-1).numpy()
                 update_idx = ((lengths > step) & eos_batches) != 0
                 lengths[update_idx] = len(sequence_symbols)
             return symbols
@@ -174,8 +175,8 @@ class DecoderRNN(BaseRNN):
                 symbols = decode(di, step_output, step_attn)
                 decoder_input = symbols if not self.use_prob_vector else step_output.unsqueeze(1)
 
-        ret_dict[DecoderRNN.KEY_SEQUENCE] = sequence_symbols
-        ret_dict[DecoderRNN.KEY_LENGTH] = lengths.tolist()
+        ret_dict[LM_DecoderRNN.KEY_SEQUENCE] = sequence_symbols
+        ret_dict[LM_DecoderRNN.KEY_LENGTH] = lengths.tolist()
 
         return decoder_outputs, decoder_hidden, ret_dict
 
@@ -218,15 +219,11 @@ class DecoderRNN(BaseRNN):
         if inputs is None:
             if teacher_forcing_ratio > 0:
                 raise ValueError("Teacher forcing has to be disabled (set 0) when no inputs is provided.")
-            if not self.use_prob_vector:
-                inputs = torch.LongTensor([self.sos_id] * batch_size).view(batch_size, 1)
-            else:
-                inputs = torch.zeros([batch_size, self.output_size],dtype=torch.float).scatter_(1,torch.LongTensor([[self.sos_id]]*batch_size),1.).unsqueeze(1)
-
+            inputs = torch.LongTensor([self.sos_id] * batch_size).view(batch_size, 1)
             if torch.cuda.is_available():
                 inputs = inputs.to(device)
             max_length = self.max_length
         else:
             max_length = inputs.size(1) - 1 # minus the start of sequence symbol
 
-        return inputs, batch_size, max_length
+        return inputs, batch_size, max_length   

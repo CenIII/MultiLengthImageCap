@@ -5,7 +5,6 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import pickle
-import torch.nn.functional as F
 
 import sys
 import json
@@ -24,7 +23,7 @@ def train_LM(lmloader, model, optimizer, criterion, pad_id, max_epoch, max_len):
             if torch.cuda.is_available():
                 input_sentences = input_sentences.cuda()
             
-            decoder_output, _, _ = model(input_sentences, teacher_forcing_ratio=1, function=F.log_softmax, max_len=max_len)
+            decoder_output, _, _ = model(input_sentences, teacher_forcing_ratio=1-epoch/max_epoch, max_len=max_len)
             decoder_output_reshaped = torch.cat([decoder_output[i].unsqueeze(1) for i in range(len(decoder_output))],1)
             decoder_output = None
             vocab_size = decoder_output_reshaped.shape[2]
@@ -57,10 +56,7 @@ def sampleSentence(model, lmloader, rev_vocab):
         print(' '.join(sentence))
 
 def loadCheckpoint(PATH, model):
-    if torch.cuda.is_available():
-        model.load_state_dict(torch.load(PATH))
-    else:
-        model.load_state_dict(torch.load(PATH,map_location='cpu'))
+    model.load_state_dict(torch.load(PATH, map_location='cpu'))
     model.eval()
     return model
 
@@ -74,19 +70,6 @@ def loadData(PATH):
         for sentence in s:
             sentences.append(words_preprocess(sentence))
     return sentences
-
-def loadCoco(PATH):
-    with open(PATH, 'r') as f:
-        data = json.load(f)
-    
-    sentences = []
-    for d in data['annotations']:
-        s = d['caption'].strip()
-        sentences.append(words_preprocess(s))
-    
-    return sentences
-
-
 
 def words_preprocess(phrase):
   """ preprocess a sentence: lowercase, clean up weird chars, remove punctuation """
@@ -111,17 +94,14 @@ def main():
 
     with open('VocabData.pkl','rb') as f:
         VocabData = pickle.load(f)
-    with open('FullImageCaps.pkl','rb') as f:
-        FullImageCaps = pickle.load(f)
-    # FullImageCaps_sub = loadData("full_image_descriptions.json")
-    coco = loadCoco('captions_train2017.json')
-
-    data = FullImageCaps + coco
-    print(len(data)/128)
+    # with open('FullImageCaps.pkl','rb') as f:
+    #     FullImageCaps = pickle.load(f)
+    FullImageCaps = loadData("full_image_descriptions.json")
+    
     recovery = sys.argv[2]
     mode = sys.argv[1]
 
-    lmdata = LMDataset(VocabData, data)
+    lmdata = LMDataset(VocabData, FullImageCaps)
     lmloader = lmdata.getLoader(batchSize=128,shuffle=True)
     testloader = lmdata.getLoader(batchSize=1,shuffle=False)
     embedding = torch.Tensor(lmdata.embedding)
@@ -129,7 +109,7 @@ def main():
     max_len = 100
     hidden_size = 1024
     embedding_size = 300
-    max_epoch = 10
+    max_epoch = 30
     sos_id = lmdata.sos_id
     eos_id = lmdata.eos_id
     pad_id = lmdata.pad_id
@@ -162,13 +142,13 @@ def main():
     strange_sentence = torch.cat([they, are, are, are, are, are], 0).unsqueeze(0)
     regular_sentence = torch.cat([they, are, students, _from, that, school], 0).unsqueeze(0)
 
-    PATH = 'LMcheckpoint(1)'
+    PATH = 'LMcheckpoint_tf_probvector'
 
     
-    model = DecoderRNN(vocab_size, max_len, hidden_size, embedding_size, sos_id, eos_id, embedding_parameter=embedding, rnn_cell='lstm')
+    model = LM_DecoderRNN(vocab_size, max_len, hidden_size, embedding_size, sos_id, eos_id, embedding=embedding, rnn_cell='lstm', use_prob_vector=True)
     if recovery=='1':
         model = loadCheckpoint(PATH, model)
-    optimizer = optim.Adam(model.parameters(), lr=0.0002)
+    optimizer = optim.Adam(model.parameters(), lr=0.003)
     criterion = nn.NLLLoss(ignore_index=pad_id)
     if torch.cuda.is_available():
         model = model.cuda()
