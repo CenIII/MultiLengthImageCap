@@ -211,7 +211,7 @@ if __name__ == '__main__':
 		VocabData = pickle.load(f)
 
 	# load linear model, transform feature tensor to semantic space
-	linNet = LinearModel(hiddenSize=4096)
+	linNet = LinearModel()
 
 	sos_id = VocabData['word_dict']['<START>']
 	eos_id = VocabData['word_dict']['<END>']
