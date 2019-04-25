@@ -254,12 +254,12 @@ if __name__ == '__main__':
 	if args.evaluate_mode:			# evaluation mode
 		loader = LoaderEnc(mode='test')
 		linNet,lstmEnc = reloadModel(args.model_path,linNet,lstmEnc)
-		eval(loader,linNet,lstmEnc,crit, args.recall, args.file_prefix)
+		eval(loader,linNet,lstmEnc,crit, args.recall, args.file_prefix, args.model)
 	else:							# train mode
 		optimizer = torch.optim.Adam(list(filter(lambda p: p.requires_grad, lstmEnc.parameters()))+list(linNet.parameters()), 0.0001)
 		dataset = LoaderEnc()
 		loader = DataLoader(dataset,batch_size=args.batch_imgs, shuffle=False, num_workers=2, collate_fn=dataset.collate_fn)
-		train(loader,linNet,lstmEnc,crit,optimizer,args.save_path, args.model)
+		train(loader,linNet,lstmEnc,crit,optimizer, args.save_pathx)
 
 
 
