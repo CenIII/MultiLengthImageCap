@@ -146,8 +146,8 @@ class DecoderRNN(BaseRNN):
         lengths = np.array([max_length] * batch_size)
         beamStatesLM = {}
         beamStatesLM['probVec'] = [[]] # sentence len list
-        beamStatesLM['hiddens'] = [torch.stack([decoder_hidden[0]],dim=0)] # seq len, topk, batch
-        beamStatesLM['cells'] = [torch.stack([decoder_hidden[1]],dim=0)] # seq len, topk, batch
+        beamStatesLM['hiddens'] = [beamStates['cells'][0].clone()] # seq len, topk, batch
+        beamStatesLM['cells'] = [beamStates['cells'][0].clone()] # seq len, topk, batch
 
         def decode(step, step_output, step_attn):
             decoder_outputs.append(step_output)
