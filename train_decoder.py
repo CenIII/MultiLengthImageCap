@@ -89,6 +89,8 @@ def makeInp(*inps):
 
 
 def evaluate(loader, lstmDec, linNet, VocabData):
+	Index2Word = dict([val,key] for key,val in VocabData['word_dict'].items()) # dictionary from index to word
+	 [[Index2Word[i]  for i in s] for s in box_gts]
 	# if torch.cuda.is_available():
 	lstmDec = lstmDec.to(device).eval()
 	linNet = linNet.to(device).eval()  # nn.DataParallel(linNet,device_ids=[0, 1]).to(device)
@@ -116,7 +118,7 @@ def evaluate(loader, lstmDec, linNet, VocabData):
 
 			# step 1: load data
 			batchdata = next(ld)
-			box_feats, box_global_feats, numBoxes = makeInp(*batchdata)  # box_feats: (numImage,numBoxes,512,7,7) box_global_feats: list, numImage [(512,34,56)]
+			box_feats, box_global_feats, numBoxes, box_captions_gt = makeInp(*batchdata)  # box_feats: (numImage,numBoxes,512,7,7) box_global_feats: list, numImage [(512,34,56)]
 			
 			# step 2: data transform by linNet
 			box_feat, global_hidden = linNet(box_feats, box_global_feats)
@@ -272,13 +274,11 @@ if __name__ == '__main__':
 
 
 	if args.evaluate_mode:  # evaluation mode
-		if args.cont_model_path == None:
-			assert(0)
 		linNet,lstmDec = reloadDec(args.cont_model_path,linNet,lstmDec)
 		dataset = LoaderDec()
 		loader = DataLoader(dataset, batch_size=args.batch_imgs, shuffle=False, num_workers=2,
 							collate_fn=dataset.collate_fn)
-		evaluate(loader, lstmDec, linNet, VocabData['word_dict'])
+		evaluate(loader, lstmDec, linNet, VocabData)
 
 	else:  # train mode
 		if args.cont_model_path is not None:

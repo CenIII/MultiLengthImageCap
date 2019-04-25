@@ -307,20 +307,24 @@ class LoaderDec(_BaseDataLoader):
 		ret['box_scores'] = data['box_scores'][filtInds]
 		ret['box_feats'] = data['box_feats'][filtInds]
 		ret['boxes_gt'] = data['boxes_gt'][filtInds]
+		ret['box_captions_gt'] = data['box_captions_gt'][filtInds]
 		ret['glob_feat'] = data['glob_feat']
+		if 'glob_caption_gt' in data:
+			ret['glob_caption_gt'] = data['glob_caption_gt']
 
 		sampledInds = self.randomSample(ret['boxes_gt'])
 		ret['box_scores'] = ret['box_scores'][sampledInds]
 		ret['box_feats'] = ret['box_feats'][sampledInds]
 		ret['boxes_gt'] = ret['boxes_gt'][sampledInds]
+		ret['box_captions_gt'] = ret['box_captions_gt'][sampledInds]
 
 		return ret, itr, numiters
 
 
 	def collate_fn(self,batch): #loader,numImgs=8
-		print("collate_fn called")
 		numBoxes = 1#int(np.random.choice(4, 1)+2)
 		box_feats = []
+		box_captions_gt = []
 		box_global_feats=[]
 		numImgs = len(batch)
 		for i in range(numImgs):
@@ -329,14 +333,16 @@ class LoaderDec(_BaseDataLoader):
 			# print('data box_feats shape: '+str(data['box_feats'].shape))
 			# print(data['box_feats'][:(numSps-numSps%numBoxes)].shape)
 			box_feats.append(torch.tensor(data['box_feats'][:(numSps-numSps%numBoxes)]).view(-1,numBoxes,D,H,W))
+			box_captions_gt.append(torch.tensor(data['box_captions_gt']))
 			box_global_feats += [torch.tensor(data['glob_feat'])]*len(box_feats[-1])
 		box_feats = torch.cat(box_feats,dim=0)
+		box_captions_gt = torch.cat(box_captions_gt, dim=0)
 
 		# box_global_feats = torch.cat(box_global_feats)
 		# _,B,C = box_global_feats.shape
 		# box_global_feats=box_global_feats.reshape(numImgs,A,B,C )
 
-		return box_feats, box_global_feats, numBoxes
+		return box_feats, box_global_feats, numBoxes, box_captions_gt
 
 
 	def __len__(self):
