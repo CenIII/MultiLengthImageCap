@@ -16,7 +16,7 @@ class _BaseDataLoader(Dataset):
 		super(_BaseDataLoader, self).__init__()
 		# self.pipeIndex = 0
 		# save pick_confirm for all pip indices
-		self.dataPipePath = './densecap/data_pipeline/'
+		self.dataPipePath = './densecap/data_pipeline/train01'
 		self.pipeLen = 60
 
 	# def updatePipeIndex(self):
