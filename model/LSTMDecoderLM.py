@@ -237,7 +237,7 @@ class DecoderRNN(BaseRNN):
 
         ret_dict[DecoderRNN.KEY_SEQUENCE] = sequence_symbols
         ret_dict[DecoderRNN.KEY_LENGTH] = lengths.tolist()
-
+        ret_dict['beamStates'] = beamStatesLM
         return decoder_outputs, decoder_hidden, ret_dict
 
     def _init_state(self, encoder_hidden):
