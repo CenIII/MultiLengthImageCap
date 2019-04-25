@@ -119,7 +119,7 @@ def evaluate(loader, lstmDec, linNet, VocabData):
 			batchdata = next(ld)
 			box_feats, box_global_feats, numBoxes, box_captions_gt = makeInp(*batchdata)  # box_feats: (numImage,numBoxes,512,7,7) box_global_feats: list, numImage [(512,34,56)]
 
-			references = [" ".join([[Index2Word[i]  for i in s if i != '<PAD>'] for s in box_captions_gt.data.cpu().numpy()])]
+			references = [[" ".join([Index2Word[i]  for i in s if i != '<PAD>']) for s in box_captions_gt.data.cpu().numpy()]]
 
 			# step 2: data transform by linNet
 			box_feat, global_hidden = linNet(box_feats, box_global_feats)
