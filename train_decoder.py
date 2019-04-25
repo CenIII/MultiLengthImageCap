@@ -111,15 +111,15 @@ def evaluate(loader, lstmDec, linNet, VocabData):
 		return str(np.round(ts.data.cpu().numpy(), 3))
 	
 	with torch.no_grad(): # evaluate mode
-		references = [["I am superman", "cat"]]
-		hypothesis = ["superman is me", "dog"]
+		references = [[]]
+		hypothesis = []
 		for i in qdar:
 
 			# step 1: load data
 			batchdata = next(ld)
 			box_feats, box_global_feats, numBoxes, box_captions_gt = makeInp(*batchdata)  # box_feats: (numImage,numBoxes,512,7,7) box_global_feats: list, numImage [(512,34,56)]
 
-			references = [[" ".join([Index2Word[i] for i in s if Index2Word[i] != '<PAD>']) for s in box_captions_gt.data.cpu().numpy()]]
+			references[0] += [" ".join([Index2Word[i] for i in s if Index2Word[i] != '<PAD>']) for s in box_captions_gt.data.cpu().numpy()] #create batch of reference based on indices
 
 			# step 2: data transform by linNet
 			box_feat, global_hidden = linNet(box_feats, box_global_feats)
@@ -135,7 +135,7 @@ def evaluate(loader, lstmDec, linNet, VocabData):
 
 
 			word_indices = decoder_outputs.argmax(2).data.cpu().numpy() #batch_size x seq_len
-			hypothesis = [" ".join([Index2Word[i] for i in s if Index2Word[i] != '<PAD>']) for s in word_indices]
+			hypothesis += [" ".join([Index2Word[i] for i in s if Index2Word[i] != '<PAD>']) for s in word_indices] #create batch of hypothesis based on indices
 
 			print(nlgeval.compute_metrics(references, hypothesis))
 			print("hello world")
