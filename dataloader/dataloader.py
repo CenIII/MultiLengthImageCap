@@ -333,10 +333,9 @@ class LoaderDec(_BaseDataLoader):
 			# print('data box_feats shape: '+str(data['box_feats'].shape))
 			# print(data['box_feats'][:(numSps-numSps%numBoxes)].shape)
 			box_feats.append(torch.tensor(data['box_feats'][:(numSps-numSps%numBoxes)]).view(-1,numBoxes,D,H,W))
-			box_captions_gt.append(torch.tensor(data['box_captions_gt']))
+			box_captions_gt.append(data['box_captions_gt'])
 			box_global_feats += [torch.tensor(data['glob_feat'])]*len(box_feats[-1])
 		box_feats = torch.cat(box_feats,dim=0)
-		box_captions_gt = torch.cat(box_captions_gt, dim=0)
 
 		# box_global_feats = torch.cat(box_global_feats)
 		# _,B,C = box_global_feats.shape
