@@ -14,6 +14,7 @@ import sys
 import argparse
 import os
 from torch.utils.data import DataLoader
+from nlgeval import NLGEval
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
@@ -87,13 +88,11 @@ def makeInp(*inps):
 	return ret
 
 
-def evaluate(loader, lstmDec, linNet, lstmEnc, LM, crit):
+def evaluate(loader, lstmDec, linNet, VocabData):
 	# if torch.cuda.is_available():
 	lstmDec = lstmDec.to(device).eval()
 	linNet = linNet.to(device).eval()  # nn.DataParallel(linNet,device_ids=[0, 1]).to(device)
-	lstmEnc = lstmEnc.to(device).eval()  # nn.DataParallel(lstmEnc,device_ids=[0, 1]).to(device)
-	LM = LM.to(device).eval()
-	crit = crit.to(device).eval()
+	nlgeval = NLGEval()
 
 	ld = iter(loader)
 	numiters = len(ld)
@@ -111,7 +110,8 @@ def evaluate(loader, lstmDec, linNet, lstmEnc, LM, crit):
 		return str(np.round(ts.data.cpu().numpy(), 3))
 	
 	with torch.no_grad(): # evaluate mode
-		
+		references = [["I am superman","Superman is me"], ["dog", "cat"]]
+		hypothesis = ["superman is me", "dog"]
 		for i in qdar:
 
 			# step 1: load data
@@ -129,24 +129,10 @@ def evaluate(loader, lstmDec, linNet, lstmEnc, LM, crit):
 				# Loss 1: Similarity loss
 			lengths = torch.LongTensor(ret_dict['length']).to(device)
 			decoder_outputs = torch.stack([decoder_outputs[i] for i in range(len(decoder_outputs))], 1) # decoder_outputs [8, 15, 10878]
-			encoder_outputs = lstmEnc(decoder_outputs, use_prob_vector=True, input_lengths=lengths, max_len=int(5*numBoxes))
-			loss1, loss_reg = crit(box_feat, encoder_outputs, lengths) #box_feat [8, 5, 4096, 3, 3], encoder_outputs [8, 15, 4096]
-				# Loss 2: LM loss
-			loss2 =  LM(decoder_outputs, lengths, max_len=int(5*numBoxes))
-
-
-			loss = loss1+loss_reg+loss2
-
-
-			loss_itr_list.append(loss.data.cpu().numpy())
-
-			lstmEnc.zero_grad()
-			LM.zero_grad()
-			optimizer.zero_grad()
-
-
-			loss.backward()
-			optimizer.step()
+			
+			word_indices = decoder_outputs.argmax(2).data.cpu().numpy() #batch_size x seq_len
+			print(nlgeval.compute_metrics(references, hypothesis))
+			print("hello world")
 
 
 
@@ -292,7 +278,7 @@ if __name__ == '__main__':
 		dataset = LoaderDec()
 		loader = DataLoader(dataset, batch_size=args.batch_imgs, shuffle=False, num_workers=2,
 							collate_fn=dataset.collate_fn)
-		evaluate(loader, lstmDec, linNet, lstmEnc, LM, crit)
+		evaluate(loader, lstmDec, linNet, VocabData['word_dict'])
 
 	else:  # train mode
 		if args.cont_model_path is not None:
