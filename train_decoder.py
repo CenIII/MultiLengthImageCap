@@ -132,8 +132,11 @@ def evaluate(loader, lstmDec, linNet, VocabData):
 				# Loss 1: Similarity loss
 			lengths = torch.LongTensor(ret_dict['length']).to(device)
 			decoder_outputs = torch.stack([decoder_outputs[i] for i in range(len(decoder_outputs))], 1) # decoder_outputs [8, 15, 10878]
-			
+
+
 			word_indices = decoder_outputs.argmax(2).data.cpu().numpy() #batch_size x seq_len
+			hypothesis = [" ".join([Index2Word[i] for i in s if Index2Word[i] != '<PAD>']) for s in word_indices]
+
 			print(nlgeval.compute_metrics(references, hypothesis))
 			print("hello world")
 
