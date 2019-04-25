@@ -137,7 +137,7 @@ def train(loader,linNet,lstmEnc,crit,optimizer,savepath):
 		saveStateDict(linNet,lstmEnc)
 		epoch += 1
 
-def eval(loader,linNet,lstmEnc,crit, recall_k, file_prefix):
+def eval(loader,linNet,lstmEnc,crit, recall_k, file_prefix, model_name):
 	# for now evaluation means to do similarity matrix check.
 	linNet = linNet.to(device)
 	lstmEnc = lstmEnc.to(device)
@@ -188,7 +188,7 @@ def eval(loader,linNet,lstmEnc,crit, recall_k, file_prefix):
 	# 	matrix_lst.append(Similarity_matrix)
 	# Similarity_matrix = np.mean(matrix_lst, axis=0)
 	# draw heatmap for similarity loss
-	np.save("{0}_simi_mat.npy".format(file_prefix), Similarity_matrix)
+	np.save("{0}_simi_mat_{1}.npy".format(file_prefix, model_name), Similarity_matrix)
 	# graph = sns.heatmap(Similarity_matrix)
 	# plt.savefig("heatmap.png")
 	Similarity_matrix = torch.from_numpy(Similarity_matrix)
@@ -228,6 +228,8 @@ def parseArgs():
 		default=1, type=int)
 	parser.add_argument('-f','--file_prefix',
 		default="train1")
+	parser.add_argument('-m','--model',
+		default="lstm")
 	args = parser.parse_args()
 	return args
 
@@ -257,7 +259,7 @@ if __name__ == '__main__':
 		optimizer = torch.optim.Adam(list(filter(lambda p: p.requires_grad, lstmEnc.parameters()))+list(linNet.parameters()), 0.0001)
 		dataset = LoaderEnc()
 		loader = DataLoader(dataset,batch_size=args.batch_imgs, shuffle=False, num_workers=2, collate_fn=dataset.collate_fn)
-		train(loader,linNet,lstmEnc,crit,optimizer,args.save_path)
+		train(loader,linNet,lstmEnc,crit,optimizer,args.save_path, args.model)
 
 
 
