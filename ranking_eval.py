@@ -13,6 +13,7 @@ import time
 import sys
 import argparse
 import os
+import json
 from torch.utils.data import DataLoader
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
@@ -136,7 +137,7 @@ def train(loader,linNet,lstmEnc,crit,optimizer,savepath):
 		saveStateDict(linNet,lstmEnc)
 		epoch += 1
 
-def eval(loader,linNet,lstmEnc,crit):
+def eval(loader,linNet,lstmEnc,crit, recall_k, file_prefix):
 	# for now evaluation means to do similarity matrix check.
 	linNet = linNet.to(device)
 	lstmEnc = lstmEnc.to(device)
@@ -187,18 +188,29 @@ def eval(loader,linNet,lstmEnc,crit):
 	# 	matrix_lst.append(Similarity_matrix)
 	# Similarity_matrix = np.mean(matrix_lst, axis=0)
 	# draw heatmap for similarity loss
-	np.save("similarity_mat.npy", Similarity_matrix)
-	graph = sns.heatmap(Similarity_matrix)
-	plt.savefig("heatmap.png")
+	np.save("{0}_simi_mat_{}.npy".format(file_prefix, recall_k), Similarity_matrix)
+	# graph = sns.heatmap(Similarity_matrix)
+	# plt.savefig("heatmap.png")
 	Similarity_matrix = torch.from_numpy(Similarity_matrix)
 	# Similarity_matrix = torch.cat(sm_lst, dim=0)
 
 	anotation_recall, med_score_anotate, search_recall, med_score_search =\
-	crit.image_text_alignment(Similarity_matrix, 4)
+	crit.image_text_alignment(Similarity_matrix, recall_k)
 	# crit.image_text_alignment(Similarity_matrix, 4)
+	res = {
+		"file_name": file_prefix,
+		"recall@k": recall_k,
+		"anotation_recall": anotation_recall,
+		"med_score_anotation": med_score_anotate,
+		"search_recall": search_recall,
+		"med_score_search": med_score_search
+	}
+	res = json.dumps(res) + "\n"
+	with open("ranking_result", "a") as f_in:
+		f_in.write(res)
 	print("anotation_recall", anotation_recall)
 	print("med_score_anotate", med_score_anotate)
-	print("search_recal", search_recall)
+	print("search_recall", search_recall)
 	print("med_score_search", med_score_search)
 
 def parseArgs():
@@ -212,6 +224,10 @@ def parseArgs():
 		default='./save/default/')
 	parser.add_argument('-b','--batch_imgs',
 		default=4, type=int)
+	parser.add_argument('-r','--recall',
+		default=1, type=int)
+	parser.add_argument('-f','--file_prefix',
+		default="train1")
 	args = parser.parse_args()
 	return args
 
@@ -236,7 +252,7 @@ if __name__ == '__main__':
 	if args.evaluate_mode:			# evaluation mode
 		loader = LoaderEnc(mode='test')
 		linNet,lstmEnc = reloadModel(args.model_path,linNet,lstmEnc)
-		eval(loader,linNet,lstmEnc,crit)
+		eval(loader,linNet,lstmEnc,crit, args.recall, args.file_prefix)
 	else:							# train mode
 		optimizer = torch.optim.Adam(list(filter(lambda p: p.requires_grad, lstmEnc.parameters()))+list(linNet.parameters()), 0.0001)
 		dataset = LoaderEnc()
