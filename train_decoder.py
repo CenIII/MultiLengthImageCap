@@ -192,7 +192,7 @@ def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath, start
 			loss2 =  LM(decoder_outputs, lengths, beamStates=ret_dict['beamStates'], max_len=int(5*numBoxes),verbose=(i%5==0 and i>0))
 
 
-			loss = loss1#+10.*loss_reg#+loss2
+			loss = loss1+loss2
 
 
 			loss_itr_list.append(loss.data.cpu().numpy())
@@ -205,7 +205,7 @@ def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath, start
 			loss.backward()
 			optimizer.step()
 
-			qdar.set_postfix(tau=str(tau),simiLoss=lstr(loss1))#lmLoss=lstr(loss2))
+			qdar.set_postfix(tau=str(tau),simiLoss=lstr(loss1),lmLoss=lstr(loss2))#lmLoss=lstr(loss2))
 			if i > 0 and i % 1000 == 0:
 				saveStateDict(linNet, lstmDec)
 				bsize,lens,vocab_size = decoder_outputs.shape
