@@ -318,7 +318,7 @@ class LoaderDec(_BaseDataLoader):
 
 
 	def collate_fn(self,batch): #loader,numImgs=8
-		numBoxes = 3#int(np.random.choice(4, 1)+2)
+		numBoxes = 1#int(np.random.choice(4, 1)+2)
 		box_feats = []
 		box_global_feats=[]
 		numImgs = len(batch)
@@ -351,7 +351,7 @@ class LoaderDemo(object):
 	"""docstring for LoaderDemo"""
 	def __init__(self):
 		super(LoaderDemo, self).__init__()
-		self.dataPipePath = './densecap/data_pipeline/'
+		self.dataPipePath = './densecap/data_pipeline/val01/'
 
 	def preprocessImage(self,image_path):
 		img = imread(image_path)
