@@ -64,11 +64,17 @@ class LanguageModelLoss(nn.Module):
 
 
     def criterion(self, decoder_out, lm_out, mask=None):
-        N = decoder_out.shape[0]
+        # N = decoder_out.shape[0]
+        decoder_out = torch.cat(decoder_out,dim=0)
+        K,B,_,V = decoder_out.shape
+        decoder_out = decoder_out.view(-1)
+        lm_out = torch.cat(lm_out,dim=0).view(-1)
+
         _loss = torch.mul(torch.log(lm_out), decoder_out)
+        
         if mask is not None:
             _loss = torch.mul(_loss, mask)
-        return -torch.sum(_loss)/N
+        return -torch.sum(_loss)/(K*B)
     # def length_to_mask(self, length, max_len=None, dtype=None):
     #     """length: B.
     #     return B x max_len.
@@ -100,25 +106,25 @@ class LanguageModelLoss(nn.Module):
         T = len(beamStates['probVec'])-1
         lm_output, _, ret_dict = self.model(inputs=None, beamStates=beamStates, max_len=max_len)
 
-        lm_output_reshape = torch.cat([lm_output[i].unsqueeze(1) for i in range(len(lm_output))],1)
-        out_reshaped = out_reshaped[:,1:,:].contiguous().view(-1, vocab_size)
-        lm_output_reshape = lm_output_reshape.contiguous().view(-1, vocab_size)
+        # lm_output_reshape = torch.cat([lm_output[i].unsqueeze(1) for i in range(len(lm_output))],1)
+        # out_reshaped = out_reshaped[:,1:,:].contiguous().view(-1, vocab_size)
+        # lm_output_reshape = lm_output_reshape.contiguous().view(-1, vocab_size)
         
-        mask = None
-        if lengths is not None:
-            mask = torch.zeros(N, T).to(device)
-            for i in range(len(lengths)):
-                mask[i,:lengths[i]] += 1
+        # mask = None
+        # if lengths is not None:
+        #     mask = torch.zeros(N, T).to(device)
+        #     for i in range(len(lengths)):
+        #         mask[i,:lengths[i]] += 1
         
-        # mask = self.length_to_mask(lengths,dtype=torch.float)
-        mask = mask[:,1:].contiguous().view(-1, 1)
+        # # mask = self.length_to_mask(lengths,dtype=torch.float)
+        # mask = mask[:,1:].contiguous().view(-1, 1)
 
         # decode outputs
-        if verbose:
-            print('lm outputs: '+str(self.probVec2Symbols(lm_output_reshape)))
-            print('dec outputs: '+str(self.probVec2Symbols(out_reshaped)))
+        # if verbose:
+        #     print('lm outputs: '+str(self.probVec2Symbols(lm_output_reshape)))
+        #     print('dec outputs: '+str(self.probVec2Symbols(out_reshaped)))
 
-        loss = self.criterion(out_reshaped,lm_output_reshape, mask)
+        loss = self.criterion(beamStates['probVec'][1:],ret_dict['beamStates']['probVec'][1:])#, mask)
 
         return loss
 
