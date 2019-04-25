@@ -90,7 +90,7 @@ def makeInp(*inps):
 
 def evaluate(loader, lstmDec, linNet, VocabData):
 	Index2Word = dict([val,key] for key,val in VocabData['word_dict'].items()) # dictionary from index to word
-	 [[Index2Word[i]  for i in s] for s in box_gts]
+	#[[Index2Word[i]  for i in s] for s in box_gts]
 	# if torch.cuda.is_available():
 	lstmDec = lstmDec.to(device).eval()
 	linNet = linNet.to(device).eval()  # nn.DataParallel(linNet,device_ids=[0, 1]).to(device)
