@@ -150,7 +150,7 @@ class DecoderRNN(BaseRNN):
         beamStates['topkInds'] = [torch.LongTensor([[[0, self.sos_id]]*batch_size]).to(device)]
         
         beamStates['newScores'] = [torch.tensor([[1]*batch_size],dtype=torch.float).to(device)] # find minimum -log score  [K,B]
-        bmPrevInds = [torch.LongTensor([[self.sos_id]*batch_size]).to(device)]
+        bmPrevInds = torch.LongTensor([[self.sos_id]*batch_size]).to(device)
 
         def decode(step, step_output, step_attn):
             decoder_outputs.append(step_output)
@@ -168,7 +168,7 @@ class DecoderRNN(BaseRNN):
         def getTopkIndsnScores(candScores,prevInds):
             tmp = candScores[:,:,0].permute(1,0,2).contiguous()
             # exclude prevInds
-
+            candScores = candScores.scatter_(3,prevInds[:,:,None,None],1) 
             B,K,V = tmp.shape
             zzz = torch.topk(tmp.view(B,-1),self.topk,dim=1,largest=False)
             bmScores_nxt = zzz[0].transpose(0,1) # B,K
