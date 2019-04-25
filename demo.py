@@ -44,7 +44,7 @@ def reloadModel(model_path, linNet, lstmEnc):
 		return model
 
 	linNet = subload(linNet, pt['linNet'])
-	lstmEnc = subload(lstmEnc, pt['lstmEnc'])
+	lstmEnc = subload(lstmEnc, pt['lstmDec'])
 	pt = None
 	for p in linNet.conv2.parameters():
 		p.requires_grad = False
