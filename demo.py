@@ -216,7 +216,7 @@ if __name__ == '__main__':
 	sos_id = VocabData['word_dict']['<START>']
 	eos_id = VocabData['word_dict']['<END>']
 
-	lstmDec = DecoderRNN(vocab_size=len(VocabData['word_dict']),max_len=15,sos_id=sos_id, eos_id=eos_id , embedding_size=300,hidden_size=4096,
+	lstmDec = DecoderRNN(vocab_size=len(VocabData['word_dict']),max_len=15,sos_id=sos_id, eos_id=eos_id , embedding_size=300,hidden_size=1024,
 						 embedding_parameter=VocabData['word_embs'], update_embedding=False ,use_attention=True)
 
 	# todo: reload lstmEnc
