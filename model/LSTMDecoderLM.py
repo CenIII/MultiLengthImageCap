@@ -168,7 +168,7 @@ class DecoderRNN(BaseRNN):
         def getTopkIndsnScores(candScores):
             tmp = candScores[:,:,0].permute(1,0,2).contiguous()
             B,K,V = tmp.shape
-            zzz = torch.topk(tmp.view(B,-1),self.topk,dim=1)
+            zzz = torch.topk(tmp.view(B,-1),self.topk,dim=1,largest=False)
             bmScores_nxt = zzz[0].transpose(0,1) # B,K
             inds = zzz[1].transpose(0,1)
             bmTopkInds_nxt = torch.stack([inds/V,inds%V],dim=2)
