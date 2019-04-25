@@ -34,7 +34,7 @@ def reloadModel(model_path,linNet,lstmEnc):
 		pretrained_dict = {}
 		for k, v in pt_dict.items():
 			if(k in model_dict):
-				pretrained_dict[k] = v if ('linear.weight' not in k) else v.transpose(1,0)
+				pretrained_dict[k] = v #if ('linear.weight' not in k) else v.transpose(1,0)
 		# 2. overwrite entries in the existing state dict
 		model_dict.update(pretrained_dict)
 		# 3. load the new state dict
@@ -187,7 +187,6 @@ def eval(loader,linNet,lstmEnc,crit):
 	# 	matrix_lst.append(Similarity_matrix)
 	# Similarity_matrix = np.mean(matrix_lst, axis=0)
 	# draw heatmap for similarity loss
-	# with open("similarity_mat.txt", "w") as f_out:
 	np.save("similarity_mat.npy", Similarity_matrix)
 	graph = sns.heatmap(Similarity_matrix)
 	plt.savefig("heatmap.png")
