@@ -110,7 +110,7 @@ def evaluate(loader, lstmDec, linNet, VocabData):
 		return str(np.round(ts.data.cpu().numpy(), 3))
 	
 	with torch.no_grad(): # evaluate mode
-		references = [["I am superman"], ["cat"]]
+		references = [["I am superman", "cat"]]
 		hypothesis = ["superman is me", "dog"]
 		for i in qdar:
 
