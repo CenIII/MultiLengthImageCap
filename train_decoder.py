@@ -101,7 +101,7 @@ def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath, start
 
 	temp_max = 0.8
 	temp_min = 0.1
-	ANNEAL_RATE = 0.00008
+	ANNEAL_RATE = 0.00004
 
 	def saveStateDict(linNet, lstmEnc):
 		models = {}
@@ -185,6 +185,7 @@ def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath, start
 			
 			# todo: get the most prob sequence of prob vec into lstmEnc
 			lstmEnc_inputs = getBestProbVecSeq(ret_dict['beamStates'])
+
 			encoder_outputs = lstmEnc(lstmEnc_inputs, use_prob_vector=True, input_lengths=lengths, max_len=int(5*numBoxes))
 			loss1, loss_reg = crit(box_feat, encoder_outputs, lengths) #box_feat [8, 5, 4096, 3, 3], encoder_outputs [8, 15, 4096]
 				# Loss 2: LM loss
@@ -208,8 +209,8 @@ def train(loader, lstmDec, linNet, lstmEnc, LM, crit, optimizer, savepath, start
 			qdar.set_postfix(tau=str(tau),simiLoss=lstr(loss1),lmLoss=lstr(loss2))#lmLoss=lstr(loss2))
 			if i > 0 and i % 1000 == 0:
 				saveStateDict(linNet, lstmDec)
-				bsize,lens,vocab_size = decoder_outputs.shape
-				outputDisplay = decoder_outputs.contiguous().view(-1, vocab_size)
+				bsize,lens,vocab_size = lstmEnc_inputs.shape
+				outputDisplay = lstmEnc_inputs.contiguous().view(-1, vocab_size)
 				wordsSeq = LM.probVec2Symbols(outputDisplay)
 				wordsSeq = [wordsSeq[j*lens:j*lens+lens] for j in range(bsize)]
 				logger.write('iter: '+str(i)+'\n'+str(wordsSeq)+'\n')
