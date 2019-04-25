@@ -57,13 +57,13 @@ class _BaseDataLoader(Dataset):
 		while True:
 			filename = glob.glob(data_file)
 			if len(filename)>=1:
-				if (not os.path.isfile(pick_confirm_file)) or mode=='test':
-					# pick_confirm file has been removed by lua loader. so this file is new. 
-					if (not os.path.isfile(writing_block_file)) and (not os.path.isfile(reading_block_file)):
-						# lua writing file finished.
-						if mode=='train':
-							os.mknod(reading_block_file)
-						break
+				#if (not os.path.isfile(pick_confirm_file)) or mode=='test':
+				# pick_confirm file has been removed by lua loader. so this file is new. 
+				if (not os.path.isfile(writing_block_file)) and (not os.path.isfile(reading_block_file)):
+					# lua writing file finished.
+					if mode=='train':
+						os.mknod(reading_block_file)
+					break
 		assert(len(filename)==1)
 		filename = filename[0]
 		# read iter and numiters
@@ -77,10 +77,10 @@ class _BaseDataLoader(Dataset):
 			data = reader.read_obj()
 
 		if mode=='train':
-			os.remove(filename)
+			#os.remove(filename)
 			os.remove(reading_block_file)
 			# place pick_confirm_$pipIndex to notify lua program
-			os.mknod(pick_confirm_file)
+			#os.mknod(pick_confirm_file)
 			
 
 		# update pInd
