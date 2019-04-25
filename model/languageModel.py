@@ -93,11 +93,13 @@ class LanguageModelLoss(nn.Module):
     def forward(self, outputs, lengths=None, beamStates=None, max_len=15, verbose=False):  # [8, 15, 10878]
         loss = 0
 
-        out_reshaped = outputs# torch.cat([outputs[i].unsqueeze(1) for i in range(len(outputs))],1)
-        N, T, vocab_size  = out_reshaped.shape
+        # out_reshaped = outputs# torch.cat([outputs[i].unsqueeze(1) for i in range(len(outputs))],1)
+        # N, T, vocab_size  = out_reshaped.shape
         # out_top1 = out_reshaped.topk(1)[1].squeeze()
-        lm_output, _, ret_dict = self.model(out_reshaped, beamStates=beamStates, max_len=max_len)
-        
+        K,N,_,V = beamStates['probVec'][2].shape
+        T = len(beamStates['probVec'])-1
+        lm_output, _, ret_dict = self.model(inputs=None, beamStates=beamStates, max_len=max_len)
+
         lm_output_reshape = torch.cat([lm_output[i].unsqueeze(1) for i in range(len(lm_output))],1)
         out_reshaped = out_reshaped[:,1:,:].contiguous().view(-1, vocab_size)
         lm_output_reshape = lm_output_reshape.contiguous().view(-1, vocab_size)
