@@ -165,13 +165,17 @@ class DecoderRNN(BaseRNN):
                 update_idx = ((lengths > step) & eos_batches) != 0
                 lengths[update_idx] = len(sequence_symbols)
             return symbols
-        def getTopkIndsnScores(candScores):
+        def getTopkIndsnScores(candScores,prevInds):
             tmp = candScores[:,:,0].permute(1,0,2).contiguous()
+            # exclude prevInds
+
             B,K,V = tmp.shape
             zzz = torch.topk(tmp.view(B,-1),self.topk,dim=1,largest=False)
             bmScores_nxt = zzz[0].transpose(0,1) # B,K
             inds = zzz[1].transpose(0,1)
             bmTopkInds_nxt = torch.stack([inds/V,inds%V],dim=2)
+            # add inds to prevInds
+            
             return bmTopkInds_nxt, bmScores_nxt
 
 
