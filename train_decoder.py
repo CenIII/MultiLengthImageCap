@@ -114,7 +114,7 @@ def evaluate(loader, lstmDec, linNet, VocabData):
 		references = [[]]
 		hypothesis = []
 		for i in qdar:
-
+			print(i)
 			# step 1: load data
 			batchdata = next(ld)
 			box_feats, box_global_feats, numBoxes, box_captions_gt = makeInp(*batchdata)  # box_feats: (numImage,numBoxes,512,7,7) box_global_feats: list, numImage [(512,34,56)]
