@@ -135,7 +135,7 @@ def evaluate(loader, lstmDec, linNet, VocabData):
 
 			word_indices = decoder_outputs.argmax(2).data.cpu().numpy() #batch_size x seq_len
 			hypothesis += [" ".join([Index2Word[i] for i in s if Index2Word[i] != '<PAD>']) for s in word_indices] #create batch of hypothesis based on indices
-			if i == 9:
+			if i == 10:
 				break
 		print(nlgeval.compute_metrics(references, hypothesis))
 
