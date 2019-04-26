@@ -122,10 +122,10 @@ def evaluate(loader, lstmDec, linNet, VocabData):
 			references[0] += [" ".join([Index2Word[i] for i in s if Index2Word[i] != '<PAD>']) for s in box_captions_gt.data.cpu().numpy()] #create batch of reference based on indices
 
 			# step 2: data transform by linNet
-			box_feat, global_hidden = linNet(box_feats, box_global_feats)
+			box_feat,box_feat_dec, global_hidden = linNet(box_feats, box_global_feats)
 			
 			# step 3: decode to captions by lstmDec
-			encoder_hidden, encoder_outputs = linOut2DecIn(global_hidden,box_feat)
+			encoder_hidden, encoder_outputs = linOut2DecIn(global_hidden,box_feat_dec)
 			decoder_outputs, decoder_hidden, ret_dict = lstmDec(encoder_hidden=encoder_hidden, encoder_outputs=encoder_outputs, max_len=int(5*numBoxes)) # box_feat [8, 4, 4096, 3, 3]
 			
 			# step 4: calculate loss
@@ -254,13 +254,13 @@ if __name__ == '__main__':
 		VocabData = pickle.load(f)
 
 	# load linear model, transform feature tensor to semantic space
-	linNet = LinearModel(hiddenSize=4096)
+	linNet = LinearModel()
 
 	sos_id = VocabData['word_dict']['<START>']
 	eos_id = VocabData['word_dict']['<END>']
 	# load LSTM encoder
 
-	lstmDec = DecoderRNN(vocab_size=len(VocabData['word_dict']),max_len=15,sos_id=sos_id, eos_id=eos_id , embedding_size=300,hidden_size=4096,
+	lstmDec = DecoderRNN(vocab_size=len(VocabData['word_dict']),max_len=15,sos_id=sos_id, eos_id=eos_id , embedding_size=300,hidden_size=1024,
 						 embedding_parameter=VocabData['word_embs'], update_embedding=False ,use_attention=True,use_prob_vector=True)
 
 	lstmEnc = EncoderRNN(len(VocabData['word_dict']), max_len=15, hidden_size=4096, embedding_size=300,
