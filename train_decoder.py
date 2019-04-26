@@ -114,7 +114,6 @@ def evaluate(loader, lstmDec, linNet, VocabData):
 		references = [[]]
 		hypothesis = []
 		for i in qdar:
-			print(i)
 			# step 1: load data
 			batchdata = next(ld)
 			box_feats, box_global_feats, numBoxes, box_captions_gt = makeInp(*batchdata)  # box_feats: (numImage,numBoxes,512,7,7) box_global_feats: list, numImage [(512,34,56)]
@@ -136,7 +135,8 @@ def evaluate(loader, lstmDec, linNet, VocabData):
 
 			word_indices = decoder_outputs.argmax(2).data.cpu().numpy() #batch_size x seq_len
 			hypothesis += [" ".join([Index2Word[i] for i in s if Index2Word[i] != '<PAD>']) for s in word_indices] #create batch of hypothesis based on indices
-
+			if i == 10:
+				break
 		print(nlgeval.compute_metrics(references, hypothesis))
 
 
