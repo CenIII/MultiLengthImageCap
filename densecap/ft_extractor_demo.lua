@@ -49,7 +49,7 @@ opt.vocab_size = loader:getVocabSize()
 opt.idx_to_token = loader.info.idx_to_token
 
 -- initialize the DenseCap model object
-local dtype = 'torch.CudaTensor'
+local dtype = 'torch.FloatTensor'
 local model = models.setup(opt):type(dtype)
 
 -- get the parameters vector
@@ -83,8 +83,44 @@ local function loadImage(image_path)
   return img
 end
 
+local function scandir(directory)
+    local i, t, popen = 0, {}, io.popen
+    local pfile = popen('ls "'..directory..'"')
+    for filename in pfile:lines() do
+        i = i + 1
+        t[i] = filename
+    end
+    pfile:close()
+    return t
+end
+local function split(inputstr, sep)
+  if sep == nil then
+          sep = "%s"
+  end
+  local t={}
+  for str in string.gmatch(inputstr, "([^"..sep.."]+)") do
+          table.insert(t, str)
+  end
+  return t
+end
+local function extractFeats()
+  image_path = nil
+  while true do
+    local filelist = scandir('./data_pipeline')
+    for k,v in pairs(filelist) do
+      if string.match(v, "prep_done") then
+        print('detect h5 file...'..v)
+        os.remove('./data_pipeline/'..v)
+        local imname = split(v,'_')[3]
 
-local function extractFeats(image_path)
+        image_path = './data_pipeline/'..imname..'.h5'
+        break
+      end
+    end
+    if image_path ~= nil then
+      break
+    end
+  end
   model:evaluate()
 
   -- Fetch data using the loader
@@ -92,6 +128,7 @@ local function extractFeats(image_path)
   -- local info = {}
   local data = {}
   -- data.image, data.gt_boxes, data.gt_labels, info.im_info, data.region_proposals, info.fullcap = loader:getBatch()
+  
   data.image = loadImage(image_path)
   for k, v in pairs(data) do
     data[k] = v:type(dtype)
@@ -105,7 +142,7 @@ local function extractFeats(image_path)
   -- local losses, stats = model:forward_backward(data)
   local outputs_all = model:forward_demo(data)
 
-  return outputs_all--, info --losses, stats
+  return outputs_all, image_path--, info --losses, stats
 end
 
 local function pack_outputs( outputs )
@@ -123,16 +160,7 @@ local function pack_outputs( outputs )
   pack['glob_feat'] = outputs[6]
   return pack
 end
-local function split(inputstr, sep)
-  if sep == nil then
-          sep = "%s"
-  end
-  local t={}
-  for str in string.gmatch(inputstr, "([^"..sep.."]+)") do
-          table.insert(t, str)
-  end
-  return t
-end
+
 local function saveJson(outputs, image_path)
   local sptb = split(image_path,'/')
   local imname = split(sptb[#sptb],'.')[1]
@@ -148,9 +176,11 @@ end
 -------------------------------------------------------------------------------
 
 -- while true do  
-local outputs = extractFeats(opt.image_path)
-local out_packed = pack_outputs(outputs)
+while true do
+  local outputs, image_path = extractFeats()
+  local out_packed = pack_outputs(outputs)
 -- save to json file
-saveJson(out_packed,opt.image_path)
+  saveJson(out_packed,image_path)
+end
 
 -- end

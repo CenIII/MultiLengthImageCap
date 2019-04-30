@@ -391,6 +391,9 @@ class LoaderDemo(object):
 
 		data_file = self.dataPipePath+'data_demo_'+str(imgName)
 		print('prep done.')	
+		with open(self.dataPipePath+'prep_done_'+str(imgName),'w') as f:
+			f.write('a')
+
 		while True:
 			filename = glob.glob(data_file)
 			if len(filename)>=1:
@@ -420,7 +423,7 @@ class LoaderDemo(object):
 		box_feats = box_feats[posInds]
 		# scores = scores[:len(box_feats)]
 		prob = softmax(box_scores)
-		index = np.random.choice(len(box_feats),min(3,len(box_feats)), replace=False,p=prob)
+		index = np.random.choice(len(box_feats),min(mode[1],len(box_feats)), replace=False,p=prob)
 
 		return box_scores[index], box_coords[index], box_feats[index]
 

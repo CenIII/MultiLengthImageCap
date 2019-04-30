@@ -14,6 +14,10 @@ import sys
 import argparse
 import os
 from torch.utils.data import DataLoader
+import matplotlib.patches as patches
+import matplotlib.pyplot as plt
+from textwrap import wrap
+from utils.math import gumbel_softmax
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
@@ -29,14 +33,14 @@ def getLengths(caps):
 
 
 def reloadModel(model_path, linNet, lstmEnc):
-	pt = torch.load(model_path)
+	pt = torch.load(model_path, map_location='cpu')
 
 	def subload(model, pt_dict):
 		model_dict = model.state_dict()
 		pretrained_dict = {}
 		for k, v in pt_dict.items():
 			if (k in model_dict):
-				pretrained_dict[k] = v if ('embedding.weight' not in k) else v.transpose(1,0)
+				pretrained_dict[k] = v #if ('embedding.weight' not in k) else v.transpose(1,0)
 		# 2. overwrite entries in the existing state dict
 		model_dict.update(pretrained_dict)
 		# 3. load the new state dict
@@ -148,15 +152,19 @@ def inference(image_path,loader,linNet,lstmDec,symbolDec,save_path,sample_mode=[
 		B,M,D,H,W = box_feat.size()
 		encoder_outputs = box_feat.permute(0,1,3,4,2).contiguous().view(B,-1,D)
 		return encoder_hidden, encoder_outputs
+	def GSwTemp(temperature):
+		def wrapper(p,dim=-1):
+			return gumbel_softmax(p,temperature,dim=dim)
+		return wrapper
 
 	image, box_scores, box_coords, box_feats, global_feat = loader.loadImage(image_path)
-	box_scores, box_coords, box_feats = loader.sampleBoxes(box_scores, box_coords, box_feats)
+	box_scores, box_coords, box_feats = loader.sampleBoxes(box_scores, box_coords, box_feats, mode=sample_mode)
 	box_feats, global_feat = loader.makeInp(box_feats, global_feat)  # box_feats: (numImage,numBoxes,512,7,7) box_global_feats: list, numImage [(512,34,56)]		
 	# step 2: data transform by linNet
 	box_feats, box_feat_dec, global_hidden = linNet(box_feats, global_feat)
 	# step 3: decode to captions by lstmDec
 	encoder_hidden, encoder_outputs = linOut2DecIn(global_hidden,box_feat_dec)
-	decoder_outputs, decoder_hidden, ret_dict = lstmDec(encoder_hidden=encoder_hidden, encoder_outputs=encoder_outputs) # box_feat [8, 4, 4096, 3, 3]
+	decoder_outputs, decoder_hidden, ret_dict = lstmDec(encoder_hidden=encoder_hidden, encoder_outputs=encoder_outputs,max_len=sample_mode[1]*5,function=GSwTemp(0.6)) # box_feat [8, 4, 4096, 3, 3]
 
 	# todo: decode index to symbols
 	#symseq = []
@@ -169,7 +177,15 @@ def inference(image_path,loader,linNet,lstmDec,symbolDec,save_path,sample_mode=[
 
 	# todo: decode index to symbols
 	word_seq = symbolDec.decode(ret_dict['sequence'])#symseq)
+	word_seq = ' '.join(word_seq)
 	print(word_seq)
+	fig,ax = plt.subplots(1)
+	ax.imshow(image)
+	ax.set_title("\n".join(wrap(word_seq,70)))
+	for coord in box_coords:
+		rect = patches.Rectangle((coord[0]-coord[2]/2,coord[1]-coord[3]/2),coord[2],coord[3],linewidth=1,edgecolor='r',facecolor='none')
+		ax.add_patch(rect)
+	plt.show()
 	# todo: draw(image,box_coords,decoder_outputs)
 
 
@@ -186,6 +202,10 @@ def parseArgs():
 						default='./save/default/')
 	parser.add_argument('-b', '--batch_imgs',
 						default=4, type=int)
+	parser.add_argument('-i', '--image_path',
+						default='densecap/data/visual-genome/images/270.jpg')
+	parser.add_argument('-n', '--num_boxes',
+						default=3, type=int)
 	args = parser.parse_args()
 	return args
 
@@ -226,7 +246,7 @@ if __name__ == '__main__':
 	eos_id = VocabData['word_dict']['<END>']
 
 	lstmDec = DecoderRNN(vocab_size=len(VocabData['word_dict']),max_len=15,sos_id=sos_id, eos_id=eos_id , embedding_size=300,hidden_size=1024,
-						 embedding_parameter=VocabData['word_embs'], update_embedding=False ,use_attention=True)
+						 embedding_parameter=VocabData['word_embs'], update_embedding=False ,use_attention=True,use_prob_vector=True)
 
 	# todo: reload lstmEnc
 	linNet, lstmDec = reloadModel(args.model_path, linNet, lstmDec)
@@ -242,10 +262,10 @@ if __name__ == '__main__':
 	# 	# get image_path interactively
 	# 	...
 		# do inference, show image, then loop back.
-	image_path = 'densecap/data/visual-genome/images/270.jpg'#'./densecap/data_pipeline/29.jpg'
+	image_path = args.image_path  #'./densecap/data_pipeline/29.jpg'
 	lstmDec = lstmDec.to(device)
 	linNet = linNet.to(device)  # nn.DataParallel(linNet,device_ids=[0, 1]).to(device)
-	inference(image_path,loader,linNet,lstmDec,symbolDec,args.save_path,sample_mode=['top',3])
+	inference(image_path,loader,linNet,lstmDec,symbolDec,args.save_path,sample_mode=['top',args.num_boxes])
 
 
 
