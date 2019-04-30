@@ -4,7 +4,7 @@ import tqdm
 import numpy as np
 from model.LSTMEncoder import EncoderRNN
 from dataloader.dataloader import LoaderEnc
-from model.LinearModel import LinearModel
+from model.LinearModel import LinearModelEnc
 from crit.SimilarityLoss import SimilarityLoss
 import pickle
 import time
@@ -150,7 +150,7 @@ if __name__ == '__main__':
 		VocabData = pickle.load(f)
 
 	# load linear model, transform feature tensor to semantic space
-	linNet = LinearModel(hiddenSize=4096)
+	linNet = LinearModelEnc(hiddenSize=4096)
 	# load LSTM encoder
 	lstmEnc = EncoderRNN(len(VocabData['word_dict']), 15, 4096, 300,
 	                 input_dropout_p=0, dropout_p=0,
