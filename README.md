@@ -75,7 +75,8 @@ Then run `demo.py`:
 ```bash
 python3 demo.py -p path_to_trained_lstm_decoder -i image_path -n number_of_boxes
 ```
-
+An example output:
+<img src='demo/bus.png'>
 
 
 
