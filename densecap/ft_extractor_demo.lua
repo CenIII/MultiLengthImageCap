@@ -49,7 +49,7 @@ opt.vocab_size = loader:getVocabSize()
 opt.idx_to_token = loader.info.idx_to_token
 
 -- initialize the DenseCap model object
-local dtype = 'torch.FloatTensor'
+local dtype = 'torch.CudaTensor'
 local model = models.setup(opt):type(dtype)
 
 -- get the parameters vector

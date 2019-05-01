@@ -40,12 +40,42 @@ To prepare the image dataset, please follow the following steps:
 Our LSTM encoder and decoder used shared vocabulary data containing a word dictionary (mapping from word to index) and a word embedding (mapping from index to embedding). We pack the two into one pickle file. Please download the pickle file from [here](https://drive.google.com/open?id=1Kdn8zhTKcYjlkD_UPXCalCfTOXULh_jH) and save them to `./data` folder. 
 
 ## Pretrain LSTM encoder
+To train a LSTM encoder, we need to first run the feature extractor implemented in Torch at background. 
+```bash
+cd densecap/
+th ft_extractor.lua -checkpoint_start_from ./data/models/densecap/densecap-pretrained-vgg16.t7 -gpu gpu_id &
+cd ..
+```
+Then run LSTM encoder pretraining script:
+```bash
 
+python3 pretrain_encoder.py -s save_path
+```
 
 ## Train LSTM decoder
-
+To train LSTM decoder we also need to first run the feature extractor implemented in Torch at background. 
+```bash
+cd densecap/
+th ft_extractor.lua -checkpoint_start_from ./data/models/densecap/densecap-pretrained-vgg16.t7 -gpu gpu_id &
+cd ..
+```
+Then run LSTM decoder training script:
+```bash
+python3 train_decoder.py -p path_to_pretrained_lstm_encoder -s save_path
+```
 
 ## Run demo
+To run demo, first run a feature extractor at background:
+```bash
+cd densecap/
+th ft_extractor_demo.lua -checkpoint_start_from ./data/models/densecap/densecap-pretrained-vgg16.t7 -gpu gpu_id &
+cd ..
+```
+Then run `demo.py`:
+```bash
+python3 demo.py -p path_to_trained_lstm_decoder -i image_path -n number_of_boxes
+```
+
 
 
 
